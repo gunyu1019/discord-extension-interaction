@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
+import asyncio
 
 import discord
 import zlib
@@ -33,17 +33,54 @@ from .commands import Command
 
 
 class ClientBase(commands.bot.BotBase):
-    def __init__(self, command_prefix, **options):
+    def __init__(
+            self,
+            command_prefix,
+            global_sync_command: bool = False,
+            **options
+    ):
         if discord.version_info.major >= 2:
             options['enable_debug_events'] = True
 
         super().__init__(command_prefix, **options)
-        self.__interactions = {}
+        self.global_sync_command = global_sync_command
+        self.all_interactions = {}
 
         self._buffer = bytearray()
         self._zlib = zlib.decompressobj()
 
-    def add_interaction(self, command: Command):
+    def add_interaction(
+            self,
+            command: Command,
+            sync_command: bool = None,
+            _parent=None
+    ):
+        if sync_command is None:
+            sync_command = self.global_sync_command
+
+        if command.name in self.all_interactions:
+            raise commands.CommandRegistrationError(command.name)
+
+        if sync_command and command.interaction:
+            self._schedule_event()
+
+        if _parent is not None:
+            command.parents = _parent
+        self.all_interactions[command.name] = command
+        if len(command.aliases) != 0:
+            for alias in command.aliases:
+                if alias in self.all_interactions:
+                    continue
+                self.all_interactions[alias] = command
+        return
+
+    def add_iog(
+            self,
+            _class,
+            sync_command: bool = None
+    ):
+        if sync_command is None:
+            sync_command = self.global_sync_command
         return
 
     async def on_socket_raw_receive(self, msg):
