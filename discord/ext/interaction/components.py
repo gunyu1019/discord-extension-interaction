@@ -21,9 +21,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
 import discord
 
-from typing import Union, Optional
+from typing import Union, Optional, List
+
+
+class Components:
+    def __init__(self, components_type: int):
+        self.type = components_type
 
 
 class Options:
@@ -56,18 +62,20 @@ class Options:
 
         return data
 
-    def from_dict(self, payload: dict):
-        self.label: str = payload.get("label")
-        self.value: str = payload.get("value")
-        self.description: Optional[str] = payload.get("description")
-        self.emoji: discord.PartialEmoji = payload.get("emoji")
-        self.default: bool = payload.get("default")
-        return self
-
-
-class Components:
-    def __init__(self, components_type: int):
-        self.type = components_type
+    @classmethod
+    def from_dict(cls, payload: dict):
+        label: str = payload.get("label")
+        value: str = payload.get("value")
+        description: Optional[str] = payload.get("description")
+        emoji: discord.PartialEmoji = payload.get("emoji")
+        default: bool = payload.get("default", False)
+        return cls(
+            label=label,
+            value=value,
+            description=description,
+            emoji=emoji,
+            default=default
+        )
 
 
 class ActionRow(Components):
@@ -88,20 +96,24 @@ class ActionRow(Components):
             "components": [i.to_dict() for i in self.components]
         }
 
-    def from_dict(self, payload: dict):
-        self.components = payload.get("components")
-        return self
+    @classmethod
+    def from_dict(cls, payload: dict):
+        components = payload.get("components")
+        return cls(components=components)
 
-    def from_payload(self, payload: dict):
-        self.components = from_payload(payload.get("components"))
-        return self
+    @classmethod
+    def from_payload(cls, payload: dict):
+        components = from_payload(
+            payload.get("components")
+        )
+        return cls(components=components)
 
 
 class Button(Components):
     def __init__(self,
-                 style: int = None,
+                 style: int,
                  label: str = None,
-                 emoji: discord.PartialEmoji = None,
+                 emoji: Union[discord.PartialEmoji, str, dict] = None,
                  custom_id: str = None,
                  url: str = None,
                  disabled: bool = None):
@@ -124,6 +136,10 @@ class Button(Components):
             base["label"] = self.label
         if self.emoji is not None and isinstance(self.emoji, discord.PartialEmoji):
             base["emoji"] = self.emoji.to_dict()
+        elif self.emoji is not None and isinstance(self.emoji, str):
+            base["emoji"] = {
+                "name": self.emoji
+            }
         elif self.emoji is not None:
             base["emoji"] = self.emoji
 
@@ -136,20 +152,28 @@ class Button(Components):
 
         return base
 
-    def from_dict(self, payload: dict):
-        self.style = payload.get("style")
-        self.label = payload.get("label")
-        self.emoji = payload.get("emoji")
-        self.custom_id = payload.get("custom_id")
-        self.url = payload.get("url")
-        self.disabled = payload.get("disabled")
-        return self
+    @classmethod
+    def from_dict(cls, payload: dict):
+        style = payload["style"]
+        label = payload.get("label")
+        emoji = payload.get("emoji")
+        custom_id = payload.get("custom_id")
+        url = payload.get("url")
+        disabled = payload.get("disabled", False)
+        return cls(
+            style=style,
+            label=label,
+            emoji=emoji,
+            custom_id=custom_id,
+            url=url,
+            disabled=disabled
+        )
 
 
 class Selection(Components):
     def __init__(self,
-                 custom_id: str = None,
-                 options: Union[list, Options] = None,
+                 custom_id: str,
+                 options: List[Union[dict, Options]],
                  placeholder: str = None,
                  min_values: int = None,
                  max_values: int = None):
@@ -166,7 +190,10 @@ class Selection(Components):
             "type": 3,
             "custom_id": self.custom_id,
             "options": [
-                option.to_dict() if isinstance(option, Options) else option for option in self.options
+                option.to_dict()
+                if isinstance(option, Options)
+                else option
+                for option in self.options
             ]
         }
         if self.placeholder is not None:
@@ -178,13 +205,22 @@ class Selection(Components):
 
         return base
 
-    def from_dict(self, payload: dict):
-        self.custom_id = payload.get("custom_id")
-        self.options = payload.get("options", [])
-        self.placeholder = payload.get("placeholder")
-        self.min_values = payload.get("min_values")
-        self.max_values = payload.get("max_values")
-        return self
+    @classmethod
+    def from_dict(cls, payload: dict):
+        custom_id = payload["custom_id"]
+        options = [
+            Options.from_dict(payload.get("options", []))
+        ]
+        placeholder = payload.get("placeholder")
+        min_values = payload.get("min_values")
+        max_values = payload.get("max_values")
+        return cls(
+            custom_id=custom_id,
+            options=options,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values
+        )
 
 
 def from_payload(payload: dict) -> list:
@@ -192,9 +228,9 @@ def from_payload(payload: dict) -> list:
 
     for i in payload:
         if i.get("type") == 1:
-            components.append(ActionRow().from_payload(i))
+            components.append(ActionRow.from_payload(i))
         elif i.get("type") == 2:
-            components.append(Button().from_dict(i))
+            components.append(Button.from_dict(i))
         elif i.get("type") == 3:
-            components.append(Selection().from_dict(i))
+            components.append(Selection.from_dict(i))
     return components

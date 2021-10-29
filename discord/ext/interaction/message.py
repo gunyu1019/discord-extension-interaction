@@ -27,9 +27,9 @@ import discord
 from discord.state import ConnectionState
 from typing import List, Union, Optional
 
-from module.components import ActionRow, Button, Selection, from_payload
-from module.errors import InvalidArgument, AlreadyDeferred
-from module.http import HttpClient
+from .components import ActionRow, Button, Selection, from_payload
+from .errors import InvalidArgument, AlreadyDeferred
+from .http import HttpClient
 
 
 def _files_to_form(files: list, payload: dict):

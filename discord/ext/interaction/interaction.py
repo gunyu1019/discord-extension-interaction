@@ -27,11 +27,11 @@ import logging
 from discord.state import ConnectionState
 from typing import Optional, List, Union
 
-from module.components import ActionRow, Button, Selection
-from module.errors import InvalidArgument
-from module.message import Message
-from module.message import _files_to_form, _allowed_mentions
-from module.http import HttpClient, InteractionData
+from .components import ActionRow, Button, Selection
+from .errors import InvalidArgument
+from .message import Message
+from .message import _files_to_form, _allowed_mentions
+from .http import HttpClient, InteractionData
 
 log = logging.getLogger()
 
