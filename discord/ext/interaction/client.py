@@ -27,9 +27,9 @@ import zlib
 from discord.ext import commands
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
-from discord.utils import _from_json
 
 from .commands import Command
+from .utils import _from_json
 
 
 class ClientBase(commands.bot.BotBase):
@@ -49,6 +49,12 @@ class ClientBase(commands.bot.BotBase):
         self._buffer = bytearray()
         self._zlib = zlib.decompressobj()
 
+    async def register_command(self, command: Command):
+        data = {
+            "name": command
+        }
+        return
+
     def add_interaction(
             self,
             command: Command,
@@ -62,7 +68,7 @@ class ClientBase(commands.bot.BotBase):
             raise commands.CommandRegistrationError(command.name)
 
         if sync_command and command.interaction:
-            self._schedule_event()
+            self._schedule_event(self.register_command, command)
 
         if _parent is not None:
             command.parents = _parent

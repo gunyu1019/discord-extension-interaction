@@ -114,3 +114,36 @@ class HttpClient:
         if files is not None or form is not None:
             return await self.http.request(r, form=form, files=files)
         return await self.http.request(r, json=payload)
+
+    async def register_command(self, application_id: int, payload: dict = None):
+        r = SlashRoute(
+            'POST', '/applications/{application_id}/commands', application_id=application_id
+        )
+        return await self.http.request(r, json=payload)
+
+    async def get_commands(self, application_id: int):
+        r = SlashRoute(
+            'GET', '/applications/{application_id}/commands', application_id=application_id
+        )
+        return await self.http.request(r)
+
+    async def get_command(self, application_id: int, command_id: int):
+        r = SlashRoute(
+            'GET', '/applications/{application_id}/commands/{command_id}',
+            application_id=application_id, command_id=command_id
+        )
+        return await self.http.request(r)
+
+    async def edit_command(self, application_id: int, command_id: int, payload: dict = None):
+        r = SlashRoute(
+            'PATCH', '/applications/{application_id}/commands/{command_id}',
+            application_id=application_id, command_id=command_id
+        )
+        return await self.http.request(r, json=payload)
+
+    async def delete_command(self, application_id: int, command_id: int, payload: dict = None):
+        r = SlashRoute(
+            'DELETE', '/applications/{application_id}/commands/{command_id}',
+            application_id=application_id, command_id=command_id
+        )
+        return await self.http.request(r, json=payload)
