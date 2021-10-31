@@ -26,20 +26,105 @@ import asyncio
 from typing import List
 
 
-class Command:
+class OptionChoice:
+    def __init__(
+            self,
+            name: str,
+            value: str
+    ):
+        self.name = name
+        self.value = value
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "value": self.value
+        }
+
+
+class Option:
+    SUB_COMMAND = 1
+    SUB_COMMAND_GROUP = 2
+    STRING = 3
+    INTEGER = 4
+    BOOLEAN = 5
+    USER = 6
+    CHANNEL = 7
+    ROLE = 8
+    MENTIONABLE = 9
+    NUMBER = 10
+
+    def __init__(
+            self,
+            name: str,
+            type: int,
+            description: str = None,
+            required: bool = False,
+            choices: List[OptionChoice] = None,
+            autocomplete: bool = False,
+            options: list = None
+    ):
+        self.name = name
+        self.type = type
+        self.description = description
+        self.required = required
+        self.choices = choices
+        self.autocomplete = autocomplete
+        self.options = options
+
+    def to_dict(self) -> dict:
+        data = {
+            "name": self.name,
+            "type": self.type
+        }
+        return data
+
+
+class ApplicationCommand:
+    def __init__(
+            self,
+            name: str,
+            description: str = None,
+            options: List[Option] = None
+    ):
+        self.name = name
+        self.description = description
+        self.options = options
+
+    def to_dict(self) -> dict:
+        data = {
+            'name': self.name
+        }
+        if self.description is not None:
+            data['description'] = self.description
+        if self.options is not None:
+            data['optins'] = [
+                option.to_dict() if isinstance(option, Option)
+                else option
+                for option in self.options
+            ]
+
+        return data
+
+
+class Command(ApplicationCommand):
     def __init__(self, func, **kwargs):
         if not asyncio.iscoroutinefunction(func):
             raise TypeError('Callback must be a coroutine.')
+        if "options" in kwargs.keys() and "option_name" in kwargs.keys():
+            raise TypeError('Add one of "option_name" and "options".')
 
+        super().__init__(**kwargs)
         self.name = name = kwargs.get('name') or func.__name__
         if not isinstance(name, str):
             raise TypeError('Name of a command must be a string.')
-        self.description = kwargs.get("description")
 
         self.callback = func
         self.aliases: list = kwargs.get('aliases', [])
-        self.option_name: list = kwargs.get("option_name", [])
-        self.options: list = kwargs.get("options", [])
+
+        self.option_name: List[str] = kwargs.get("option_name") or [
+            option.name for option in kwargs.get("options", []) if isinstance(option, Option)
+        ]
 
         self.interaction: bool = kwargs.get('interaction', True)
         self.message: bool = kwargs.get('message', True)
@@ -49,6 +134,7 @@ class Command:
 
 def command(
         name: str = None,
+        description: str = None,
         cls: classmethod = None,
         aliases: List[str] = None,
         options: List[str] = None,
@@ -65,6 +151,7 @@ def command(
         return cls(
             func,
             name=name,
+            description=description,
             aliases=aliases,
             interaction=interaction,
             message=message,

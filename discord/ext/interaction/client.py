@@ -51,8 +51,13 @@ class ClientBase(commands.bot.BotBase):
 
     async def register_command(self, command: Command):
         data = {
-            "name": command
+            "name": command.name
         }
+
+        if command.description is not None:
+            data["description"] = command.description
+        if command.options is not None
+            data["options"] = [option.to_dict() for option in command.options]
         return
 
     def add_interaction(
