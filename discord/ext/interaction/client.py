@@ -22,6 +22,7 @@ SOFTWARE.
 """
 import asyncio
 
+import os
 import discord
 import zlib
 from discord.ext import commands
@@ -56,8 +57,22 @@ class ClientBase(commands.bot.BotBase):
 
         if command.description is not None:
             data["description"] = command.description
-        if command.options is not None
-            data["options"] = [option.to_dict() for option in command.options]
+        if command.options is not None:
+            data["options"] = [
+                option.to_dict() for option in command.options
+            ]
+        return
+
+    def load_extensions(self, package: str, directory: str = None) -> None:
+        if directory is not None:
+            package = os.path.join(directory, package)
+        cogs = [
+            "{0}.{1}".format(package, file[:-3])
+            for file in os.listdir(package)
+            if file.endswith(".py")
+        ]
+        for cog in cogs:
+            self.load_extension(cog)
         return
 
     def add_interaction(
@@ -72,9 +87,6 @@ class ClientBase(commands.bot.BotBase):
         if command.name in self.all_interactions:
             raise commands.CommandRegistrationError(command.name)
 
-        if sync_command and command.interaction:
-            self._schedule_event(self.register_command, command)
-
         if _parent is not None:
             command.parents = _parent
         self.all_interactions[command.name] = command
@@ -85,13 +97,10 @@ class ClientBase(commands.bot.BotBase):
                 self.all_interactions[alias] = command
         return
 
-    def add_iog(
+    def add_icog(
             self,
-            _class,
-            sync_command: bool = None
+            _class
     ):
-        if sync_command is None:
-            sync_command = self.global_sync_command
         return
 
     async def on_socket_raw_receive(self, msg):
@@ -114,6 +123,9 @@ class ClientBase(commands.bot.BotBase):
             return
 
         state: ConnectionState = self._connection
+
+    async def on_ready(self):
+        return
 
 
 class Client(ClientBase, discord.Client):
