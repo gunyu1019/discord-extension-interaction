@@ -68,8 +68,15 @@ class InteractionContext:
         self.deferred = False
         self.responded = False
 
-        data = InteractionData(interaction_token=self.token, interaction_id=self.id, application_id=self.application)
-        self.http = HttpClient(http=self.client.http, data=data)
+        self.data = InteractionData(
+            interaction_token=self.token,
+            interaction_id=self.id,
+            application_id=self.application
+        )
+        if hasattr(self.client, "interaction_http"):
+            self.http = self.client.interaction_http
+        else:
+            self.http = HttpClient(http=self.client.http)
 
     @staticmethod
     def _get_payload(
@@ -107,7 +114,7 @@ class InteractionContext:
         if hidden:
             base["data"] = {"flags": 64}
 
-        await self.http.post_defer_response(payload=base)
+        await self.http.post_defer_response(payload=base, data=self.data)
         self.deferred = True
         return
 
@@ -159,14 +166,14 @@ class InteractionContext:
                 await self.defer(hidden=hidden)
 
             if self.deferred:
-                resp = await self.http.edit_initial_response(payload=payload, form=form, files=files)
+                resp = await self.http.edit_initial_response(payload=payload, form=form, files=files, data=self.data)
                 self.deferred = False
             else:
-                await self.http.post_initial_response(payload=payload)
-                resp = await self.http.get_initial_response()
+                await self.http.post_initial_response(payload=payload, data=self.data)
+                resp = await self.http.get_initial_response(data=self.data)
             self.responded = True
         else:
-            resp = await self.http.post_followup(payload=payload, form=form, files=files)
+            resp = await self.http.post_followup(payload=payload, form=form, files=files, data=self.data)
         ret = Message(state=self._state, channel=self.channel, data=resp)
 
         if files:
@@ -216,9 +223,15 @@ class InteractionContext:
             form = None
 
         if message_id == "@original":
-            resp = await self.http.edit_initial_response(payload=payload, form=form, files=files)
+            resp = await self.http.edit_initial_response(payload=payload, form=form, files=files, data=self.data)
         else:
-            resp = await self.http.edit_followup(message_id, payload=payload, form=form, files=files)
+            resp = await self.http.edit_followup(
+                message_id=message_id,
+                payload=payload,
+                form=form,
+                files=files,
+                data=self.data
+            )
         ret = Message(state=self._state, channel=self.channel, data=resp)
         if self.deferred:
             self.deferred = False
@@ -230,9 +243,9 @@ class InteractionContext:
 
     async def delete(self, message_id="@original"):
         if message_id == "@original":
-            await self.http.delete_initial_response()
+            await self.http.delete_initial_response(data=self.data)
         else:
-            await self.http.delete_followup(message_id)
+            await self.http.delete_followup(message_id=message_id, data=self.data)
         return
 
 
@@ -320,7 +333,7 @@ class ComponentsContext(InteractionContext):
         if hidden:
             base["data"] = {"flags": 64}
 
-        await self.http.post_defer_response(payload=base)
+        await self.http.post_defer_response(payload=base, data=self.data)
         self.deferred = True
         return
 
@@ -376,10 +389,10 @@ class ComponentsContext(InteractionContext):
                 )
                 self.deferred = False
             else:
-                await self.http.post_initial_components_response(payload=payload)
+                await self.http.post_initial_components_response(payload=payload, data=self.data)
             self.responded = True
         else:
-            await self.http.post_followup(payload=payload, form=form, files=files)
+            await self.http.post_followup(payload=payload, form=form, files=files, data=self.data)
 
         if files:
             for i in files:

@@ -20,16 +20,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-import asyncio
 
 import os
 import discord
 import zlib
+import inspect
 from discord.ext import commands
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from .commands import Command
+from typing import Optional, Dict, Coroutine
+from .commands import ApplicationCommand, Command
+from .http import HttpClient
+from .listener import Listener
 from .utils import _from_json
 
 
@@ -42,13 +45,17 @@ class ClientBase(commands.bot.BotBase):
     ):
         if discord.version_info.major >= 2:
             options['enable_debug_events'] = True
-
         super().__init__(command_prefix, **options)
         self.global_sync_command = global_sync_command
-        self.all_interactions = {}
+        self.interaction_http = HttpClient(self.http)
 
         self._buffer = bytearray()
         self._zlib = zlib.decompressobj()
+
+        self._application_id = None
+        self._interactions_of_group = []
+        self._interactions: Dict[str, Command] = {}
+        self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
 
     async def register_command(self, command: Command):
         data = {
@@ -61,6 +68,40 @@ class ClientBase(commands.bot.BotBase):
             data["options"] = [
                 option.to_dict() for option in command.options
             ]
+        return
+
+    async def _application_id(self):
+        if self._application_id is None:
+            application_info: discord.AppInfo = await self.application_info()
+            self._application_id = application_info.id
+        return self._application_id
+
+    async def fetch_commands(self) -> Coroutine[Dict[str, ApplicationCommand]]:
+        data = await self.interaction_http.get_commands(
+            await self._application_id()
+        )
+        if isinstance(data, list):
+            result = [
+                {
+                    x['name'], ApplicationCommand.from_payload(x)
+                } for x in data
+            ]
+            self._fetch_interactions = result
+        else:
+            _result = ApplicationCommand.from_payload(data)
+            result = {_result.name: _result}
+        return result
+
+    async def _sync_command(self, command: Command):
+        await self.wait_until_ready()
+        if self._fetch_interactions is None:
+            await self.fetch_commands()
+
+        if command.name in self._fetch_interactions.keys():
+            if self._fetch_interactions[command.name] != command.name:
+                return
+        else:
+            await self.register_command(command)
         return
 
     def load_extensions(self, package: str, directory: str = None) -> None:
@@ -84,23 +125,31 @@ class ClientBase(commands.bot.BotBase):
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name in self.all_interactions:
+        if command.name in self._interactions:
             raise commands.CommandRegistrationError(command.name)
 
         if _parent is not None:
             command.parents = _parent
-        self.all_interactions[command.name] = command
+        self._interactions[command.name] = command
         if len(command.aliases) != 0:
             for alias in command.aliases:
-                if alias in self.all_interactions:
+                if alias in self._interactions:
                     continue
-                self.all_interactions[alias] = command
+                self._interactions[alias] = command
+
+        self._schedule_event(self.register_command, command=command)
         return
 
     def add_icog(
             self,
-            _class
+            icog: type
     ):
+        for func, attr in inspect.getmembers(icog):
+            if isinstance(attr, Command):
+                attr.parents = icog
+                self.add_interaction(attr, attr.sync_command)
+            elif isinstance(attr, Listener):
+                self.add_listener(attr.callback, name=attr.name)
         return
 
     async def on_socket_raw_receive(self, msg):
@@ -121,11 +170,9 @@ class ClientBase(commands.bot.BotBase):
 
         if op != DiscordWebSocket.DISPATCH:
             return
+        self.dispatch("payload_receive", payload=payload)
 
         state: ConnectionState = self._connection
-
-    async def on_ready(self):
-        return
 
 
 class Client(ClientBase, discord.Client):

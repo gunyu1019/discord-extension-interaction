@@ -23,7 +23,7 @@ SOFTWARE.
 
 
 import asyncio
-from typing import List
+from typing import List, Optional
 
 
 class OptionChoice:
@@ -85,11 +85,14 @@ class ApplicationCommand:
             self,
             name: str,
             description: str = None,
-            options: List[Option] = None
+            options: List[Option] = None,
+            **kwargs
     ):
         self.name = name
         self.description = description
         self.options = options
+
+        self.id: Optional[int] = kwargs.pop("id")
 
     def to_dict(self) -> dict:
         data = {
@@ -105,6 +108,22 @@ class ApplicationCommand:
             ]
 
         return data
+
+    @classmethod
+    def from_payload(cls, data: dict):
+        name = data.pop("name")
+        description = data.pop("description")
+        if "options" in data:
+            options = data.pop("options")
+        else:
+            options = None
+
+        return cls(
+            name=name,
+            description=description,
+            options=options,
+            **data
+        )
 
 
 class Command(ApplicationCommand):
@@ -126,6 +145,7 @@ class Command(ApplicationCommand):
             option.name for option in kwargs.get("options", []) if isinstance(option, Option)
         ]
 
+        self.sync_command: bool = kwargs.get("sync_command", None)
         self.interaction: bool = kwargs.get('interaction', True)
         self.message: bool = kwargs.get('message', True)
 
@@ -139,7 +159,8 @@ def command(
         aliases: List[str] = None,
         options: List[str] = None,
         interaction: bool = True,
-        message: bool = True
+        message: bool = True,
+        sync_command: bool = None
 ):
     if aliases is None:
         aliases = []
@@ -155,7 +176,8 @@ def command(
             aliases=aliases,
             interaction=interaction,
             message=message,
-            options=options
+            options=options,
+            sync_command=sync_command
         )
 
     return decorator

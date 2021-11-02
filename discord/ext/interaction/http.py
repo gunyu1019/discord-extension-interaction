@@ -37,65 +37,64 @@ class InteractionData:
 
 
 class HttpClient:
-    def __init__(self, http: discord.http.HTTPClient, data: InteractionData = None):
+    def __init__(self, http: discord.http.HTTPClient):
         self.http = http
-        self.data = data
 
-    async def post_defer_response(self, payload: dict):
+    async def post_defer_response(self, data: InteractionData, payload: dict):
         r = SlashRoute(
-            "POST", "/interactions/{id}/{token}/callback", id=self.data.id, token=self.data.token
+            "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
         await self.http.request(r, json=payload)
 
-    async def post_initial_response(self, payload: dict):
+    async def post_initial_response(self, data: InteractionData, payload: dict):
         r = SlashRoute(
-            "POST", "/interactions/{id}/{token}/callback", id=self.data.id, token=self.data.token
+            "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
         data = {"type": 4, "data": payload}
         return await self.http.request(r, json=data)
 
-    async def post_initial_components_response(self, payload: dict):
+    async def post_initial_components_response(self, data: InteractionData, payload: dict):
         r = SlashRoute(
-            "POST", "/interactions/{id}/{token}/callback", id=self.data.id, token=self.data.token
+            "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
         data = {"type": 7, "data": payload}
         return await self.http.request(r, json=data)
 
-    async def get_initial_response(self):
+    async def get_initial_response(self, data: InteractionData):
         r = SlashRoute(
-            "GET", "/webhooks/{id}/{token}/messages/@original", id=self.data.application, token=self.data.token
+            "GET", "/webhooks/{id}/{token}/messages/@original", id=data.application, token=data.token
         )
         return await self.http.request(r)
 
-    async def edit_initial_response(self, payload: dict = None, form=None, files=None):
+    async def edit_initial_response(self, data: InteractionData, payload: dict = None, form=None, files=None):
         if files is not None or form is not None:
-            return await self.edit_followup("@original", form=form, files=files)
-        return await self.edit_followup("@original", payload=payload)
+            return await self.edit_followup(message_id="@original", form=form, files=files, data=data)
+        return await self.edit_followup(message_id="@original", payload=payload, data=data)
 
-    async def delete_initial_response(self):
-        await self.delete_followup("@original")
+    async def delete_initial_response(self, data: InteractionData):
+        await self.delete_followup(message_id="@original", data=data)
 
-    async def post_followup(self, payload: dict = None, form=None, files=None):
+    async def post_followup(self, data: InteractionData, payload: dict = None, form=None, files=None):
         r = SlashRoute(
-            "POST", "/webhooks/{id}/{token}", id=self.data.application, token=self.data.token
+            "POST", "/webhooks/{id}/{token}", id=data.application, token=data.token
         )
         if files is not None or form is not None:
             return await self.http.request(r, form=form, files=files)
         return await self.http.request(r, json=payload)
 
-    async def edit_followup(self, message_id, payload: dict = None, form=None, files=None):
+    async def edit_followup(self, data: InteractionData, message_id, payload: dict = None, form=None, files=None):
         r = SlashRoute(
             "PATCH", "/webhooks/{id}/{token}/messages/{message_id}",
-            id=self.data.application, token=self.data.token, message_id=message_id
+            id=data.application, token=data.token, message_id=message_id
         )
         if files is not None or form is not None:
             return await self.http.request(r, form=form, files=files)
         return await self.http.request(r, json=payload)
 
-    async def delete_followup(self, message_id):
+    async def delete_followup(self, data: InteractionData, message_id):
         r = SlashRoute(
             "DELETE", "/webhooks/{id}/{token}/messages/{message_id}",
-            id=self.data.application, token=self.data.token, message_id=message_id
+            id=data.application, token=data.token, message_id=message_id
         )
         await self.http.request(r)
 
