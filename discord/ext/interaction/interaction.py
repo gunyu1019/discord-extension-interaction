@@ -37,7 +37,7 @@ log = logging.getLogger()
 
 
 class InteractionContext:
-    def __init__(self, payload: dict, client: discord.Client):
+    def __init__(self, payload: dict, client):
         self.prefix: Optional[str] = None
 
         self.client = client
@@ -250,7 +250,7 @@ class InteractionContext:
 
 
 class ApplicationContext(InteractionContext):
-    def __init__(self, payload: dict, client: discord.Client):
+    def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = payload.get("type", 2)
         data = payload.get("data", {})
@@ -314,7 +314,7 @@ class ApplicationContext(InteractionContext):
 
 
 class ComponentsContext(InteractionContext):
-    def __init__(self, payload: dict, client: discord.Client):
+    def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = payload.get("type", 3)
         data = payload.get("data", {})

@@ -154,7 +154,6 @@ class Command(ApplicationCommand):
 
         self.callback = func
         self.aliases: list = kwargs.get('aliases', [])
-        print(kwargs)
         self.option_name: Optional[List[str]] = kwargs.get("option_name", None) or [
             option.name for option in kwargs.get("options", []) if isinstance(option, Option)
         ]

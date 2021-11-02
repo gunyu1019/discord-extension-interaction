@@ -32,6 +32,8 @@ from discord.state import ConnectionState
 
 from typing import Optional, Dict
 from .commands import ApplicationCommand, Command
+from .interaction import ApplicationContext, ComponentsContext
+from .message import MessageCommand, Message
 from .http import HttpClient
 from .listener import Listener
 from .utils import _from_json
@@ -60,7 +62,7 @@ class ClientBase(commands.bot.BotBase):
         self._interactions: Dict[str, Command] = {}
         self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
 
-        self.__sync_command = []
+        self.__sync_command_before_ready = []
 
         self.add_listener(self._sync_command_task, "on_ready")
 
@@ -110,18 +112,17 @@ class ClientBase(commands.bot.BotBase):
             await self._application_id()
         )
         if isinstance(data, list):
-            result = [
-                {
-                    x['name']: ApplicationCommand.from_payload(x)
-                } for x in data
-            ]
+            result = {}
+            for x in data:
+                _x = ApplicationCommand.from_payload(x)
+                result[_x.name] = _x
             self._fetch_interactions = result
         else:
             _result = ApplicationCommand.from_payload(data)
             result = {_result.name: _result}
         return result
 
-    async def _fetch_command_cached(self):
+    async def _fetch_command_cached(self) -> Dict[str, ApplicationCommand]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions
@@ -129,12 +130,11 @@ class ClientBase(commands.bot.BotBase):
     async def _sync_command(self, command: Command):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-
         if command.name in fetch_data.keys():
             command_id = fetch_data[command.name].id
             if command.name in self._interactions:
                 self._interactions[command.name].id = command_id
-            if fetch_data[command.name] != command.name:
+            if fetch_data[command.name] != command:
                 await self.edit_command(command=command)
         else:
             await self.register_command(command)
@@ -177,6 +177,7 @@ class ClientBase(commands.bot.BotBase):
             if self.is_ready():
                 self._schedule_event(self._sync_command, "sync_command", command=command)
             else:
+                self.__sync_command_before_ready.append(command)
         return
 
     def add_icog(
@@ -212,15 +213,43 @@ class ClientBase(commands.bot.BotBase):
         self.dispatch("payload_receive", payload=payload)
 
         state: ConnectionState = self._connection
+        if t == "INTERACTION_CREATE":
+            state.dispatch('interaction_raw_create', payload)
+            if data.get("type") == 2:
+                result = ApplicationContext(data, self)
+                state.dispatch('interaction_command', result)
+            elif data.get("type") == 3:
+                result = ComponentsContext(data, self)
+                state.dispatch('interaction_components', result)
+            return
+        elif t == "MESSAGE_CREATE":
+            channel, _ = getattr(state, "_get_guild_channel")(data)
+            message = Message(state=state, data=data, channel=channel)
+            state.dispatch('interaction_message', message)
+            if len(self._interactions) != 0:
+                command = MessageCommand(state=state, data=data, channel=channel)
+                state.dispatch('interaction_command', command)
+            return
 
     async def _sync_command_task(self):
-        log.debug("global_sync_command is activated. Delete unregistered commands on client.")
-        popping_data = await self._fetch_command_cached()
-        for cmd in self._interactions.keys():
-            popping_data.pop(cmd)
+        if len(self.__sync_command_before_ready) != 0:
+            log.debug(
+                f"Register registered commands before bot is ready. List: "
+                f"{', '.join([x.name for x in self.__sync_command_before_ready])}"
+            )
+        while len(self.__sync_command_before_ready) != 0:
+            command = self.__sync_command_before_ready.pop()
+            await self._sync_command(command=command)
 
-        for cmd in popping_data:
-            await self.delete_command(cmd)
+        if self.global_sync_command:
+            log.info("global_sync_command is activated. Delete unregistered commands on client.")
+            popping_data = await self._fetch_command_cached()
+            for already_cmd in self._interactions.keys():
+                if already_cmd in popping_data:
+                    del popping_data[already_cmd]
+
+            for cmd in popping_data.values():
+                await self.delete_command(cmd)
 
 
 class Client(ClientBase, discord.Client):
