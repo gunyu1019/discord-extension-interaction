@@ -25,15 +25,18 @@ import os
 import discord
 import zlib
 import inspect
+import logging
 from discord.ext import commands
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from typing import Optional, Dict, Coroutine
+from typing import Optional, Dict
 from .commands import ApplicationCommand, Command
 from .http import HttpClient
 from .listener import Listener
 from .utils import _from_json
+
+log = logging.getLogger()
 
 
 class ClientBase(commands.bot.BotBase):
@@ -52,38 +55,64 @@ class ClientBase(commands.bot.BotBase):
         self._buffer = bytearray()
         self._zlib = zlib.decompressobj()
 
-        self._application_id = None
+        self._application_id_value = None
         self._interactions_of_group = []
         self._interactions: Dict[str, Command] = {}
         self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
 
-    async def register_command(self, command: Command):
-        data = {
-            "name": command.name
-        }
+        self.__sync_command = []
 
-        if command.description is not None:
-            data["description"] = command.description
-        if command.options is not None:
-            data["options"] = [
-                option.to_dict() for option in command.options
-            ]
-        return
+        self.add_listener(self._sync_command_task, "on_ready")
+
+    async def register_command(self, command: Command):
+        command_ids = await self._fetch_command_cached()
+        if command.name in command_ids:
+            raise commands.CommandRegistrationError(command.name)
+        return await self.interaction_http.register_command(
+            await self._application_id(),
+            payload=command.to_dict()
+        )
+
+    async def edit_command(self, command: Command, command_id: int = None):
+        if command_id is None and command.id is None:
+            command_ids = await self._fetch_command_cached()
+            if command.name not in command_ids:
+                raise commands.CommandNotFound(f'Command "{command.name}" is not found')
+
+            command_id = command_ids[command.name].id
+        return await self.interaction_http.edit_command(
+            await self._application_id(),
+            command_id=command_id or command.id,
+            payload=command.to_dict()
+        )
+
+    async def delete_command(self, command: Command, command_id: int = None):
+        if command_id is None and command.id is None:
+            command_ids = await self._fetch_command_cached()
+            if command.name not in command_ids:
+                raise commands.CommandNotFound(f'Command "{command.name}" is not found')
+
+            command_id = command_ids[command.name].id
+        return await self.interaction_http.delete_command(
+            await self._application_id(),
+            command_id=command_id or command.id,
+            payload=command.to_dict()
+        )
 
     async def _application_id(self):
-        if self._application_id is None:
+        if self._application_id_value is None:
             application_info: discord.AppInfo = await self.application_info()
-            self._application_id = application_info.id
-        return self._application_id
+            self._application_id_value = application_info.id
+        return self._application_id_value
 
-    async def fetch_commands(self) -> Coroutine[Dict[str, ApplicationCommand]]:
+    async def fetch_commands(self) -> Dict[str, ApplicationCommand]:
         data = await self.interaction_http.get_commands(
             await self._application_id()
         )
         if isinstance(data, list):
             result = [
                 {
-                    x['name'], ApplicationCommand.from_payload(x)
+                    x['name']: ApplicationCommand.from_payload(x)
                 } for x in data
             ]
             self._fetch_interactions = result
@@ -92,14 +121,21 @@ class ClientBase(commands.bot.BotBase):
             result = {_result.name: _result}
         return result
 
-    async def _sync_command(self, command: Command):
-        await self.wait_until_ready()
+    async def _fetch_command_cached(self):
         if self._fetch_interactions is None:
             await self.fetch_commands()
+        return self._fetch_interactions
 
-        if command.name in self._fetch_interactions.keys():
-            if self._fetch_interactions[command.name] != command.name:
-                return
+    async def _sync_command(self, command: Command):
+        await self.wait_until_ready()
+        fetch_data = await self._fetch_command_cached()
+
+        if command.name in fetch_data.keys():
+            command_id = fetch_data[command.name].id
+            if command.name in self._interactions:
+                self._interactions[command.name].id = command_id
+            if fetch_data[command.name] != command.name:
+                await self.edit_command(command=command)
         else:
             await self.register_command(command)
         return
@@ -137,7 +173,10 @@ class ClientBase(commands.bot.BotBase):
                     continue
                 self._interactions[alias] = command
 
-        self._schedule_event(self.register_command, command=command)
+        if sync_command:
+            if self.is_ready():
+                self._schedule_event(self._sync_command, "sync_command", command=command)
+            else:
         return
 
     def add_icog(
@@ -173,6 +212,15 @@ class ClientBase(commands.bot.BotBase):
         self.dispatch("payload_receive", payload=payload)
 
         state: ConnectionState = self._connection
+
+    async def _sync_command_task(self):
+        log.debug("global_sync_command is activated. Delete unregistered commands on client.")
+        popping_data = await self._fetch_command_cached()
+        for cmd in self._interactions.keys():
+            popping_data.pop(cmd)
+
+        for cmd in popping_data:
+            await self.delete_command(cmd)
 
 
 class Client(ClientBase, discord.Client):

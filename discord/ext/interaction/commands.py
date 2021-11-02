@@ -92,7 +92,9 @@ class ApplicationCommand:
         self.description = description
         self.options = options
 
-        self.id: Optional[int] = kwargs.pop("id")
+        self.default_permission: Optional[bool] = kwargs.get('default_permission')
+        self.guild_id: Optional[int] = kwargs.get('guild_id')
+        self.id: Optional[int] = kwargs.get("id")
 
     def to_dict(self) -> dict:
         data = {
@@ -106,7 +108,8 @@ class ApplicationCommand:
                 else option
                 for option in self.options
             ]
-
+        if self.default_permission is not None:
+            data['default_permission'] = self.default_permission
         return data
 
     @classmethod
@@ -125,6 +128,17 @@ class ApplicationCommand:
             **data
         )
 
+    def __eq__(self, other):
+        default_permission = self.default_permission or True
+        return (
+            self.name == other.name and
+            self.description == other.description and
+            default_permission == other.default_permission
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Command(ApplicationCommand):
     def __init__(self, func, **kwargs):
@@ -140,8 +154,8 @@ class Command(ApplicationCommand):
 
         self.callback = func
         self.aliases: list = kwargs.get('aliases', [])
-
-        self.option_name: List[str] = kwargs.get("option_name") or [
+        print(kwargs)
+        self.option_name: Optional[List[str]] = kwargs.get("option_name", None) or [
             option.name for option in kwargs.get("options", []) if isinstance(option, Option)
         ]
 
@@ -157,10 +171,11 @@ def command(
         description: str = None,
         cls: classmethod = None,
         aliases: List[str] = None,
-        options: List[str] = None,
+        options: List[str] = [],
         interaction: bool = True,
         message: bool = True,
-        sync_command: bool = None
+        sync_command: bool = None,
+        default_permission: bool = None
 ):
     if aliases is None:
         aliases = []
@@ -177,7 +192,8 @@ def command(
             interaction=interaction,
             message=message,
             options=options,
-            sync_command=sync_command
+            sync_command=sync_command,
+            default_permission=default_permission
         )
 
     return decorator
