@@ -163,6 +163,7 @@ class Command(ApplicationCommand):
         self.message: bool = kwargs.get('message', True)
 
         self.parents = None
+        self.checks = kwargs.get('checks', [])
 
     def __eq__(self, other):
         return self.name == other.name and other.aliases in self.aliases
@@ -176,12 +177,15 @@ def command(
         description: str = None,
         cls: classmethod = None,
         aliases: List[str] = None,
-        options: List[str] = [],
+        check=None,
+        options=None,
         interaction: bool = True,
         message: bool = True,
         sync_command: bool = None,
         default_permission: bool = None
 ):
+    if options is None:
+        options = []
     if aliases is None:
         aliases = []
 
@@ -194,6 +198,7 @@ def command(
             name=name,
             description=description,
             aliases=aliases,
+            check=check,
             interaction=interaction,
             message=message,
             options=options,

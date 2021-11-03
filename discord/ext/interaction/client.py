@@ -30,7 +30,7 @@ from discord.ext import commands
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 from .commands import ApplicationCommand, Command
 from .interaction import ApplicationContext, ComponentsContext
 from .message import MessageCommand, Message
@@ -218,7 +218,6 @@ class ClientBase(commands.bot.BotBase):
             else:
                 self.__sync_command_before_ready_popping.append(command)
 
-
     def add_icog(
             self,
             icog: type
@@ -270,6 +269,53 @@ class ClientBase(commands.bot.BotBase):
                 command = MessageCommand(state=state, data=data, channel=channel)
                 state.dispatch('interaction_command', command)
             return
+
+    async def on_interaction_command(self, ctx: Union[MessageCommand, ApplicationContext]):
+        prefixes = await self.get_prefix(ctx)
+        ctx.prefix = prefixes
+        if isinstance(ctx, MessageCommand):
+            if isinstance(prefixes, list):
+                if not ctx.content.startswith(tuple(prefixes)):
+                    return
+
+                find_prefix = None
+                for prefix in prefixes:
+                    prefix_len = len(prefix)
+                    if ctx.content[0:prefix_len] == prefix:
+                        find_prefix = prefix
+                        break
+                if find_prefix is None:
+                    raise
+
+                ctx.command_prefix = find_prefix
+                ctx.name = ctx.name[len(find_prefix):]
+            elif isinstance(prefixes, str):
+                if not ctx.content.startswith(prefixes):
+                    return
+                prefix_len = len(prefixes)
+                ctx.command_prefix = ctx.content[0:prefix_len]
+                ctx.name = ctx.name[prefix_len:]
+
+        _state: ConnectionState = getattr(self.bot, "_connection")
+        command = self.commands.get(ctx.name)
+        if command is None:
+            return
+
+
+        _function = command
+        if not self.check_interaction(ctx, _function):
+            return
+        _state.dispatch("command", ctx)
+        if permission(_function.permission)(ctx):
+            try:
+                await _function.callback(_function.parents, ctx)
+            except Exception as error:
+                _state.dispatch("command_exception", ctx, error)
+            else:
+                _state.dispatch("command_complete", ctx)
+        else:
+            _state.dispatch("command_permission_error", ctx)
+        return
 
     async def _sync_command_task(self):
         if len(self.__sync_command_before_ready_register) != 0:
