@@ -164,6 +164,12 @@ class Command(ApplicationCommand):
 
         self.parents = None
 
+    def __eq__(self, other):
+        return self.name == other.name and other.aliases in self.aliases
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 def command(
         name: str = None,

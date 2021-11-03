@@ -62,11 +62,12 @@ class ClientBase(commands.bot.BotBase):
         self._interactions: Dict[str, Command] = {}
         self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
 
-        self.__sync_command_before_ready = []
+        self.__sync_command_before_ready_register = []
+        self.__sync_command_before_ready_popping = []
 
         self.add_listener(self._sync_command_task, "on_ready")
 
-    async def register_command(self, command: Command):
+    async def register_command(self, command: ApplicationCommand):
         command_ids = await self._fetch_command_cached()
         if command.name in command_ids:
             raise commands.CommandRegistrationError(command.name)
@@ -75,7 +76,7 @@ class ClientBase(commands.bot.BotBase):
             payload=command.to_dict()
         )
 
-    async def edit_command(self, command: Command, command_id: int = None):
+    async def edit_command(self, command: ApplicationCommand, command_id: int = None):
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids:
@@ -88,7 +89,7 @@ class ClientBase(commands.bot.BotBase):
             payload=command.to_dict()
         )
 
-    async def delete_command(self, command: Command, command_id: int = None):
+    async def delete_command(self, command: ApplicationCommand, command_id: int = None):
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids:
@@ -140,6 +141,14 @@ class ClientBase(commands.bot.BotBase):
             await self.register_command(command)
         return
 
+    async def _sync_command_popping(self, command: Command):
+        await self.wait_until_ready()
+        fetch_data = await self._fetch_command_cached()
+        if command.name in fetch_data.keys():
+            command_id = fetch_data[command.name].id
+            await self.delete_command(command, command_id=command_id)
+        return
+
     def load_extensions(self, package: str, directory: str = None) -> None:
         if directory is not None:
             package = os.path.join(directory, package)
@@ -177,8 +186,38 @@ class ClientBase(commands.bot.BotBase):
             if self.is_ready():
                 self._schedule_event(self._sync_command, "sync_command", command=command)
             else:
-                self.__sync_command_before_ready.append(command)
+                self.__sync_command_before_ready_register.append(command)
         return
+
+    def get_interaction(self):
+        return self._interactions.values()
+
+    def delete_interaction(
+            self,
+            command: Command,
+            sync_command: bool = None
+    ):
+        if sync_command is None:
+            sync_command = self.global_sync_command
+
+        if command.name not in self._interactions:
+            raise commands.CommandNotFound(f'Command "{command.name}" is not found')
+
+        if len(command.aliases) != 0:
+            for key in self._interactions:
+                value = self._interactions[key]
+                if value != command:
+                    continue
+                self._interactions.pop(key)
+        else:
+            self._interactions.pop(command.name)
+
+        if sync_command:
+            if self.is_ready():
+                self._schedule_event(self._sync_command_popping, "sync_command", command=command)
+            else:
+                self.__sync_command_before_ready_popping.append(command)
+
 
     def add_icog(
             self,
@@ -217,7 +256,8 @@ class ClientBase(commands.bot.BotBase):
             state.dispatch('interaction_raw_create', payload)
             if data.get("type") == 2:
                 result = ApplicationContext(data, self)
-                state.dispatch('interaction_command', result)
+                if len(self._interactions) != 0:
+                    state.dispatch('interaction_command', result)
             elif data.get("type") == 3:
                 result = ComponentsContext(data, self)
                 state.dispatch('interaction_components', result)
@@ -232,14 +272,17 @@ class ClientBase(commands.bot.BotBase):
             return
 
     async def _sync_command_task(self):
-        if len(self.__sync_command_before_ready) != 0:
+        if len(self.__sync_command_before_ready_register) != 0:
             log.debug(
                 f"Register registered commands before bot is ready. List: "
-                f"{', '.join([x.name for x in self.__sync_command_before_ready])}"
+                f"{', '.join([x.name for x in self.__sync_command_before_ready_register])}"
             )
-        while len(self.__sync_command_before_ready) != 0:
-            command = self.__sync_command_before_ready.pop()
+        while len(self.__sync_command_before_ready_register) != 0:
+            command = self.__sync_command_before_ready_register.pop()
             await self._sync_command(command=command)
+        while len(self.__sync_command_before_ready_popping) != 0:
+            command = self.__sync_command_before_ready_popping.pop()
+            await self._sync_command_popping(command=command)
 
         if self.global_sync_command:
             log.info("global_sync_command is activated. Delete unregistered commands on client.")
