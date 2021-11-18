@@ -81,14 +81,22 @@ class Option:
 
 
 class ApplicationCommand:
+    CHAT_INPUT = 1
+    USER = 2
+    MESSAGE = 3
+
     def __init__(
             self,
             name: str,
+            type: int = 1,
             description: str = None,
             options: List[Option] = None,
             **kwargs
     ):
+        if type != 1 and options is not None:
+            raise TypeError('option is only available for CHAT_INPUT.')
         self.name = name
+        self.type = type
         self.description = description
         self.options = options
 
@@ -115,6 +123,7 @@ class ApplicationCommand:
     @classmethod
     def from_payload(cls, data: dict):
         name = data.pop("name")
+        type_command = data.pop("type")
         description = data.pop("description")
         if "options" in data:
             options = data.pop("options")
@@ -123,6 +132,7 @@ class ApplicationCommand:
 
         return cls(
             name=name,
+            type=type_command,
             description=description,
             options=options,
             **data
@@ -140,13 +150,15 @@ class ApplicationCommand:
         return not self.__eq__(other)
 
 
+# < For Decorator >
 class Command(ApplicationCommand):
-    def __init__(self, func, **kwargs):
+    def __init__(self, func, command_type, **kwargs):
         if not asyncio.iscoroutinefunction(func):
             raise TypeError('Callback must be a coroutine.')
         if "options" in kwargs.keys() and "option_name" in kwargs.keys():
             raise TypeError('Add one of "option_name" and "options".')
 
+        self.type = command_type
         super().__init__(**kwargs)
         self.name = name = kwargs.get('name') or func.__name__
         if not isinstance(name, str):
@@ -166,7 +178,33 @@ class Command(ApplicationCommand):
         self.checks = kwargs.get('checks', [])
 
     def __eq__(self, other):
-        return self.name == other.name and other.aliases in self.aliases
+        return self.name == other.name and other.aliases in self.aliases and self.type == other.type
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class MessageApplicationCommand(ApplicationCommand):
+    def __init__(self, func, command_type, **kwargs):
+        self.type = command_type
+        super().__init__(**kwargs)
+        self.name = name = kwargs.get('name') or func.__name__
+        if not isinstance(name, str):
+            raise TypeError('Name of a command must be a string.')
+
+        self.callback = func
+        self.aliases: list = kwargs.get('aliases', [])
+        self.option_name: Optional[List[str]] = kwargs.get("option_name", None) or [
+            option.name for option in kwargs.get("options", []) if isinstance(option, Option)
+        ]
+
+        self.sync_command: bool = kwargs.get("sync_command", None)
+
+        self.parents = None
+        self.checks = kwargs.get('checks', [])
+
+    def __eq__(self, other):
+        return self.name == other.name and other.aliases in self.aliases and self.type == other.type
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -196,12 +234,73 @@ def command(
         return cls(
             func,
             name=name,
+            command_type=ApplicationCommand.CHAT_INPUT,
             description=description,
             aliases=aliases,
             check=check,
             interaction=interaction,
             message=message,
             options=options,
+            sync_command=sync_command,
+            default_permission=default_permission
+        )
+
+    return decorator
+
+
+def command_user(
+        name: str = None,
+        description: str = None,
+        cls: classmethod = None,
+        aliases: List[str] = None,
+        check=None,
+        sync_command: bool = None,
+        default_permission: bool = None
+):
+    if aliases is None:
+        aliases = []
+
+    if cls is None:
+        cls = MessageApplicationCommand
+
+    def decorator(func):
+        return cls(
+            func,
+            name=name,
+            command_type=ApplicationCommand.USER,
+            description=description,
+            aliases=aliases,
+            check=check,
+            sync_command=sync_command,
+            default_permission=default_permission
+        )
+
+    return decorator
+
+
+def command_message(
+        name: str = None,
+        description: str = None,
+        cls: classmethod = None,
+        aliases: List[str] = None,
+        check=None,
+        sync_command: bool = None,
+        default_permission: bool = None
+):
+    if aliases is None:
+        aliases = []
+
+    if cls is None:
+        cls = MessageApplicationCommand
+
+    def decorator(func):
+        return cls(
+            func,
+            name=name,
+            command_type=ApplicationCommand.MESSAGE,
+            description=description,
+            aliases=aliases,
+            check=check,
             sync_command=sync_command,
             default_permission=default_permission
         )

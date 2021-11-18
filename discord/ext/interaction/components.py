@@ -174,11 +174,13 @@ class Selection(Components):
     def __init__(self,
                  custom_id: str,
                  options: List[Union[dict, Options]],
+                 disabled: bool = False,
                  placeholder: str = None,
                  min_values: int = None,
                  max_values: int = None):
         super().__init__(components_type=3)
 
+        self.disabled = disabled
         self.custom_id = custom_id
         self.options = options
         self.placeholder = placeholder
@@ -189,6 +191,7 @@ class Selection(Components):
         base = {
             "type": 3,
             "custom_id": self.custom_id,
+            "disabled": self.disabled,
             "options": [
                 option.to_dict()
                 if isinstance(option, Options)
