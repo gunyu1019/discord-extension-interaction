@@ -114,7 +114,7 @@ class InteractionContext:
         if hidden:
             base["data"] = {"flags": 64}
 
-        await self.http.post_defer_response(payload=base, data=self.data)
+        await self.http.post_initial_response(payload=base, data=self.data)
         self.deferred = True
         return
 
@@ -169,7 +169,13 @@ class InteractionContext:
                 resp = await self.http.edit_initial_response(payload=payload, form=form, files=files, data=self.data)
                 self.deferred = False
             else:
-                await self.http.post_initial_response(payload=payload, data=self.data)
+                await self.http.post_initial_response(
+                    payload={
+                        "type": 4,
+                        "data": payload
+                    },
+                    data=self.data
+                )
                 resp = await self.http.get_initial_response(data=self.data)
             self.responded = True
         else:
@@ -333,7 +339,7 @@ class ComponentsContext(InteractionContext):
         if hidden:
             base["data"] = {"flags": 64}
 
-        await self.http.post_defer_response(payload=base, data=self.data)
+        await self.http.post_initial_response(payload=base, data=self.data)
         self.deferred = True
         return
 
@@ -389,7 +395,13 @@ class ComponentsContext(InteractionContext):
                 )
                 self.deferred = False
             else:
-                await self.http.post_initial_components_response(payload=payload, data=self.data)
+                await self.http.post_initial_response(
+                    payload={
+                        "type": 7,
+                        "data": payload
+                    },
+                    data=self.data
+                )
             self.responded = True
         else:
             await self.http.post_followup(payload=payload, form=form, files=files, data=self.data)

@@ -40,25 +40,11 @@ class HttpClient:
     def __init__(self, http: discord.http.HTTPClient):
         self.http = http
 
-    async def post_defer_response(self, data: InteractionData, payload: dict):
-        r = SlashRoute(
-            "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
-        )
-        await self.http.request(r, json=payload)
-
     async def post_initial_response(self, data: InteractionData, payload: dict):
         r = SlashRoute(
             "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
-        data = {"type": 4, "data": payload}
-        return await self.http.request(r, json=data)
-
-    async def post_initial_components_response(self, data: InteractionData, payload: dict):
-        r = SlashRoute(
-            "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
-        )
-        data = {"type": 7, "data": payload}
-        return await self.http.request(r, json=data)
+        return await self.http.request(r, json=payload)
 
     async def get_initial_response(self, data: InteractionData):
         r = SlashRoute(

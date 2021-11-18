@@ -296,11 +296,10 @@ class ClientBase(commands.bot.BotBase):
                 ctx.command_prefix = ctx.content[0:prefix_len]
                 ctx.name = ctx.name[prefix_len:]
 
-        _state: ConnectionState = getattr(self.bot, "_connection")
-        command = self.commands.get(ctx.name)
+        _state: ConnectionState = self._connection
+        command = self._interactions.get(ctx.name)
         if command is None:
             return
-
 
         _function = command
         if not self.check_interaction(ctx, _function):
