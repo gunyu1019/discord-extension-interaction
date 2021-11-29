@@ -2,7 +2,7 @@ import functools
 import inspect
 from typing import Union, Callable
 
-from discord.ext.commands.errors import NoPrivateMessage
+from discord.ext.commands.errors import *
 from .commands import Command, MessageApplicationCommand
 from .message import MessageCommand
 from .interaction import ApplicationContext
@@ -39,10 +39,40 @@ def check(predicate):
     return decorator
 
 
-def has_role(item: Union[int, str]) -> Callable:
+def checks(*predicate, exception: bool = False):
+    unwrapped = []
+    for wrapped in predicate:
+        try:
+            pred = wrapped.predicate
+        except AttributeError:
+            raise TypeError(f'{wrapped!r} must be wrapped by commands.check decorator') from None
+        else:
+            unwrapped.append(pred)
+
+    async def predicate(ctx: Union[ApplicationContext, MessageCommand]) -> bool:
+        errors = []
+        for func in unwrapped:
+            try:
+                value = await func(ctx)
+            except CheckFailure as e:
+                errors.append(e)
+            else:
+                if value:
+                    return True
+        # if we're here, all checks failed
+        if exception:
+            raise CheckAnyFailure(unwrapped, errors)
+        return False
+
+    return check(predicate)
+
+
+def has_role(item: Union[int, str], exception: bool = False) -> Callable:
     def predicate(ctx: Union[ApplicationContext, MessageCommand]) -> bool:
         if ctx.guild is None:
-            raise NoPrivateMessage()
+            if exception:
+                raise NoPrivateMessage()
+            return False
 
         # ctx.guild is None doesn't narrow ctx.author to Member
         if isinstance(item, int):
@@ -51,7 +81,27 @@ def has_role(item: Union[int, str]) -> Callable:
             role = discord.utils.get(ctx.author.roles, name=item)  # type: ignore
 
         if role is None:
+            if exception:
+                raise MissingRole(item)
             return False
         return True
+
+    return check(predicate)
+
+
+def has_roles(*items: Union[int, str], exception: bool = False) -> Callable:
+    def predicate(ctx: Union[ApplicationContext, MessageCommand]) -> bool:
+        if ctx.guild is None:
+            if exception:
+                raise NoPrivateMessage()
+            return False
+
+        getter = functools.partial(discord.utils.get, ctx.author.roles)  # type: ignore
+        if any(getter(id=item) is not None if isinstance(item, int) else getter(name=item) is not None for item in
+               items):
+            return True
+        if exception:
+            raise MissingAnyRole(list(items))
+        return False
 
     return check(predicate)
