@@ -3,7 +3,7 @@ import inspect
 
 class Listener:
     def __init__(self, name):
-        self.name = name
+        self.name = self.__name__ = name
         self.callback = None
 
     @classmethod

@@ -176,12 +176,19 @@ class Command(ApplicationCommand):
 
         self.parents = None
         self.checks = kwargs.get('checks', [])
+        if hasattr(func, '__command_checks__'):
+            self.checks += func.__command_checks__
 
     def __eq__(self, other):
+        if isinstance(other, ApplicationCommand):
+            return self.name == other.name and self.type == other.type
         return self.name == other.name and other.aliases in self.aliases and self.type == other.type
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __func__(self):
+        return self.callback
 
 
 class MessageApplicationCommand(ApplicationCommand):
@@ -194,20 +201,24 @@ class MessageApplicationCommand(ApplicationCommand):
 
         self.callback = func
         self.aliases: list = kwargs.get('aliases', [])
-        self.option_name: Optional[List[str]] = kwargs.get("option_name", None) or [
-            option.name for option in kwargs.get("options", []) if isinstance(option, Option)
-        ]
 
         self.sync_command: bool = kwargs.get("sync_command", None)
 
         self.parents = None
         self.checks = kwargs.get('checks', [])
+        if hasattr(func, '__command_checks__'):
+            self.checks += func.__command_checks__
 
     def __eq__(self, other):
+        if isinstance(other, ApplicationCommand):
+            return self.name == other.name and self.type == other.type
         return self.name == other.name and other.aliases in self.aliases and self.type == other.type
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __func__(self):
+        return self.callback
 
 
 def command(
