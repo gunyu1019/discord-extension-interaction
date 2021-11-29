@@ -37,9 +37,9 @@
 
 # Function Process
 아래 항목에는 현재 작업 중인 기능 목록을 나열합니다.
-> **♣**: 신규 기능
-> **⊙**: 리메이크 기능 (P1 - Add Component)
-> **◐**: 리메이크 기능 (P2 - Remake Service)
+> **♣**: 신규 기능<br/>
+> **⊙**: 리메이크 기능 (P1 - Add Component)<br/>
+> **◐**: 리메이크 기능 (P2 - Remake Service)<br/>
 * 검색
     * 코로나 정보 ◐
     * 날씨 정보 ◐
