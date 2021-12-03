@@ -35,6 +35,14 @@ class ApplicationCommandType(Enum):
     USER = 2
     MESSAGE = 3
 
+    def __eq__(self, other):
+        if isinstance(other, ApplicationCommandType):
+            return self._value_ == other.value
+        return self._value_ == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 # OptionType
 class Mentionable:
@@ -63,6 +71,15 @@ class CommandOptionChoice:
             'name': self.name,
             'value': self.value
         }
+
+    def __eq__(self, other):
+        return (
+            self.name == other.name and
+            self.value == other.value
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class CommandOption:
@@ -113,6 +130,18 @@ class CommandOption:
             ]
         }
         return data
+
+    def __eq__(self, other):
+        return (
+            self.name == other.name and
+            self.type == other.type and
+            self.description == other.description and
+            self.choices == other.choices and
+            self.required == other.required
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class ApplicationCommand:
@@ -187,6 +216,15 @@ class SlashCommand(ApplicationCommand):
         self.type = ApplicationCommandType.CHAT_INPUT
         self.options: List[CommandOption] = options
 
+    def __eq__(self, other):
+        return (
+            super().__eq__(other) and
+            self.options == other.options
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = super().from_payload(data)
@@ -211,8 +249,20 @@ class ContextMenu(ApplicationCommand):
         self.type = ApplicationCommandType.MESSAGE
 
 
-# For Decorator
 command_types = Union[SlashCommand, UserCommand, ContextMenu]
+
+
+def from_payload(data: dict) -> command_types:
+    if data['type'] == ApplicationCommandType.CHAT_INPUT:
+        _result = SlashCommand.from_payload(data)
+    elif data['type'] == ApplicationCommandType.USER:
+        _result = UserCommand.from_payload(data)
+    elif data['type'] == ApplicationCommandType.MESSAGE:
+        _result = ContextMenu.from_payload(data)
+    else:
+        _result = ApplicationCommand.from_payload(data)
+    return _result
+# For Decorator
 
 
 class BaseCommand:
@@ -268,11 +318,11 @@ class Command(BaseCommand, SlashCommand):
 
         for index, opt in enumerate(options):
             if opt.name is None:
-                options[index].name = arguments[index + 1].name
+                options[index].name = arguments[index].name
             if opt.type is None:
-                options[index].type = arguments[index + 1].annotation
-            if opt.required and arguments[index + 1].default != arguments[index + 1].empty:
-                options[index].required = True
+                options[index].type = arguments[index].annotation
+            if opt.required and arguments[index].default != arguments[index].empty:
+                options[index].required = False
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
 
 

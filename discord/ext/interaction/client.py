@@ -30,7 +30,7 @@ import discord
 from discord.ext import commands
 from typing import Optional, Dict, Union
 
-from .commands import ApplicationCommand, command_types
+from .commands import ApplicationCommand, from_payload, command_types
 from .http import HttpClient
 
 log = logging.getLogger()
@@ -103,18 +103,18 @@ class ClientBase(commands.bot.BotBase):
             self._application_id_value = application_info.id
         return self._application_id_value
 
-    async def fetch_commands(self) -> Dict[str, ApplicationCommand]:
+    async def fetch_commands(self) -> Dict[str, command_types]:
         data = await self.interaction_http.get_commands(
             await self._application_id()
         )
         if isinstance(data, list):
             result = {}
             for x in data:
-                _x = ApplicationCommand.from_payload(x)
+                _x = from_payload(x)
                 result[_x.name] = _x
             self._fetch_interactions = result
         else:
-            _result = ApplicationCommand.from_payload(data)
+            _result = from_payload(data)
             result = {_result.name: _result}
         return result
 
