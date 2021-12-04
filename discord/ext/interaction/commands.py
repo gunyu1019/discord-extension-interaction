@@ -89,6 +89,9 @@ class CommandOption:
             option_type: type = None,
             description: str = "No description.",
             choices: List[CommandOptionChoice] = None,
+            channel_type: Union[discord.ChannelType, int] = None,
+            min_value: Union[float, int] = None,
+            max_value: Union[float, int] = None,
             required: bool = False
     ):
         if choices is None:
@@ -98,6 +101,32 @@ class CommandOption:
         self.description = description
         self.choices = choices
         self.required = required
+
+        self._channel_type: Optional[int] = None
+        if channel_type is not None:
+            if option_type is not None:
+                if discord.abc.GuildChannel not in option_type.__mro__:
+                    raise TypeError
+
+            if isinstance(channel_type, discord.ChannelType):
+                self._channel_type = channel_type.value
+            else:
+                self._channel_type = channel_type
+
+        if option_type is not None:
+            if min_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
+                raise TypeError
+            if max_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
+                raise TypeError
+        self.min_value: Optional[int] = min_value
+        self.max_value: Optional[int] = max_value
+
+    @property
+    def channel_type(self) -> Optional[discord.ChannelType]:
+        if discord.abc.GuildChannel not in self.type.__mro__:
+            return
+        channel_type = get_enum(discord.ChannelType, self._channel_type)
+        return channel_type
 
     @property
     def _get_type_id(self) -> int:
@@ -129,6 +158,12 @@ class CommandOption:
                 choice.to_dict() for choice in self.choices
             ]
         }
+        if self._channel_type is not None:
+            data['channel_type'] = self._channel_type
+        if self.min_value is not None:
+            data['min_value'] = self._channel_type
+        if self.max_value is not None:
+            data['max_value'] = self._channel_type
         return data
 
     def __eq__(self, other):
@@ -304,12 +339,17 @@ class Command(BaseCommand, SlashCommand):
         arguments = []
         if len(options) == 0 and len(signature_arguments) > 1:
             for _ in range(
-                    len(signature_arguments) - 1
+                len(signature_arguments) - 1
             ):
                 options.append(
                     CommandOption()
                 )
-        elif len(signature_arguments) != len(options) + 1:
+        elif len(signature_arguments) > len(options) + 1:
+            for _ in range(
+                len(signature_arguments) - len(options)
+            ):
+                options.append(CommandOption())
+        elif len(signature_arguments) < len(options) + 1:
             raise TypeError("number of options and the number of arguments are different.")
 
         sign_arguments = list(signature_arguments.values())
@@ -321,8 +361,9 @@ class Command(BaseCommand, SlashCommand):
                 options[index].name = arguments[index].name
             if opt.type is None:
                 options[index].type = arguments[index].annotation
-            if opt.required and arguments[index].default != arguments[index].empty:
-                options[index].required = False
+            if opt.required or arguments[index].default != arguments[index].empty:
+                options[index].required = True
+        options.reverse()
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
 
 
