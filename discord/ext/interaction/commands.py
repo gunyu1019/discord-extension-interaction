@@ -90,6 +90,7 @@ class CommandOption:
             description: str = "No description.",
             choices: List[CommandOptionChoice] = None,
             channel_type: Union[discord.ChannelType, int] = None,
+            channel_types: List[Union[discord.ChannelType, int]] = None,
             min_value: Union[float, int] = None,
             max_value: Union[float, int] = None,
             required: bool = False
@@ -102,16 +103,26 @@ class CommandOption:
         self.choices = choices
         self.required = required
 
-        self._channel_type: Optional[int] = None
-        if channel_type is not None:
+        self._channel_type: Optional[List[int]] = None
+        if channel_type is not None or channel_types is not None:
             if option_type is not None:
                 if discord.abc.GuildChannel not in option_type.__mro__:
                     raise TypeError
 
-            if isinstance(channel_type, discord.ChannelType):
-                self._channel_type = channel_type.value
-            else:
-                self._channel_type = channel_type
+            if channel_types is not None and channel_type is not None:
+                raise TypeError
+            elif channel_type is not None:
+                if isinstance(channel_type, discord.ChannelType):
+                    self._channel_type = [channel_type.value]
+                else:
+                    self._channel_type = [channel_type]
+            elif channel_types is not None:
+                self._channel_type = []
+                for x in channel_types:
+                    if isinstance(x, discord.ChannelType):
+                        self._channel_type.append(x.value)
+                    else:
+                        self._channel_type.append(x)
 
         if option_type is not None:
             if min_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
@@ -122,10 +133,14 @@ class CommandOption:
         self.max_value: Optional[int] = max_value
 
     @property
-    def channel_type(self) -> Optional[discord.ChannelType]:
+    def channel_type(self) -> Optional[List[discord.ChannelType]]:
         if discord.abc.GuildChannel not in self.type.__mro__:
             return
-        channel_type = get_enum(discord.ChannelType, self._channel_type)
+        channel_type = []
+        for x in self._channel_type:
+            channel_type.append(
+                get_enum(discord.ChannelType, x)
+            )
         return channel_type
 
     @property
@@ -159,7 +174,7 @@ class CommandOption:
             ]
         }
         if self._channel_type is not None:
-            data['channel_type'] = self._channel_type
+            data['channel_types'] = self._channel_type
         if self.min_value is not None:
             data['min_value'] = self._channel_type
         if self.max_value is not None:
