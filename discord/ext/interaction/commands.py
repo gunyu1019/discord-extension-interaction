@@ -304,6 +304,15 @@ class ContextMenu(ApplicationCommand):
 
 
 command_types = Union[SlashCommand, UserCommand, ContextMenu]
+channel_types = (
+    discord.TextChannel,
+    discord.VoiceChannel,
+    discord.DMChannel,
+    discord.StageChannel,
+    discord.GroupChannel,
+    discord.CategoryChannel,
+    discord.StoreChannel
+)
 
 
 def from_payload(data: dict) -> command_types:
@@ -336,6 +345,11 @@ class BaseCommand:
             decorator_checks.reverse()
             checks += decorator_checks
         self.checks: list = checks
+
+        self.permissions: list = []
+        if hasattr(func, '__commands_permissions__'):
+            decorator_permissions = getattr(func, '__commands_permissions__')
+            self.permissions += decorator_permissions
 
         self.sync_command: bool = sync_command
         self.cog = None

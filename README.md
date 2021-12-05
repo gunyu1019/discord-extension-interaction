@@ -15,19 +15,44 @@ from discord.ext.interaction.commands import CommandOption
 client = interaction.Client(command_prefix="=", global_sync_command=True)
 
 
-@client.command()
+@interaction.command()
 def ping1(argument: int, channel: discord.TextChannel = None):
   return
 
-@client.command(
+@interaction.command(
   options=[CommandOption(description="옵션 설명")]
 )
 def ping2(argument: int, channel: discord.TextChannel = None):
   return
 
+@interaction.command(
+    description="This is argument test.",
+)
+@interaction.option(description="This is option test.")
+@interaction.option(min_value=0, max_value=25565)
+@interaction.option(channel_type=discord.ChannelType.text)
+@interaction.permissions(
+    id=916798717208694836,
+    guild_id=844613188900356157,
+    type=interaction.PermissionType.USER,
+    permission=True
+)
+@interaction.has_role(item=844620432904552539, exception=False)
+async def ping3(
+        ctx,
+        argument1: discord.User,
+        argument2: int = None,
+        argument3: discord.TextChannel = None,
+):
+    await ctx.send(
+        "{0}님은 {1}와 {2}를 택하였습니다.".format(argument1, argument2, argument3)
+    )
+    return
+
 
 client.add_interaction(ping1, sync_command=True)
 client.add_interaction(ping2, sync_command=True)
+client.add_interaction(ping3, sync_command=True)
 
 client.run('token')
 ```
