@@ -21,13 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import asyncio
 import inspect
-import discord
 from enum import Enum
 from typing import List, Optional, Union, Callable
 
-from .utils import get_as_snowflake, get_enum
+import discord
+
+from .utils import get_enum
 
 
 class ApplicationCommandType(Enum):
@@ -74,8 +74,8 @@ class CommandOptionChoice:
 
     def __eq__(self, other):
         return (
-            self.name == other.name and
-            self.value == other.value
+                self.name == other.name and
+                self.value == other.value
         )
 
     def __ne__(self, other):
@@ -183,11 +183,11 @@ class CommandOption:
 
     def __eq__(self, other):
         return (
-            self.name == other.name and
-            self.type == other.type and
-            self.description == other.description and
-            self.choices == other.choices and
-            self.required == other.required
+                self.name == other.name and
+                self.type == other.type and
+                self.description == other.description and
+                self.choices == other.choices and
+                self.required == other.required
         )
 
     def __ne__(self, other):
@@ -242,12 +242,16 @@ class ApplicationCommand:
             data['default_permission'] = self.default_permission
         return data
 
+    @property
+    def is_guild(self) -> bool:
+        return self.guild_id is not None
+
     def __eq__(self, other):
         default_permission = self.default_permission or True
         return (
-            self.name == other.name and
-            self.description == other.description and
-            default_permission == other.default_permission
+                self.name == other.name and
+                self.description == other.description and
+                default_permission == other.default_permission
         )
 
     def __ne__(self, other):
@@ -268,8 +272,8 @@ class SlashCommand(ApplicationCommand):
 
     def __eq__(self, other):
         return (
-            super().__eq__(other) and
-            self.options == other.options
+                super().__eq__(other) and
+                self.options == other.options
         )
 
     def __ne__(self, other):
@@ -312,11 +316,15 @@ def from_payload(data: dict) -> command_types:
     else:
         _result = ApplicationCommand.from_payload(data)
     return _result
+
+
 # For Decorator
 
 
 class BaseCommand:
     def __init__(self, func: Callable, checks=None, sync_command: bool = False, *args, **kwargs):
+        if kwargs.get('name') is None:
+            kwargs['name'] = func.__name__
         super().__init__(*args, **kwargs)
 
         self.func = func
@@ -347,24 +355,34 @@ class BaseCommand:
 
 
 class Command(BaseCommand, SlashCommand):
-    def __init__(self, func: Callable, checks=None, sync_command: bool = False, **kwargs):
+    def __init__(
+            self,
+            func: Callable,
+            checks=None,
+            options: List[CommandOption] = None,
+            sync_command: bool = False,
+            **kwargs
+    ):
+        if options is None:
+            options = []
+        if hasattr(func, '__command_options__'):
+            options += func.__command_options__
 
-        options: List[CommandOption] = kwargs.pop('options')
         signature_arguments = inspect.signature(func).parameters
         arguments = []
-        if len(options) == 0 and len(signature_arguments) > 1:
+        if len(options) == 0 and len(signature_arguments) > 0:
             for _ in range(
-                len(signature_arguments) - 1
+                    len(signature_arguments) - 1
             ):
                 options.append(
                     CommandOption()
                 )
-        elif len(signature_arguments) > len(options) + 1:
+        elif len(signature_arguments) - 1 > len(options):
             for _ in range(
-                len(signature_arguments) - len(options)
+                    len(signature_arguments) - len(options) - 1
             ):
                 options.append(CommandOption())
-        elif len(signature_arguments) < len(options) + 1:
+        elif len(signature_arguments) - 1 < len(options):
             raise TypeError("number of options and the number of arguments are different.")
 
         sign_arguments = list(signature_arguments.values())
@@ -376,9 +394,8 @@ class Command(BaseCommand, SlashCommand):
                 options[index].name = arguments[index].name
             if opt.type is None:
                 options[index].type = arguments[index].annotation
-            if opt.required or arguments[index].default != arguments[index].empty:
+            if opt.required or arguments[index].default == arguments[index].empty:
                 options[index].required = True
-        options.reverse()
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
 
 
@@ -459,5 +476,40 @@ def context(
             sync_command=sync_command,
             default_permission=default_permission
         )
+
+    return decorator
+
+
+def option(
+        name: str = None,
+        option_type: type = None,
+        description: str = "No description.",
+        choices: List[CommandOptionChoice] = None,
+        channel_type: Union[discord.ChannelType, int] = None,
+        channel_types: List[Union[discord.ChannelType, int]] = None,
+        min_value: Union[float, int] = None,
+        max_value: Union[float, int] = None,
+        required: bool = False
+):
+    options = CommandOption(
+        name=name,
+        option_type=option_type,
+        description=description,
+        choices=choices,
+        channel_type=channel_type,
+        channel_types=channel_types,
+        min_value=min_value,
+        max_value=max_value,
+        required=required
+    )
+
+    def decorator(func):
+        if hasattr(func, 'options') or isinstance(func, SlashCommand):
+            func.options.append(options)
+        else:
+            if not hasattr(func, '__command_options__'):
+                func.__command_options__ = []
+            func.__command_options__.append(options)
+        return func
 
     return decorator
