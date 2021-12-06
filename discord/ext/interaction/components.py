@@ -246,6 +246,7 @@ class DetectComponent:
         self.custom_id = custom_id
         self.type = component_type
         self.callback = None
+        self.parents = None
 
     @classmethod
     def detect_component(

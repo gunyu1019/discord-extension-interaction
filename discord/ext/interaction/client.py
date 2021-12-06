@@ -31,6 +31,7 @@ from discord.ext import commands
 from typing import Optional, Dict, Union
 
 from .commands import ApplicationCommand, BaseCommand, from_payload, command_types
+from .components import DetectComponent
 from .listener import Listener
 from .http import HttpClient
 
@@ -57,6 +58,8 @@ class ClientBase(commands.bot.BotBase):
         self._interactions_of_group = []
         self._interactions: Dict[str, command_types] = dict()
         self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
+
+        self._detect_components: Dict[str, DetectComponent] = dict()
 
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
@@ -229,12 +232,16 @@ class ClientBase(commands.bot.BotBase):
             self,
             icog: type
     ):
+        self._interactions_of_group.append(icog)
         for func, attr in inspect.getmembers(icog):
             if isinstance(attr, BaseCommand):
                 attr.parents = icog
                 self.add_interaction(attr, attr.sync_command)
             elif isinstance(attr, Listener):
                 self.add_listener(attr.callback, name=attr.name)
+            elif isinstance(attr, DetectComponent):
+                attr.parents = icog
+                pass
         return
 
 
