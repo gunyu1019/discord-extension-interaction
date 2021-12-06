@@ -31,7 +31,7 @@ from .components import ActionRow, Button, Selection
 from .errors import InvalidArgument
 from .message import Message
 from .http import HttpClient, InteractionData
-from .utils import get_as_snowflake, _files_to_form, _allowed_mentions
+from .utils import get_as_snowflake, _files_to_form, _allowed_mentions, channel_types
 
 log = logging.getLogger()
 
@@ -261,6 +261,7 @@ class ApplicationContext(InteractionContext):
 
         self.function = None
         self.parents = None
+
         self.application_type = data.get("type")
         self.target_id = data.get("target_id")
         self.name = data.get("name")
@@ -282,7 +283,7 @@ class ApplicationContext(InteractionContext):
                     else:
                         self.member = client.get_user(value)
                 elif option_type == 7 and self.guild is not None:
-                    self.options[key]: Optional[discord.abc.GuildChannel] = self.guild.get_channel(value)
+                    self.options[key]: Optional[Union[channel_types]] = self.guild.get_channel(value)
                 elif option_type == 8:
                     self.options[key]: Optional[discord.Role] = self.guild.get_role(value)
                 elif option_type == 10:
@@ -314,6 +315,14 @@ class ApplicationContext(InteractionContext):
         elif target_type == "users" and "users" in self._resolved:
             resolved = self._resolved.get("users", {})
             data = discord.User(data=resolved.get(target_id), state=self._state)
+            return data
+        elif target_type == "roles" and "roles" in self._resolved and self.guild is not None:
+            resolved = self._resolved.get("roles", {})
+            data = discord.Role(data=resolved.get(target_id), state=self._state, guild=self.guild)
+            return data
+        elif target_type == "channels" and "channels" in self._resolved:
+            # resolved = self._resolved.get("channels", {})
+            data = self._state.get_channel(target_id)
             return data
 
 

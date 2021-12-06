@@ -39,7 +39,6 @@ def checks(*predicate, exception: bool = False):
         else:
             unwrapped.append(pred)
 
-    # TODO(ctx types)
     async def predicate(ctx) -> bool:
         errors = []
         for func in unwrapped:
@@ -100,5 +99,3 @@ def has_roles(*items: Union[int, str], exception: bool = False) -> Callable:
         return False
 
     return check(predicate)
-
-

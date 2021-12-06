@@ -1,4 +1,5 @@
 import json
+import discord
 
 try:
     import orjson
@@ -12,6 +13,17 @@ if HAS_ORJSON:
     _from_json = orjson.loads
 else:
     _from_json = json.loads
+
+channel_types = [
+    discord.TextChannel,
+    discord.VoiceChannel,
+    discord.DMChannel,
+    discord.StageChannel,
+    discord.GroupChannel,
+    discord.CategoryChannel,
+    discord.StoreChannel
+]
+
 
 try:
     from deprecated import deprecated

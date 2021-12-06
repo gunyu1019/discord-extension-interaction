@@ -29,13 +29,16 @@ import zlib
 
 import discord
 from discord.ext import commands
-from typing import Optional, Dict, Union, Callable, List
+from typing import Optional, Dict, Callable, List
+from discord.state import ConnectionState
 from discord.gateway import DiscordWebSocket
 
 from .commands import ApplicationCommand, BaseCommand, from_payload, command_types
 from .components import DetectComponent
 from .listener import Listener
 from .http import HttpClient
+from .message import Message
+from .interaction import ApplicationContext, ComponentsContext
 from .utils import _from_json
 
 log = logging.getLogger()
@@ -315,9 +318,10 @@ class ClientBase(commands.bot.BotBase):
             channel, _ = getattr(state, "_get_guild_channel")(data)
             message = Message(state=state, data=data, channel=channel)
             state.dispatch('interaction_message', message)
-            if len(self._interactions) != 0:
-                command = MessageCommand(state=state, data=data, channel=channel)
-                state.dispatch('interaction_command', command)
+            # @deprecated
+            # if len(self._interactions) != 0:
+            #     command = MessageCommand(state=state, data=data, channel=channel)
+            #     state.dispatch('interaction_command', command)
             return
 
 

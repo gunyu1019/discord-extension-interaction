@@ -304,15 +304,6 @@ class ContextMenu(ApplicationCommand):
 
 
 command_types = Union[SlashCommand, UserCommand, ContextMenu]
-channel_types = (
-    discord.TextChannel,
-    discord.VoiceChannel,
-    discord.DMChannel,
-    discord.StageChannel,
-    discord.GroupChannel,
-    discord.CategoryChannel,
-    discord.StoreChannel
-)
 
 
 def from_payload(data: dict) -> command_types:
