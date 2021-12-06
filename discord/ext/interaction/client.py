@@ -30,11 +30,13 @@ import zlib
 import discord
 from discord.ext import commands
 from typing import Optional, Dict, Union, Callable, List
+from discord.gateway import DiscordWebSocket
 
 from .commands import ApplicationCommand, BaseCommand, from_payload, command_types
 from .components import DetectComponent
 from .listener import Listener
 from .http import HttpClient
+from .utils import _from_json
 
 log = logging.getLogger()
 
@@ -200,6 +202,23 @@ class ClientBase(commands.bot.BotBase):
             self._detect_components[name] = [func]
         return
 
+    def get_detect_component(self):
+        return self._detect_components
+
+    def delete_detect_component(
+            self,
+            custom_id: str,
+            func=None,
+    ):
+        if func is None:
+            self._detect_components.pop(custom_id)
+        else:
+            for i, x in enumerate(self._detect_components[custom_id]):
+                if x == func:
+                    self._detect_components[custom_id].pop(i)
+                    break
+        return
+
     def add_interaction(
             self,
             command: command_types,
@@ -260,6 +279,46 @@ class ClientBase(commands.bot.BotBase):
                 attr.parents = icog
                 self.add_detect_component(attr.callback, custom_id=attr.custom_id)
         return
+
+    async def on_socket_raw_receive(self, msg):
+        if type(msg) is bytes:
+            self._buffer.extend(msg)
+
+            if len(msg) < 4 or msg[-4:] != b'\x00\x00\xff\xff':
+                return
+
+            msg = self._zlib.decompress(self._buffer)
+            msg = msg.decode('utf-8')
+            self._buffer = bytearray()
+        payload = _from_json(msg)
+
+        data = payload.get("d", {})
+        t = payload.get("t", "")
+        op = payload.get("op", "")
+
+        if op != DiscordWebSocket.DISPATCH:
+            return
+        self.dispatch("payload_receive", payload=payload)
+
+        state: ConnectionState = self._connection
+        if t == "INTERACTION_CREATE":
+            state.dispatch('interaction_raw_create', payload)
+            if data.get("type") == 2:
+                result = ApplicationContext(data, self)
+                if len(self._interactions) != 0:
+                    state.dispatch('interaction_command', result)
+            elif data.get("type") == 3:
+                result = ComponentsContext(data, self)
+                state.dispatch('interaction_components', result)
+            return
+        elif t == "MESSAGE_CREATE":
+            channel, _ = getattr(state, "_get_guild_channel")(data)
+            message = Message(state=state, data=data, channel=channel)
+            state.dispatch('interaction_message', message)
+            if len(self._interactions) != 0:
+                command = MessageCommand(state=state, data=data, channel=channel)
+                state.dispatch('interaction_command', command)
+            return
 
 
 class Client(ClientBase, discord.Client):

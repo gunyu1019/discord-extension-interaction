@@ -1,3 +1,26 @@
+import json
+
+try:
+    import orjson
+except ModuleNotFoundError:
+    HAS_ORJSON = False
+else:
+    HAS_ORJSON = True
+
+
+if HAS_ORJSON:
+    _from_json = orjson.loads
+else:
+    _from_json = json.loads
+
+try:
+    from deprecated import deprecated
+except ModuleNotFoundError:
+    def deprecated():
+        def decorator(*_1, **_2):
+            return
+        return decorator
+
 
 def get_as_snowflake(data, key):
     try:
@@ -13,3 +36,43 @@ def get_enum(cls, val):
     if len(enum_val) == 0:
         return val
     return enum_val[0]
+
+
+def _files_to_form(files: list, payload: dict):
+    form = [{'name': 'payload_json', 'value': to_json(payload)}]
+    if len(files) == 1:
+        file = files[0]
+        form.append(
+            {
+                'name': 'file',
+                'value': file.fp,
+                'filename': file.filename,
+                'content_type': 'application/octet-stream',
+            }
+        )
+    else:
+        for index, file in enumerate(files):
+            form.append(
+                {
+                    'name': f'file{index}',
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream',
+                }
+            )
+    return form
+
+
+def _allowed_mentions(state, allowed_mentions):
+    if allowed_mentions is not None:
+        if state.allowed_mentions is not None:
+            allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
+        else:
+            allowed_mentions = allowed_mentions.to_dict()
+    else:
+        allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
+    return allowed_mentions
+
+
+def to_json(obj):
+    return json.dumps(obj, separators=(',', ':'), ensure_ascii=True)
