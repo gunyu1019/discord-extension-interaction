@@ -88,11 +88,17 @@ def has_roles(*items: Union[int, str], exception: bool = False) -> Callable:
             return False
 
         getter = functools.partial(discord.utils.get, ctx.author.roles)  # type: ignore
-        if any(getter(id=item) is not None if isinstance(item, int) else getter(name=item) is not None for item in
-               items):
+        if any(
+                getter(id=item) is not None
+                if isinstance(item, int)
+                else getter(name=item) is not None
+                for item in items
+        ):
             return True
         if exception:
             raise MissingAnyRole(list(items))
         return False
 
     return check(predicate)
+
+
