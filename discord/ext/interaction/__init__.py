@@ -4,6 +4,6 @@ from .commands import (
     CommandOption, Command, CommandOptionChoice, ContextMenuCommand, ContextMenu, UserCommand, SlashCommand,
     MemberCommand, ApplicationCommand, ApplicationCommandType, Mentionable, command, user, context, option
 )
-from .components import Components, Button, Selection, Options
+from .components import Components, Button, Selection, Options, DetectComponent, detect_component
 from .permissions import ApplicationCommandPermission, CommandPermission, PermissionType, permissions
-from .listener import Listener
+from .listener import Listener, listener

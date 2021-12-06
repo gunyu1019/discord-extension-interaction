@@ -248,21 +248,27 @@ class DetectComponent:
         self.callback = None
         self.parents = None
 
-    @classmethod
-    def detect_component(
-            cls,
-            custom_id: str = None,
-            component_type: Components = None
-    ):
-        def decorator(func):
-            _function = func
-            if isinstance(func, staticmethod):
-                _function = func.__func__
 
-            if not inspect.iscoroutinefunction(_function):
-                raise TypeError('Detect Component function must be a coroutine function.')
+def detect_component(
+        cls: classmethod = None,
+        custom_id: str = None,
+        component_type: Components = None
+):
+    if cls is None:
+        cls = DetectComponent
 
-            new_cls = cls(custom_id=custom_id or _function.__name__)
-            new_cls.callback = _function
-            return new_cls
-        return decorator
+    def decorator(func):
+        _function = func
+        if isinstance(func, staticmethod):
+            _function = func.__func__
+
+        if not inspect.iscoroutinefunction(_function):
+            raise TypeError('Detect Component function must be a coroutine function.')
+
+        new_cls = cls(
+            custom_id=custom_id or _function.__name__,
+            component_type=component_type
+        )
+        new_cls.callback = _function
+        return new_cls
+    return decorator

@@ -40,6 +40,7 @@ class HttpClient:
     def __init__(self, http: discord.http.HTTPClient):
         self.http = http
 
+    # Interaction Response ▼
     async def post_initial_response(self, data: InteractionData, payload: dict):
         r = SlashRoute(
             "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
@@ -60,6 +61,7 @@ class HttpClient:
     async def delete_initial_response(self, data: InteractionData):
         await self.delete_followup(message_id="@original", data=data)
 
+    # Interaction Response (Followup) ▼
     async def post_followup(self, data: InteractionData, payload: dict = None, form=None, files=None):
         r = SlashRoute(
             "POST", "/webhooks/{id}/{token}", id=data.application, token=data.token
@@ -84,6 +86,7 @@ class HttpClient:
         )
         await self.http.request(r)
 
+    # Manage Message ▼
     async def create_message(self, channel_id, payload: dict = None, form=None, files=None):
         r = SlashRoute(
             'POST', '/channels/{channel_id}/messages', channel_id=channel_id
@@ -100,35 +103,67 @@ class HttpClient:
             return await self.http.request(r, form=form, files=files)
         return await self.http.request(r, json=payload)
 
-    async def register_command(self, application_id: int, payload: dict = None):
-        r = SlashRoute(
-            'POST', '/applications/{application_id}/commands', application_id=application_id
-        )
+    # Application Command Register ▼
+    async def register_command(self, application_id: int, payload: dict = None, guild_id: int = None):
+        if guild_id is None:
+            r = SlashRoute(
+                'POST', '/applications/{application_id}/commands', application_id=application_id
+            )
+        else:
+            r = SlashRoute(
+                'POST', '/applications/{application_id}/guilds/{guild_id}/commands',
+                application_id=application_id, guild_id=guild_id
+            )
         return await self.http.request(r, json=payload)
 
-    async def get_commands(self, application_id: int):
-        r = SlashRoute(
-            'GET', '/applications/{application_id}/commands', application_id=application_id
-        )
+    async def get_commands(self, application_id: int, guild_id: int = None):
+        if guild_id is None:
+            r = SlashRoute(
+                'GET', '/applications/{application_id}/commands', application_id=application_id
+            )
+        else:
+            r = SlashRoute(
+                'GET', '/applications/{application_id}/guilds/{guild_id}/commands',
+                application_id=application_id, guild_id=guild_id
+            )
         return await self.http.request(r)
 
-    async def get_command(self, application_id: int, command_id: int):
-        r = SlashRoute(
-            'GET', '/applications/{application_id}/commands/{command_id}',
-            application_id=application_id, command_id=command_id
-        )
+    async def get_command(self, application_id: int, command_id: int, guild_id: int = None):
+        if guild_id is None:
+            r = SlashRoute(
+                'GET', '/applications/{application_id}/commands/{command_id}',
+                application_id=application_id, command_id=command_id
+            )
+        else:
+            r = SlashRoute(
+                'GET', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
+                application_id=application_id, guild_id=guild_id, command_id=command_id
+            )
         return await self.http.request(r)
 
-    async def edit_command(self, application_id: int, command_id: int, payload: dict = None):
-        r = SlashRoute(
-            'PATCH', '/applications/{application_id}/commands/{command_id}',
-            application_id=application_id, command_id=command_id
-        )
+    async def edit_command(self, application_id: int, command_id: int, payload: dict = None, guild_id: int = None):
+        if guild_id is None:
+            r = SlashRoute(
+                'PATCH', '/applications/{application_id}/commands/{command_id}',
+                application_id=application_id, command_id=command_id
+            )
+        else:
+            r = SlashRoute(
+                'PATCH', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
+                application_id=application_id, guild_id=guild_id, command_id=command_id
+            )
         return await self.http.request(r, json=payload)
 
-    async def delete_command(self, application_id: int, command_id: int, payload: dict = None):
-        r = SlashRoute(
-            'DELETE', '/applications/{application_id}/commands/{command_id}',
-            application_id=application_id, command_id=command_id
-        )
+    async def delete_command(self, application_id: int, command_id: int, payload: dict = None, guild_id: int = None):
+        if guild_id is None:
+            r = SlashRoute(
+                'DELETE', '/applications/{application_id}/commands/{command_id}',
+                application_id=application_id, command_id=command_id
+            )
+        else:
+            r = SlashRoute(
+                'DELETE', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
+                application_id=application_id, guild_id=guild_id, command_id=command_id
+            )
+
         return await self.http.request(r, json=payload)

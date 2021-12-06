@@ -21,6 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import asyncio
 import inspect
 import logging
 import os
@@ -28,7 +29,7 @@ import zlib
 
 import discord
 from discord.ext import commands
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Union, Callable, List
 
 from .commands import ApplicationCommand, BaseCommand, from_payload, command_types
 from .components import DetectComponent
@@ -59,7 +60,7 @@ class ClientBase(commands.bot.BotBase):
         self._interactions: Dict[str, command_types] = dict()
         self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
 
-        self._detect_components: Dict[str, DetectComponent] = dict()
+        self._detect_components: Dict[str, List[Callable]] = dict()
 
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
@@ -183,6 +184,22 @@ class ClientBase(commands.bot.BotBase):
             for cmd in popping_data.values():
                 await self.delete_command(cmd)
 
+    def add_detect_component(
+            self,
+            func,
+            custom_id: str = None
+    ):
+        name = func.__name__ if custom_id is None else custom_id
+
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError('Detect Component must be coroutines')
+
+        if name in self._detect_components:
+            self._detect_components[name].append(func)
+        else:
+            self._detect_components[name] = [func]
+        return
+
     def add_interaction(
             self,
             command: command_types,
@@ -241,7 +258,7 @@ class ClientBase(commands.bot.BotBase):
                 self.add_listener(attr.callback, name=attr.name)
             elif isinstance(attr, DetectComponent):
                 attr.parents = icog
-                pass
+                self.add_detect_component(attr.callback, custom_id=attr.custom_id)
         return
 
 
