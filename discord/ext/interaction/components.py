@@ -23,6 +23,7 @@ SOFTWARE.
 
 
 import discord
+import inspect
 
 from typing import Union, Optional, List
 
@@ -237,3 +238,30 @@ def from_payload(payload: dict) -> list:
         elif i.get("type") == 3:
             components.append(Selection.from_dict(i))
     return components
+
+
+# For Decorator
+class DetectComponent:
+    def __init__(self, custom_id, component_type: Components = None):
+        self.custom_id = custom_id
+        self.type = component_type
+        self.callback = None
+
+    @classmethod
+    def detect_component(
+            cls,
+            custom_id: str = None,
+            component_type: Components = None
+    ):
+        def decorator(func):
+            _function = func
+            if isinstance(func, staticmethod):
+                _function = func.__func__
+
+            if not inspect.iscoroutinefunction(_function):
+                raise TypeError('Detect Component function must be a coroutine function.')
+
+            new_cls = cls(custom_id=custom_id or _function.__name__)
+            new_cls.callback = _function
+            return new_cls
+        return decorator

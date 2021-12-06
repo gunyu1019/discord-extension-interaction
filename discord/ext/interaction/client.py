@@ -31,6 +31,7 @@ from discord.ext import commands
 from typing import Optional, Dict, Union
 
 from .commands import ApplicationCommand, BaseCommand, from_payload, command_types
+from .listener import Listener
 from .http import HttpClient
 
 log = logging.getLogger()
@@ -232,8 +233,8 @@ class ClientBase(commands.bot.BotBase):
             if isinstance(attr, BaseCommand):
                 attr.parents = icog
                 self.add_interaction(attr, attr.sync_command)
-        #     elif isinstance(attr, Listener):
-        #         self.add_listener(attr.callback, name=attr.name)
+            elif isinstance(attr, Listener):
+                self.add_listener(attr.callback, name=attr.name)
         return
 
 
