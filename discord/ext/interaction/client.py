@@ -336,11 +336,9 @@ class ClientBase(commands.bot.BotBase):
                 if command.cog is not None:
                     await command.callback(command.cog, ctx, **ctx.options)
                 else:
-                    print(ctx.options)
                     await command.callback(ctx, **ctx.options)
             except Exception as error:
                 _state.dispatch("command_exception", ctx, error)
-                raise error
             else:
                 _state.dispatch("command_complete", ctx)
         else:
