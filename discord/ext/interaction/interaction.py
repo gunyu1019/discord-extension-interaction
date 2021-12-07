@@ -267,6 +267,7 @@ class ApplicationContext(InteractionContext):
         self.name = data.get("name")
         if self.application_type == 1:
             self.options = {}
+            print(data.get("options", []))
             for option in data.get("options", []):
                 key = option.get("name")
                 value = option.get("value")
@@ -279,9 +280,9 @@ class ApplicationContext(InteractionContext):
                     self.options[key] = bool(value)
                 elif option_type == 6:
                     if self.guild is not None:
-                        self.member = self.guild.get_member(value)
+                        self.options[key] = self.guild.get_member(value)
                     else:
-                        self.member = client.get_user(value)
+                        self.options[key] = client.get_user(value)
                 elif option_type == 7 and self.guild is not None:
                     self.options[key]: Optional[Union[channel_types]] = self.guild.get_channel(value)
                 elif option_type == 8:

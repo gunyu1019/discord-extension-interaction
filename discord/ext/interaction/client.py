@@ -333,9 +333,14 @@ class ClientBase(commands.bot.BotBase):
         _state.dispatch("command", ctx)
         if command.command_check(ctx):
             try:
-                await command.callback(command.cog, ctx, **ctx.options)
+                if command.cog is not None:
+                    await command.callback(command.cog, ctx, **ctx.options)
+                else:
+                    print(ctx.options)
+                    await command.callback(ctx, **ctx.options)
             except Exception as error:
                 _state.dispatch("command_exception", ctx, error)
+                raise error
             else:
                 _state.dispatch("command_complete", ctx)
         else:
