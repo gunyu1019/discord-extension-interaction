@@ -306,11 +306,8 @@ class SlashCommand(ApplicationCommand):
         self.options: List[CommandOption] = options
 
     def __eq__(self, other):
-        print(self.name, other.name)
         option_check = True
         for opt in self.options:
-            other_opt = other.options[self.options.index(opt)]
-            print(opt.name, opt not in other.options, opt._channel_type, other_opt._channel_type)
             if opt not in other.options:
                 option_check = False
                 break
