@@ -283,8 +283,8 @@ class ApplicationContext(InteractionContext):
                         self.options[key] = self.guild.get_member(value)
                     else:
                         self.options[key] = client.get_user(value)
-                elif option_type == 7 and self.guild is not None:
-                    self.options[key]: Optional[Union[channel_types]] = self.guild.get_channel(value)
+                elif option_type == 7:
+                    self.options[key]: Optional[Union[channel_types]] = client.get_channel(value)
                 elif option_type == 8:
                     self.options[key]: Optional[discord.Role] = self.guild.get_role(value)
                 elif option_type == 10:
