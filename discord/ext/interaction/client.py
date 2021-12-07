@@ -62,7 +62,7 @@ class ClientBase(commands.bot.BotBase):
 
         self._application_id_value = None
         self._interactions_of_group = []
-        self._interactions: Dict[str, command_types] = dict()
+        self._interactions: Dict[str, BaseCommand] = dict()
         self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
 
         self._detect_components: Dict[str, List[Callable]] = dict()
@@ -323,6 +323,24 @@ class ClientBase(commands.bot.BotBase):
             #     command = MessageCommand(state=state, data=data, channel=channel)
             #     state.dispatch('interaction_command', command)
             return
+
+    async def on_interaction_command(self, ctx: ApplicationContext):
+        _state: ConnectionState = self._connection
+        command = self._interactions.get(ctx.name)
+        if command is None:
+            return
+
+        _state.dispatch("command", ctx)
+        if command.check(ctx):
+            try:
+                await command.callback(command.cog, ctx, **ctx.options)
+            except Exception as error:
+                _state.dispatch("command_exception", ctx, error)
+            else:
+                _state.dispatch("command_complete", ctx)
+        else:
+            _state.dispatch("command_permission_error", ctx)
+        return
 
 
 class Client(ClientBase, discord.Client):
