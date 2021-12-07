@@ -176,22 +176,57 @@ class CommandOption:
         if self._channel_type is not None:
             data['channel_types'] = self._channel_type
         if self.min_value is not None:
-            data['min_value'] = self._channel_type
+            data['min_value'] = self.min_value
         if self.max_value is not None:
-            data['max_value'] = self._channel_type
+            data['max_value'] = self.max_value
         return data
 
     def __eq__(self, other):
-        return (
+        default_check = (
                 self.name == other.name and
-                self.type == other.type and
+                self.type in other.type.__mro__ and
                 self.description == other.description and
                 self.choices == other.choices and
                 self.required == other.required
         )
+        if int in self.type.__mro__ or float in self.type.__mro__:
+            default_check = default_check and self.min_value == other.min_value and self.max_value == other.max_value
+        elif discord.abc.GuildChannel in self.type.__mro__:
+            default_check = default_check and self._channel_type == other._channel_type
+        return default_check
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    @classmethod
+    def from_payload(cls, data: dict):
+        new_cls = cls()
+        for x in ('name', 'description',  'required'):
+            setattr(
+                new_cls, x, data.get(x)
+            )
+        # optional--default false
+        if new_cls.required is None:
+            new_cls.required = False
+
+        new_cls.type = (
+            str, int, bool, discord.User, discord.abc.GuildChannel, discord.Role, Mentionable, float
+        )[(data['type'] - 3)]
+        if new_cls.type == discord.abc.GuildChannel and 'channel_types' in data.keys():
+            new_cls._channel_type = data.get('channel_types', [])
+        if (new_cls.type == int or new_cls.type == float) and 'min_value' in data.keys():
+            new_cls.min_value = data.get('min_value')
+        if (new_cls.type == int or new_cls.type == float) and 'max_value' in data.keys():
+            new_cls.max_value = data.get('max_value')
+
+        new_cls.choices = []
+        choices = data.get('choices', [])
+        if len(choices) > 0:
+            for ch in choices:
+                new_cls.choices.append(
+                    CommandOptionChoice.from_payload(ch)
+                )
+        return new_cls
 
 
 class ApplicationCommand:
@@ -271,9 +306,18 @@ class SlashCommand(ApplicationCommand):
         self.options: List[CommandOption] = options
 
     def __eq__(self, other):
+        print(self.name, other.name)
+        option_check = True
+        for opt in self.options:
+            other_opt = other.options[self.options.index(opt)]
+            print(opt.name, opt not in other.options, opt._channel_type, other_opt._channel_type)
+            if opt not in other.options:
+                option_check = False
+                break
+
         return (
                 super().__eq__(other) and
-                self.options == other.options
+                option_check
         )
 
     def __ne__(self, other):
@@ -282,7 +326,7 @@ class SlashCommand(ApplicationCommand):
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = super().from_payload(data)
-        new_cls.options = []
+        new_cls.options = [CommandOption.from_payload(opt) for opt in data.get('options', [])]
         return new_cls
 
     def to_register_dict(self) -> dict:
@@ -358,6 +402,12 @@ class BaseCommand:
         except ValueError:
             pass
 
+    def command_check(self, ctx):
+        for check in self.checks:
+            if not check(ctx):
+                return False
+        return True
+
 
 class Command(BaseCommand, SlashCommand):
     def __init__(
@@ -371,6 +421,7 @@ class Command(BaseCommand, SlashCommand):
         if options is None:
             options = []
         if hasattr(func, '__command_options__'):
+            func.__command_options__.reverse()
             options += func.__command_options__
 
         signature_arguments = inspect.signature(func).parameters

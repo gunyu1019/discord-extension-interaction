@@ -331,7 +331,7 @@ class ClientBase(commands.bot.BotBase):
             return
 
         _state.dispatch("command", ctx)
-        if command.check(ctx):
+        if command.command_check(ctx):
             try:
                 await command.callback(command.cog, ctx, **ctx.options)
             except Exception as error:
