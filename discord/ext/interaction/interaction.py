@@ -265,9 +265,10 @@ class ApplicationContext(InteractionContext):
         self.application_type = data.get("type")
         self.target_id = data.get("target_id")
         self.name = data.get("name")
+
+        self._resolved = data.get("resolved", {})
         if self.application_type == 1:
             self.options = {}
-            print(data.get("options", []))
             for option in data.get("options", []):
                 key = option.get("name")
                 value = option.get("value")
@@ -280,18 +281,21 @@ class ApplicationContext(InteractionContext):
                     self.options[key] = bool(value)
                 elif option_type == 6:
                     if self.guild is not None:
-                        self.options[key] = self.guild.get_member(value)
+                        self.options[key] = self.guild.get_member(value) or self.target('members', target_id=value)
                     else:
-                        self.options[key] = client.get_user(value)
+                        self.options[key] = client.get_user(value) or self.target('users', target_id=value)
                 elif option_type == 7:
-                    self.options[key]: Optional[Union[channel_types]] = client.get_channel(value)
+                    self.options[key]: Optional[Union[channel_types]] = (
+                            client.get_channel(value) or self.target('channels', target_id=value)
+                    )
                 elif option_type == 8:
-                    self.options[key]: Optional[discord.Role] = self.guild.get_role(value)
+                    self.options[key]: Optional[discord.Role] = (
+                            self.guild.get_role(value) or self.target('roles', target_id=value)
+                    )
                 elif option_type == 10:
                     self.options[key]: float = float(value)
                 else:
                     self.options[key] = value
-        self._resolved = data.get("resolved", {})
 
     @property
     def content(self):
@@ -307,24 +311,60 @@ class ApplicationContext(InteractionContext):
 
         if target_type == "message" and "messages" in self._resolved:
             resolved = self._resolved.get("messages", {})
-            data = Message(state=self._state, channel=self.channel, data=resolved.get(target_id))
+            data = Message(
+                state=self._state,
+                channel=self.channel,
+                data=resolved.get(str(target_id))
+            )
             return data
         elif target_type == "members" and "members" in self._resolved and self.guild_id is not None:
             resolved = self._resolved.get("members", {})
-            data = discord.Member(data=resolved.get(target_id), state=self._state, guild=self.guild)
+            member_data = resolved.get(
+                str(target_id), {}
+            )
+
+            # USER DATA INJECT!
+            user_resolved = self._resolved.get("users", {})
+            user_data = user_resolved.get(
+                str(target_id), {}
+            )
+            member_data['user'] = user_data
+
+            data = discord.Member(data=member_data, state=self._state, guild=self.guild)
             return data
         elif target_type == "users" and "users" in self._resolved:
             resolved = self._resolved.get("users", {})
-            data = discord.User(data=resolved.get(target_id), state=self._state)
+            data = discord.User(data=resolved.get(
+                str(target_id), {}
+            ), state=self._state)
             return data
         elif target_type == "roles" and "roles" in self._resolved and self.guild is not None:
             resolved = self._resolved.get("roles", {})
-            data = discord.Role(data=resolved.get(target_id), state=self._state, guild=self.guild)
+            data = discord.Role(data=resolved.get(
+                str(target_id), {}
+            ), state=self._state, guild=self.guild)
             return data
         elif target_type == "channels" and "channels" in self._resolved:
-            # resolved = self._resolved.get("channels", {})
-            data = self._state.get_channel(target_id)
-            return data
+            resolved = self._resolved.get("channels", {})
+            data = resolved.get(str(target_id))
+            if data is None:
+                return
+
+            factory, ch_type = discord._channel_factory(data['type'])
+            if factory is None:
+                raise discord.InvalidData('Unknown channel type {type} for channel ID {id}.'.format_map(data))
+
+            if ch_type in (discord.ChannelType.group, discord.ChannelType.private):
+                channel = factory(me=self.client.user, data=data, state=self._state)
+            else:
+                if 'position' not in data:
+                    data['position'] = None
+
+                guild_id = int(data.get('guild_id') or self.guild_id)
+                guild = self.client.get_guild(guild_id) or discord.Object(id=guild_id)
+                channel = factory(guild=guild, state=self._state, data=data)
+
+            return channel
 
     @property
     def is_context(self) -> bool:
