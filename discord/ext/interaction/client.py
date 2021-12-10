@@ -70,6 +70,8 @@ class ClientBase(commands.bot.BotBase):
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
 
+        self._deferred_components: Dict[str, list] = dict()
+
         self.add_listener(self._sync_command_task, "on_ready")
 
     async def register_command(self, command: ApplicationCommand):
@@ -312,7 +314,8 @@ class ClientBase(commands.bot.BotBase):
                     state.dispatch('interaction_command', result)
             elif data.get("type") == 3:
                 result = ComponentsContext(data, self)
-                state.dispatch('interaction_components', result)
+                await self.process_components(result)
+                state.dispatch('components', result)
             return
         elif t == "MESSAGE_CREATE":
             channel, _ = getattr(state, "_get_guild_channel")(data)
@@ -324,25 +327,82 @@ class ClientBase(commands.bot.BotBase):
             #     state.dispatch('interaction_command', command)
             return
 
-    async def on_interaction_command(self, ctx: ApplicationContext):
+    async def invoke(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
         command = self._interactions.get(ctx.name)
         if command is None:
             return
 
         _state.dispatch("command", ctx)
-        if command.command_check(ctx):
+        ctx.function = command
+        if command.cog is not None:
+            ctx.parents = command.cog
+
+        if command.can_run(ctx):
             try:
-                if command.cog is not None:
-                    await command.callback(command.cog, ctx, **ctx.options)
-                else:
-                    await command.callback(ctx, **ctx.options)
+                await command.callback(ctx, **ctx.options)
             except Exception as error:
                 _state.dispatch("command_exception", ctx, error)
             else:
                 _state.dispatch("command_complete", ctx)
         else:
             _state.dispatch("command_permission_error", ctx)
+        return
+
+    async def on_interaction_command(self, ctx: ApplicationContext):
+        await self.invoke(ctx)
+        return
+
+    async def wait_for_component(self, custom_id: str, check=None, timeout=None):
+        future = self.loop.create_future()
+        if check is None:
+            def _check(check_component: ComponentsContext):
+                return check_component == custom_id
+            check = _check
+
+        ev = custom_id.lower()
+        try:
+            listeners = self._deferred_components[ev]
+        except KeyError:
+            listeners = []
+            self._deferred_components[ev] = listeners
+
+        listeners.append((future, check))
+        return asyncio.wait_for(future, timeout)
+
+    async def process_components(self, component: ComponentsContext):
+        listeners = self._listener.get("components", [])
+        _state: ConnectionState = self._connection
+
+        find_interaction = None
+        for index, (future, check) in enumerate(listeners):
+            removed = []
+            if future.cancelled():
+                removed.append(index)
+                continue
+
+            try:
+                result = check(component)
+            except Exception as exc:
+                future.set_exception(exc)
+                removed.append(index)
+            else:
+                if result:
+                    find_interaction = component
+                    future.set_result(component)
+                    removed.append(index)
+
+                if len(removed) == len(listeners):
+                    self._listeners.pop("components")
+                else:
+                    for idx in reversed(removed):
+                        del listeners[idx]
+
+        for event in self.extra_events.get("on_components", []):
+            self._schedule_event(event, "on_components", component)
+
+        if find_interaction is None:
+            _state.dispatch("components_cancelled", component)
         return
 
 

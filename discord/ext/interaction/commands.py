@@ -23,11 +23,11 @@ SOFTWARE.
 
 import inspect
 from enum import Enum
-from typing import List, Optional, Union, Callable
+from typing import List, Optional, Union, Callable, Coroutine
 
 import discord
 
-from .utils import get_enum
+from .utils import get_enum, async_all
 
 
 class ApplicationCommandType(Enum):
@@ -386,24 +386,21 @@ class BaseCommand:
         self.sync_command: bool = sync_command
         self.cog = None
 
-    @property
-    def callback(self) -> Callable:
-        return self.func
+    def __call__(self, *args, **kwargs):
+        return self.callback(*args, **kwargs)
 
-    def add_check(self, func) -> None:
-        self.checks.append(func)
+    def callback(self, *args, **kwargs) -> Coroutine[..., Callable]:
+        if self.cog is None:
+            return self.func(*args, **kwargs)
+        return self.func(self.cog, *args, **kwargs)
 
-    def remove_check(self, func) -> None:
-        try:
-            self.checks.remove(func)
-        except ValueError:
-            pass
+    async def can_run(self, ctx):
+        predicates = self.checks
+        if not predicates:
+            # since we have no checks, then we just return True.
+            return True
 
-    def command_check(self, ctx):
-        for check in self.checks:
-            if not check(ctx):
-                return False
-        return True
+        return await async_all(predicate(ctx) for predicate in predicates)
 
 
 class Command(BaseCommand, SlashCommand):

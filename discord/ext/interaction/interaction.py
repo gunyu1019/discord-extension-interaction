@@ -326,6 +326,10 @@ class ApplicationContext(InteractionContext):
             data = self._state.get_channel(target_id)
             return data
 
+    @property
+    def is_context(self) -> bool:
+        return self.function is not None
+
 
 class ComponentsContext(InteractionContext):
     def __init__(self, payload: dict, client):

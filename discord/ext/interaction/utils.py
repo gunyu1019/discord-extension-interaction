@@ -1,4 +1,5 @@
 import json
+import inspect
 import discord
 
 try:
@@ -88,3 +89,13 @@ def _allowed_mentions(state, allowed_mentions):
 
 def to_json(obj):
     return json.dumps(obj, separators=(',', ':'), ensure_ascii=True)
+
+
+async def async_all(gen, *, check=inspect.isawaitable):
+    for elem in gen:
+        if check(elem):
+            elem = await elem
+        if not elem:
+            return False
+    return True
+
