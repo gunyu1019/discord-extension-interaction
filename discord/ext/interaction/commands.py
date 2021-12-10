@@ -23,7 +23,7 @@ SOFTWARE.
 
 import inspect
 from enum import Enum
-from typing import List, Optional, Union, Callable, Coroutine
+from typing import List, Optional, Union, Callable, Coroutine, Any
 
 import discord
 
@@ -360,10 +360,8 @@ def from_payload(data: dict) -> command_types:
 
 
 # For Decorator
-
-
-class BaseCommand:
-    def __init__(self, func: Callable, checks=None, sync_command: bool = False, *args, **kwargs):
+class BaseCore:
+    def __init__(self, func: Callable, checks=None, *args, **kwargs):
         if kwargs.get('name') is None:
             kwargs['name'] = func.__name__
         super().__init__(*args, **kwargs)
@@ -377,19 +375,12 @@ class BaseCommand:
             decorator_checks.reverse()
             checks += decorator_checks
         self.checks: list = checks
-
-        self.permissions: list = []
-        if hasattr(func, '__commands_permissions__'):
-            decorator_permissions = getattr(func, '__commands_permissions__')
-            self.permissions += decorator_permissions
-
-        self.sync_command: bool = sync_command
         self.cog = None
 
     def __call__(self, *args, **kwargs):
         return self.callback(*args, **kwargs)
 
-    def callback(self, *args, **kwargs) -> Coroutine[..., Callable]:
+    def callback(self, *args, **kwargs) -> Callable[..., Coroutine[Any, Any, Any]]:
         if self.cog is None:
             return self.func(*args, **kwargs)
         return self.func(self.cog, *args, **kwargs)
@@ -401,6 +392,17 @@ class BaseCommand:
             return True
 
         return await async_all(predicate(ctx) for predicate in predicates)
+
+
+class BaseCommand(BaseCore):
+    def __init__(self, func: Callable, checks=None, sync_command: bool = False, *args, **kwargs):
+        super().__init__(func=func, checks=checks, *args, **kwargs)
+        self.permissions: list = []
+        if hasattr(func, '__commands_permissions__'):
+            decorator_permissions = getattr(func, '__commands_permissions__')
+            self.permissions += decorator_permissions
+
+        self.sync_command: bool = sync_command
 
 
 class Command(BaseCommand, SlashCommand):

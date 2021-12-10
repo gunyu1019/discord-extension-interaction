@@ -26,19 +26,19 @@ import inspect
 import logging
 import os
 import zlib
+from typing import Optional, Dict, List
 
 import discord
 from discord.ext import commands
-from typing import Optional, Dict, Callable, List
-from discord.state import ConnectionState
 from discord.gateway import DiscordWebSocket
+from discord.state import ConnectionState
 
 from .commands import ApplicationCommand, BaseCommand, from_payload, command_types
 from .components import DetectComponent
-from .listener import Listener
 from .http import HttpClient
-from .message import Message
 from .interaction import ApplicationContext, ComponentsContext
+from .listener import Listener
+from .message import Message
 from .utils import _from_json
 
 log = logging.getLogger()
@@ -63,9 +63,16 @@ class ClientBase(commands.bot.BotBase):
         self._application_id_value = None
         self._interactions_of_group = []
         self._interactions: Dict[str, BaseCommand] = dict()
-        self._fetch_interactions: Optional[Dict[str, ApplicationCommand]] = None
+        self._fetch_interactions: Optional[
+            Dict[
+                str, ApplicationCommand
+            ]
+        ] = None
 
-        self._detect_components: Dict[str, List[Callable]] = dict()
+        self._detect_components: Dict[
+            str,
+            List[DetectComponent]
+        ] = dict()
 
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
@@ -193,18 +200,13 @@ class ClientBase(commands.bot.BotBase):
 
     def add_detect_component(
             self,
-            func,
-            custom_id: str = None
+            detect_component: DetectComponent
     ):
-        name = func.__name__ if custom_id is None else custom_id
-
-        if not asyncio.iscoroutinefunction(func):
-            raise TypeError('Detect Component must be coroutines')
-
+        name = detect_component.custom_id
         if name in self._detect_components:
-            self._detect_components[name].append(func)
+            self._detect_components[name].append(detect_component)
         else:
-            self._detect_components[name] = [func]
+            self._detect_components[name] = [detect_component]
         return
 
     def get_detect_component(self):
@@ -213,13 +215,13 @@ class ClientBase(commands.bot.BotBase):
     def delete_detect_component(
             self,
             custom_id: str,
-            func=None,
+            detect_component: DetectComponent = None
     ):
-        if func is None:
+        if detect_component is None:
             self._detect_components.pop(custom_id)
         else:
             for i, x in enumerate(self._detect_components[custom_id]):
-                if x == func:
+                if x == detect_component:
                     self._detect_components[custom_id].pop(i)
                     break
         return
@@ -282,7 +284,7 @@ class ClientBase(commands.bot.BotBase):
                 self.add_listener(attr.callback, name=attr.name)
             elif isinstance(attr, DetectComponent):
                 attr.parents = icog
-                self.add_detect_component(attr.callback, custom_id=attr.custom_id)
+                self.add_detect_component(attr)
         return
 
     async def on_socket_raw_receive(self, msg):
@@ -356,8 +358,8 @@ class ClientBase(commands.bot.BotBase):
     async def wait_for_component(self, custom_id: str, check=None, timeout=None):
         future = self.loop.create_future()
         if check is None:
-            def _check(check_component: ComponentsContext):
-                return check_component == custom_id
+            def _check(_: ComponentsContext):
+                return True
             check = _check
 
         ev = custom_id.lower()
@@ -371,37 +373,50 @@ class ClientBase(commands.bot.BotBase):
         return asyncio.wait_for(future, timeout)
 
     async def process_components(self, component: ComponentsContext):
-        listeners = self._listener.get("components", [])
         _state: ConnectionState = self._connection
 
-        find_interaction = None
-        for index, (future, check) in enumerate(listeners):
-            removed = []
-            if future.cancelled():
-                removed.append(index)
-                continue
+        detect_component = self._detect_components.get(component.custom_id, default=[])
+        active_component = []
+        for _component in detect_component:
+            if _component.type_id == component.component_type or _component.type is None:
+                if not await _component.can_run(component):
+                    _state.dispatch("component_permission_error", component)
+                    continue
 
-            try:
-                result = check(component)
-            except Exception as exc:
-                future.set_exception(exc)
-                removed.append(index)
-            else:
-                if result:
-                    find_interaction = component
-                    future.set_result(component)
-                    removed.append(index)
-
-                if len(removed) == len(listeners):
-                    self._listeners.pop("components")
+                try:
+                    await _component.callback(component)
+                except Exception as error:
+                    _state.dispatch("component_exception", component, error)
                 else:
-                    for idx in reversed(removed):
-                        del listeners[idx]
+                    active_component.append(component)
 
-        for event in self.extra_events.get("on_components", []):
-            self._schedule_event(event, "on_components", component)
+        listeners = self._deferred_components.get(component.custom_id)
+        detect_component_wait_for = []
+        if listeners is not None:
+            removed = []
+            for index, (future, check) in enumerate(listeners):
+                if future.cancelled():
+                    removed.append(index)
+                    continue
 
-        if find_interaction is None:
+                try:
+                    result = check(component)
+                except Exception as exc:
+                    future.set_exception(exc)
+                    removed.append(index)
+                else:
+                    if result:
+                        detect_component_wait_for.append(component)
+                        future.set_result(component)
+                        removed.append(index)
+
+            if len(removed) == len(listeners):
+                self._deferred_components.pop(component.custom_id)
+            else:
+                for idx in reversed(removed):
+                    listeners.pop(idx)
+
+        if len(detect_component_wait_for) == 0 and len(active_component) == 0:
             _state.dispatch("components_cancelled", component)
         return
 

@@ -25,10 +25,13 @@ SOFTWARE.
 import discord
 import inspect
 
+from .commands import BaseCore
 from typing import Union, Optional, List
 
 
 class Components:
+    TYPE: Optional[int] = None
+
     def __init__(self, components_type: int):
         self.type = components_type
 
@@ -80,6 +83,8 @@ class Options:
 
 
 class ActionRow(Components):
+    TYPE = 1
+
     def __init__(self, components: list = None):
         super().__init__(components_type=1)
 
@@ -111,6 +116,8 @@ class ActionRow(Components):
 
 
 class Button(Components):
+    TYPE = 2
+
     def __init__(self,
                  style: int,
                  label: str = None,
@@ -172,6 +179,8 @@ class Button(Components):
 
 
 class Selection(Components):
+    TYPE = 3
+
     def __init__(self,
                  custom_id: str,
                  options: List[Union[dict, Options]],
@@ -241,18 +250,23 @@ def from_payload(payload: dict) -> list:
 
 
 # For Decorator
-class DetectComponent:
-    def __init__(self, custom_id, component_type: Components = None):
+class DetectComponent(BaseCore):
+    def __init__(self, func, custom_id, component_type: Components = None, checks=None):
         self.custom_id = custom_id
         self.type = component_type
-        self.callback = None
-        self.parents = None
+        self.func = func
+        super().__init__(func=func, checks=checks)
+
+    @property
+    def type_id(self) -> int:
+        return self.type.TYPE
 
 
 def detect_component(
         cls: classmethod = None,
         custom_id: str = None,
-        component_type: Components = None
+        component_type: Components = None,
+        checks=None
 ):
     if cls is None:
         cls = DetectComponent
@@ -266,9 +280,10 @@ def detect_component(
             raise TypeError('Detect Component function must be a coroutine function.')
 
         new_cls = cls(
+            func=_function,
             custom_id=custom_id or _function.__name__,
-            component_type=component_type
+            component_type=component_type,
+            checks=checks
         )
-        new_cls.callback = _function
         return new_cls
     return decorator
