@@ -247,6 +247,9 @@ class ApplicationCommand:
         self.default_permission: Optional[bool] = default_permission
         self.version: int = 1  # default: None
 
+        self.permissions: list = []
+        self.fetch_permissions: list = []
+
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = cls(

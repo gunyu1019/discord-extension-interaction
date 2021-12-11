@@ -167,3 +167,25 @@ class HttpClient:
             )
 
         return await self.http.request(r, json=payload)
+
+    # ▼ Add Command Permission
+    async def get_command_permission(self, application_id: int, command_id: int, guild_id: int):
+        r = SlashRoute(
+            'GET', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
+            application_id=application_id, command_id=command_id, guild_id=guild_id
+        )
+        return await self.http.request(r)
+
+    async def get_commands_permission(self, application_id: int, guild_id: int):
+        r = SlashRoute(
+            'GET', '/applications/{application_id}/guilds/{guild_id}/commands/permissions',
+            application_id=application_id, guild_id=guild_id
+        )
+        return await self.http.request(r)
+
+    async def edit_command_permission(self, application_id: int, command_id: int, guild_id: int, payload: dict):
+        r = SlashRoute(
+            'PUT', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
+            application_id=application_id, command_id=command_id, guild_id=guild_id
+        )
+        return await self.http.request(r, json=payload)

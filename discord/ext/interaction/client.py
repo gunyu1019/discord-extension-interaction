@@ -39,6 +39,7 @@ from .http import HttpClient
 from .interaction import ApplicationContext, ComponentsContext
 from .listener import Listener
 from .message import Message
+from .permissions import ApplicationCommandPermission, CommandPermission
 from .utils import _from_json
 
 log = logging.getLogger()
@@ -85,6 +86,10 @@ class ClientBase(commands.bot.BotBase):
         command_ids = await self._fetch_command_cached()
         if command.name in command_ids:
             raise commands.CommandRegistrationError(command.name)
+
+        if len(command.permissions) > 0:
+            [await self.add_permission(command, x) for x in command.permissions]
+
         return await self.interaction_http.register_command(
             await self._application_id(),
             payload=command.to_register_dict()
@@ -329,7 +334,7 @@ class ClientBase(commands.bot.BotBase):
             #     state.dispatch('interaction_command', command)
             return
 
-    async def invoke(self, ctx: ApplicationContext):
+    async def process_interaction(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
         command = self._interactions.get(ctx.name)
         if command is None:
@@ -352,7 +357,7 @@ class ClientBase(commands.bot.BotBase):
         return
 
     async def on_interaction_command(self, ctx: ApplicationContext):
-        await self.invoke(ctx)
+        await self.process_interaction(ctx)
         return
 
     def wait_for_component(self, custom_id: str, check=None, timeout=None):
@@ -421,6 +426,58 @@ class ClientBase(commands.bot.BotBase):
         if len(detect_component_wait_for) == 0 and len(active_component) == 0:
             _state.dispatch("components_cancelled", component)
         return
+
+    async def add_permission(
+            self,
+            command: ApplicationCommand,
+            guild_id: int,
+            permission: CommandPermission
+    ):
+        permissions = await self.get_permission(
+            command=command, guild_id=guild_id
+        )
+        if permissions is None:
+            permissions = ApplicationCommandPermission(permissions=[permission])
+        permissions.permissions.append(permission)
+        await self.interaction_http.edit_command_permission(
+            application_id=await self._application_id(),
+            command_id=command.id,
+            guild_id=guild_id,
+            payload=permissions.to_dict()
+        )
+        return
+
+    async def delete_permission(
+            self,
+            command: ApplicationCommand,
+            guild_id: int,
+            permission: CommandPermission
+    ):
+        permissions = await self.get_permission(
+            command=command, guild_id=guild_id
+        )
+        if permissions is None:
+            raise IndexError('No Command Permissions')
+        permissions.permissions.pop(permissions.permissions.index(permission))
+        await self.interaction_http.edit_command_permission(
+            application_id=await self._application_id(),
+            command_id=command.id,
+            guild_id=guild_id,
+            payload=permissions.to_dict()
+        )
+        return
+
+    async def get_permission(
+            self,
+            command: ApplicationCommand,
+            guild_id: int
+    ):
+        data = await self.interaction_http.get_command_permission(
+            application_id=await self._application_id(),
+            command_id=command.id,
+            guild_id=guild_id,
+        )
+        return ApplicationCommand.from_payload(data)
 
 
 class Client(ClientBase, discord.Client):
