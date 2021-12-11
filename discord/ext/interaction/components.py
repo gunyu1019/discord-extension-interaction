@@ -258,8 +258,10 @@ class DetectComponent(BaseCore):
         super().__init__(func=func, checks=checks)
 
     @property
-    def type_id(self) -> int:
-        return self.type.TYPE
+    def type_id(self) -> Optional[int]:
+        if isinstance(self.type, Components):
+            return self.type.TYPE
+        return
 
 
 def detect_component(

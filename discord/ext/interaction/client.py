@@ -355,7 +355,7 @@ class ClientBase(commands.bot.BotBase):
         await self.invoke(ctx)
         return
 
-    async def wait_for_component(self, custom_id: str, check=None, timeout=None):
+    def wait_for_component(self, custom_id: str, check=None, timeout=None):
         future = self.loop.create_future()
         if check is None:
             def _check(_: ComponentsContext):
@@ -375,7 +375,9 @@ class ClientBase(commands.bot.BotBase):
     async def process_components(self, component: ComponentsContext):
         _state: ConnectionState = self._connection
 
-        detect_component = self._detect_components.get(component.custom_id, default=[])
+        detect_component = self._detect_components.get(component.custom_id)
+        if detect_component is None:
+            detect_component = []
         active_component = []
         for _component in detect_component:
             if _component.type_id == component.component_type or _component.type is None:

@@ -362,8 +362,6 @@ def from_payload(data: dict) -> command_types:
 # For Decorator
 class BaseCore:
     def __init__(self, func: Callable, checks=None, *args, **kwargs):
-        if kwargs.get('name') is None:
-            kwargs['name'] = func.__name__
         super().__init__(*args, **kwargs)
 
         self.func = func
@@ -396,6 +394,8 @@ class BaseCore:
 
 class BaseCommand(BaseCore):
     def __init__(self, func: Callable, checks=None, sync_command: bool = False, *args, **kwargs):
+        if kwargs.get('name') is None:
+            kwargs['name'] = func.__name__
         super().__init__(func=func, checks=checks, *args, **kwargs)
         self.permissions: list = []
         if hasattr(func, '__commands_permissions__'):

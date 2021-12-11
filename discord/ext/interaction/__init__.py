@@ -4,7 +4,7 @@ from .commands import (
     CommandOption, Command, CommandOptionChoice, ContextMenuCommand, ContextMenu, UserCommand, SlashCommand,
     MemberCommand, ApplicationCommand, ApplicationCommandType, Mentionable, command, user, context, option
 )
-from .components import Components, Button, Selection, Options, DetectComponent, detect_component
+from .components import Components, ActionRow, Button, Selection, Options, DetectComponent, detect_component
 from .errors import InvalidArgument, AlreadyDeferred, CommandNotFound
 from .interaction import InteractionContext, ApplicationContext, ComponentsContext
 from .message import Message, MessageSendable
