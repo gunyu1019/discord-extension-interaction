@@ -28,7 +28,7 @@ from discord.state import ConnectionState
 from typing import Optional, List, Union
 
 from .components import ActionRow, Button, Selection
-from .errors import InvalidArgument
+from .errors import InvalidArgument, AlreadyDeferred
 from .message import Message
 from .http import HttpClient, InteractionData
 from .utils import get_as_snowflake, _files_to_form, _allowed_mentions, channel_types
@@ -108,6 +108,9 @@ class InteractionContext:
         return self.guild.voice_client
 
     async def defer(self, hidden: bool = False):
+        if self.deferred:
+            raise AlreadyDeferred
+
         base = {"type": 5}
         if hidden:
             base["data"] = {"flags": 64}

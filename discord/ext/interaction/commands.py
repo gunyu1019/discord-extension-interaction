@@ -28,6 +28,7 @@ from typing import List, Optional, Union, Callable, Coroutine, Any
 
 import discord
 
+from .errors import InvalidArgument
 from .utils import get_enum, async_all
 
 log = logging.getLogger(__name__)
@@ -115,10 +116,10 @@ class CommandOption:
         if channel_type is not None or channel_types is not None:
             if option_type is not None:
                 if discord.abc.GuildChannel not in option_type.__mro__:
-                    raise TypeError
+                    raise TypeError('Channel options can be set only when they are set to a channel type.')
 
             if channel_types is not None and channel_type is not None:
-                raise TypeError
+                raise InvalidArgument('Single item and multiple item cannot be used for same function.')
             elif channel_type is not None:
                 if isinstance(channel_type, discord.ChannelType):
                     self._channel_type = [channel_type.value]
@@ -134,9 +135,9 @@ class CommandOption:
 
         if option_type is not None:
             if min_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
-                raise TypeError
+                raise TypeError('min_value can only be called when the parameter types are int and float.')
             if max_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
-                raise TypeError
+                raise TypeError('max_value can only be called when the parameter types are int and float.')
         self.min_value: Optional[int] = min_value
         self.max_value: Optional[int] = max_value
 
