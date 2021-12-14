@@ -330,6 +330,9 @@ class ClientBase(commands.bot.BotBase):
                 result = ComponentsContext(data, self)
                 await self.process_components(result)
                 state.dispatch('components', result)
+            elif data.get("type") == 4:
+                # result = ComponentsContext(data, self)
+                state.dispatch('autocomplete', data)
             return
         elif t == "MESSAGE_CREATE":
             channel, _ = getattr(state, "_get_guild_channel")(data)
