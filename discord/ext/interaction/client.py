@@ -47,7 +47,7 @@ log = logging.getLogger()
 class ClientBase(commands.bot.BotBase):
     def __init__(
             self,
-            command_prefix,
+            command_prefix=None,
             global_sync_command: bool = False,
             **options
     ):
@@ -80,6 +80,16 @@ class ClientBase(commands.bot.BotBase):
         self._deferred_components: Dict[str, list] = dict()
 
         self.add_listener(self._sync_command_task, "on_ready")
+
+    async def process_commands(self, message):
+        if self.command_prefix is not None:
+            return super().process_commands(message)
+        return
+
+    async def get_prefix(self, message):
+        if self.command_prefix is not None:
+            return super().get_prefix(message)
+        return
 
     async def register_command(self, command: ApplicationCommand):
         command_ids = await self._fetch_command_cached()
