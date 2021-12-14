@@ -22,12 +22,15 @@ SOFTWARE.
 """
 
 import inspect
+import logging
 from enum import Enum
 from typing import List, Optional, Union, Callable, Coroutine, Any
 
 import discord
 
 from .utils import get_enum, async_all
+
+log = logging.getLogger(__name__)
 
 
 class ApplicationCommandType(Enum):
@@ -93,7 +96,8 @@ class CommandOption:
             channel_types: List[Union[discord.ChannelType, int]] = None,
             min_value: Union[float, int] = None,
             max_value: Union[float, int] = None,
-            required: bool = False
+            required: bool = False,
+            autocomplete: bool = False
     ):
         if choices is None:
             choices = []
@@ -102,6 +106,10 @@ class CommandOption:
         self.description = description
         self.choices = choices
         self.required = required
+        self.autocomplete = autocomplete
+
+        if len(self.choices) > 0 and self.autocomplete:
+            log.warning("autocomplete may not be set to true if choices are present.")
 
         self._channel_type: Optional[List[int]] = None
         if channel_type is not None or channel_types is not None:
@@ -171,7 +179,8 @@ class CommandOption:
             "required": self.required,
             "choices": [
                 choice.to_dict() for choice in self.choices
-            ]
+            ],
+            "autocomplete": self.autocomplete
         }
         if self._channel_type is not None:
             data['channel_types'] = self._channel_type
@@ -187,7 +196,8 @@ class CommandOption:
                 self.type in other.type.__mro__ and
                 self.description == other.description and
                 self.choices == other.choices and
-                self.required == other.required
+                self.required == other.required and
+                self.autocomplete == other.autocomplete
         )
         if int in self.type.__mro__ or float in self.type.__mro__:
             default_check = default_check and self.min_value == other.min_value and self.max_value == other.max_value
@@ -201,7 +211,7 @@ class CommandOption:
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = cls()
-        for x in ('name', 'description', 'required'):
+        for x in ('name', 'description', 'required', 'autocomplete'):
             setattr(
                 new_cls, x, data.get(x)
             )
@@ -539,7 +549,8 @@ def option(
         channel_types: List[Union[discord.ChannelType, int]] = None,
         min_value: Union[float, int] = None,
         max_value: Union[float, int] = None,
-        required: bool = False
+        required: bool = False,
+        autocomplete: bool = False
 ):
     options = CommandOption(
         name=name,
@@ -550,7 +561,8 @@ def option(
         channel_types=channel_types,
         min_value=min_value,
         max_value=max_value,
-        required=required
+        required=required,
+        autocomplete=autocomplete
     )
 
     def decorator(func):
