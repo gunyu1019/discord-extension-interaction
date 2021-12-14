@@ -119,7 +119,7 @@ class CommandOption:
             elif channel_types is not None:
                 self._channel_type = []
                 for x in channel_types:
-                    if isinstance(x, discord.ChannelType):
+                    if hasattr(x, 'value'):
                         self._channel_type.append(x.value)
                     else:
                         self._channel_type.append(x)
@@ -201,7 +201,7 @@ class CommandOption:
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = cls()
-        for x in ('name', 'description',  'required'):
+        for x in ('name', 'description', 'required'):
             setattr(
                 new_cls, x, data.get(x)
             )
@@ -246,9 +246,6 @@ class ApplicationCommand:
         self.description: str = description
         self.default_permission: Optional[bool] = default_permission
         self.version: int = 1  # default: None
-
-        self.permissions: list = []
-        self.fetch_permissions: list = []
 
     @classmethod
     def from_payload(cls, data: dict):
@@ -381,14 +378,14 @@ class BaseCore:
     def __call__(self, *args, **kwargs):
         return self.callback(*args, **kwargs)
 
-    def callback(self, *args, **kwargs) -> Callable[..., Coroutine[Any, Any, Any]]:
+    def callback(self, *args, **kwargs) -> Coroutine[Any, Any, Any]:
         if self.cog is None:
             return self.func(*args, **kwargs)
         return self.func(self.cog, *args, **kwargs)
 
     async def can_run(self, ctx):
         predicates = self.checks
-        if not predicates:
+        if len(predicates) == 0:
             # since we have no checks, then we just return True.
             return True
 
@@ -400,11 +397,6 @@ class BaseCommand(BaseCore):
         if kwargs.get('name') is None:
             kwargs['name'] = func.__name__
         super().__init__(func=func, checks=checks, *args, **kwargs)
-        self.permissions: list = []
-        if hasattr(func, '__commands_permissions__'):
-            decorator_permissions = getattr(func, '__commands_permissions__')
-            self.permissions += decorator_permissions
-
         self.sync_command: bool = sync_command
 
 
@@ -460,6 +452,9 @@ class MemberCommand(BaseCommand, UserCommand):
 
 class ContextMenuCommand(BaseCommand, ContextMenu):
     pass
+
+
+decorator_command_types = Union[Command, MemberCommand, ContextMenuCommand]
 
 
 def command(

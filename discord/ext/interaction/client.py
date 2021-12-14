@@ -33,13 +33,12 @@ from discord.ext import commands
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from .commands import ApplicationCommand, BaseCommand, from_payload, command_types
+from .commands import ApplicationCommand, BaseCommand, from_payload, command_types, decorator_command_types
 from .components import DetectComponent
 from .http import HttpClient
 from .interaction import ApplicationContext, ComponentsContext
 from .listener import Listener
 from .message import Message
-from .permissions import ApplicationCommandPermission, CommandPermission
 from .utils import _from_json
 
 log = logging.getLogger()
@@ -63,7 +62,7 @@ class ClientBase(commands.bot.BotBase):
 
         self._application_id_value = None
         self._interactions_of_group = []
-        self._interactions: Dict[str, BaseCommand] = dict()
+        self._interactions: Dict[str, decorator_command_types] = dict()
         self._fetch_interactions: Optional[
             Dict[
                 str, ApplicationCommand
@@ -86,9 +85,6 @@ class ClientBase(commands.bot.BotBase):
         command_ids = await self._fetch_command_cached()
         if command.name in command_ids:
             raise commands.CommandRegistrationError(command.name)
-
-        if len(command.permissions) > 0:
-            [await self.add_permission(command, x) for x in command.permissions]
 
         return await self.interaction_http.register_command(
             await self._application_id(),
@@ -233,7 +229,7 @@ class ClientBase(commands.bot.BotBase):
 
     def add_interaction(
             self,
-            command: command_types,
+            command: decorator_command_types,
             sync_command: bool = None,
             _parent=None
     ):
@@ -283,6 +279,7 @@ class ClientBase(commands.bot.BotBase):
         self._interactions_of_group.append(icog)
         for func, attr in inspect.getmembers(icog):
             if isinstance(attr, BaseCommand):
+                attr: decorator_command_types
                 attr.parents = icog
                 self.add_interaction(attr, attr.sync_command)
             elif isinstance(attr, Listener):
@@ -345,15 +342,18 @@ class ClientBase(commands.bot.BotBase):
         if command.cog is not None:
             ctx.parents = command.cog
 
-        if command.can_run(ctx):
-            try:
-                await command.callback(ctx, **ctx.options)
-            except Exception as error:
-                _state.dispatch("command_exception", ctx, error)
+        try:
+            if await self.can_run(ctx, call_once=True):
+                if await command.can_run(ctx):
+                    await command.callback(ctx, **ctx.options)
             else:
-                _state.dispatch("command_complete", ctx)
+                raise commands.errors.CheckFailure('The global check once functions failed.')
+        except Exception as error:
+            if isinstance(error, commands.errors.CheckFailure):
+                _state.dispatch("command_permission_error", ctx, error)
+            _state.dispatch("command_error", ctx, error)
         else:
-            _state.dispatch("command_permission_error", ctx)
+            _state.dispatch("command_complete", ctx)
         return
 
     async def on_interaction_command(self, ctx: ApplicationContext):
@@ -386,15 +386,19 @@ class ClientBase(commands.bot.BotBase):
         active_component = []
         for _component in detect_component:
             if _component.type_id == component.component_type or _component.type is None:
-                if not await _component.can_run(component):
-                    _state.dispatch("component_permission_error", component)
-                    continue
 
                 try:
-                    await _component.callback(component)
+                    if await self.can_run(component, call_once=True):
+                        if await _component.can_run(component):
+                            await _component.callback(component)
+                    else:
+                        raise commands.errors.CheckFailure('The global check once functions failed.')
                 except Exception as error:
-                    _state.dispatch("component_exception", component, error)
+                    if isinstance(error, commands.errors.CheckFailure):
+                        _state.dispatch("component_permission_error", component, error)
+                    _state.dispatch("component_error", component, error)
                 else:
+                    _state.dispatch("component_complete", component)
                     active_component.append(component)
 
         listeners = self._deferred_components.get(component.custom_id)
@@ -426,58 +430,6 @@ class ClientBase(commands.bot.BotBase):
         if len(detect_component_wait_for) == 0 and len(active_component) == 0:
             _state.dispatch("components_cancelled", component)
         return
-
-    async def add_permission(
-            self,
-            command: ApplicationCommand,
-            guild_id: int,
-            permission: CommandPermission
-    ):
-        permissions = await self.get_permission(
-            command=command, guild_id=guild_id
-        )
-        if permissions is None:
-            permissions = ApplicationCommandPermission(permissions=[permission])
-        permissions.permissions.append(permission)
-        await self.interaction_http.edit_command_permission(
-            application_id=await self._application_id(),
-            command_id=command.id,
-            guild_id=guild_id,
-            payload=permissions.to_dict()
-        )
-        return
-
-    async def delete_permission(
-            self,
-            command: ApplicationCommand,
-            guild_id: int,
-            permission: CommandPermission
-    ):
-        permissions = await self.get_permission(
-            command=command, guild_id=guild_id
-        )
-        if permissions is None:
-            raise IndexError('No Command Permissions')
-        permissions.permissions.pop(permissions.permissions.index(permission))
-        await self.interaction_http.edit_command_permission(
-            application_id=await self._application_id(),
-            command_id=command.id,
-            guild_id=guild_id,
-            payload=permissions.to_dict()
-        )
-        return
-
-    async def get_permission(
-            self,
-            command: ApplicationCommand,
-            guild_id: int
-    ):
-        data = await self.interaction_http.get_command_permission(
-            application_id=await self._application_id(),
-            command_id=command.id,
-            guild_id=guild_id,
-        )
-        return ApplicationCommand.from_payload(data)
 
 
 class Client(ClientBase, discord.Client):
