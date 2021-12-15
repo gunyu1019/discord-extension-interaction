@@ -34,12 +34,12 @@ from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
 from .commands import (
-    ApplicationCommand, BaseCommand, CommandOption, SubCommand, SubCommandGroup,
-    ApplicationSubcommand, ApplicationSubcommandGroup, from_payload, command_types, decorator_command_types
+    ApplicationCommand, BaseCommand, SubCommand, SubCommandGroup,
+    from_payload, command_types, decorator_command_types
 )
 from .components import DetectComponent
 from .http import HttpClient
-from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext, SubcommandContext
+from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext
 from .listener import Listener
 from .message import Message
 from .utils import _from_json
