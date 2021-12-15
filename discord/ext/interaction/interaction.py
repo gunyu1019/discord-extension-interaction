@@ -27,7 +27,7 @@ import logging
 from discord.state import ConnectionState
 from typing import Optional, List, Union
 
-from .commands import CommandOptionChoice, ApplicationSubcommand, ApplicationSubcommandGroup
+from .commands import CommandOptionChoice
 from .components import ActionRow, Button, Selection
 from .errors import InvalidArgument, AlreadyDeferred
 from .message import Message
@@ -257,69 +257,7 @@ class InteractionContext:
         return
 
 
-class ApplicationContext(InteractionContext):
-    def __init__(self, payload: dict, client):
-        super().__init__(payload, client)
-        self.type = payload.get("type", 2)
-        data = payload.get("data", {})
-
-        self.function = None
-        self.parents = None
-
-        self.application_type = data.get("type")
-        self.target_id = data.get("target_id")
-        self.name = data.get("name")
-
-        self._resolved = data.get("resolved", {})
-        if self.application_type == 1:
-            self.options = {}
-            self.option_focused = []
-            for option in data.get("options", []):
-                key = option.get("name")
-                value = option.get("value")
-                option_type = option.get("type")
-                focused = option.get("focused", False)
-                if focused:
-                    self.option_focused.append(key)
-
-                if option_type == 1:
-                    self.options[key] = SubCommand
-                elif option_type == 2:
-                    self.options[key] = SubCommandGroup
-                elif option_type == 3:
-                    self.options[key]: str = value
-                elif option_type == 4:
-                    self.options[key]: int = value
-                elif option_type == 5:
-                    self.options[key] = bool(value)
-                elif option_type == 6:
-                    if self.guild is not None:
-                        self.options[key] = self.guild.get_member(value) or self.target('members', target_id=value)
-                    else:
-                        self.options[key] = client.get_user(value) or self.target('users', target_id=value)
-                elif option_type == 7:
-                    self.options[key]: Optional[Union[channel_types]] = (
-                            client.get_channel(value) or self.target('channels', target_id=value)
-                    )
-                elif option_type == 8:
-                    self.options[key]: Optional[discord.Role] = (
-                            self.guild.get_role(value) or self.target('roles', target_id=value)
-                    )
-                elif option_type == 10:
-                    self.options[key]: float = float(value)
-                else:
-                    self.options[key] = value
-
-        self.command_id = data.get("id")
-
-    @property
-    def content(self):
-        if self.application_type == 1:
-            options = [str(self.options[i]) for i in self.options.keys()]
-            return f"/{self.name} {' '.join(options)}"
-        else:
-            return f"/{self.name}"
-
+class BaseSlashContext:
     def target(self, target_type, target_id: int = None):
         if target_id is None:
             target_id = self.target_id
@@ -380,6 +318,107 @@ class ApplicationContext(InteractionContext):
                 channel = factory(guild=guild, state=self._state, data=data)
 
             return channel
+
+
+class SubcommandContext(BaseSlashContext):
+    def __init__(self, payload: dict, client):
+        self.name = payload.get('name')
+        self.options = {}
+
+        for option in payload.get("options", []):
+            key = option.get("name")
+            value = option.get("value")
+            option_type = option.get("type")
+
+            if option_type == 1:
+                self.options['subcommand'] = SubcommandContext(option, client)
+            elif option_type == 3:
+                self.options[key]: str = value
+            elif option_type == 4:
+                self.options[key]: int = value
+            elif option_type == 5:
+                self.options[key] = bool(value)
+            elif option_type == 6:
+                if self.guild is not None:
+                    self.options[key] = self.guild.get_member(value) or self.target('members', target_id=value)
+                else:
+                    self.options[key] = client.get_user(value) or self.target('users', target_id=value)
+            elif option_type == 7:
+                self.options[key]: Optional[Union[channel_types]] = (
+                        client.get_channel(value) or self.target('channels', target_id=value)
+                )
+            elif option_type == 8:
+                self.options[key]: Optional[discord.Role] = (
+                        self.guild.get_role(value) or self.target('roles', target_id=value)
+                )
+            elif option_type == 10:
+                self.options[key]: float = float(value)
+            else:
+                self.options[key] = value
+
+
+class ApplicationContext(InteractionContext, BaseSlashContext):
+    def __init__(self, payload: dict, client):
+        super().__init__(payload, client)
+        self.type = payload.get("type", 2)
+        data = payload.get("data", {})
+
+        self.function = None
+        self.parents = None
+
+        self.application_type = data.get("type")
+        self.target_id = data.get("target_id")
+        self.name = data.get("name")
+
+        self._resolved = data.get("resolved", {})
+        if self.application_type == 1:
+            self.options = {}
+            self.option_focused = []
+            for option in data.get("options", []):
+                key = option.get("name")
+                value = option.get("value")
+                option_type = option.get("type")
+                focused = option.get("focused", False)
+                if focused:
+                    self.option_focused.append(key)
+
+                if option_type == 1:
+                    self.options['subcommand'] = SubcommandContext(option, client)
+                elif option_type == 2:
+                    self.options['subcommand_group'] = SubcommandContext(option, client)
+                elif option_type == 3:
+                    self.options[key]: str = value
+                elif option_type == 4:
+                    self.options[key]: int = value
+                elif option_type == 5:
+                    self.options[key] = bool(value)
+                elif option_type == 6:
+                    if self.guild is not None:
+                        self.options[key] = self.guild.get_member(value) or self.target('members', target_id=value)
+                    else:
+                        self.options[key] = client.get_user(value) or self.target('users', target_id=value)
+                elif option_type == 7:
+                    self.options[key]: Optional[Union[channel_types]] = (
+                            client.get_channel(value) or self.target('channels', target_id=value)
+                    )
+                elif option_type == 8:
+                    self.options[key]: Optional[discord.Role] = (
+                            self.guild.get_role(value) or self.target('roles', target_id=value)
+                    )
+                elif option_type == 10:
+                    self.options[key]: float = float(value)
+                else:
+                    self.options[key] = value
+
+        self.command_id = data.get("id")
+
+    @property
+    def content(self):
+        if self.application_type == 1:
+            options = [str(self.options[i]) for i in self.options.keys()]
+            return f"/{self.name} {' '.join(options)}"
+        else:
+            return f"/{self.name}"
 
     @property
     def is_context(self) -> bool:

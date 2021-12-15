@@ -291,6 +291,17 @@ class ApplicationSubcommand:
             "options": [opt.to_dict() for opt in self.options]
         }
 
+    def __eq__(self, other):
+        default_check = (
+            self.name == other.name and
+            self.description == other.description and
+            self.options == other.options
+        )
+        return default_check
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class ApplicationSubcommandGroup:
     def __init__(
@@ -322,6 +333,17 @@ class ApplicationSubcommandGroup:
             "type": self._get_type_id,
             "options": [opt.to_dict() for opt in self.options]
         }
+
+    def __eq__(self, other):
+        default_check = (
+            self.name == other.name and
+            self.description == other.description and
+            self.options == other.options
+        )
+        return default_check
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class ApplicationCommand:

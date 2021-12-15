@@ -39,7 +39,7 @@ from .commands import (
 )
 from .components import DetectComponent
 from .http import HttpClient
-from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext
+from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext, SubcommandContext
 from .listener import Listener
 from .message import Message
 from .utils import _from_json
@@ -360,21 +360,33 @@ class ClientBase(commands.bot.BotBase):
             if command.cog is not None:
                 ctx.parents = command.cog
             if await self.can_run(ctx, call_once=True):
+                _option = ctx.options
                 if command.is_subcommand:
-                    for opt in command.options:
-                        if isinstance(opt, CommandOption):
-                            continue
-                        elif isinstance(opt, SubCommand):
-                            base = ctx.options[opt.name]
-
+                    options = command.options
+                    if 'subcommand_group' in ctx.options:
+                        sub_command_group = ctx.options['subcommand_group']
+                        for opt in command.options:
+                            if isinstance(opt, SubCommandGroup) and sub_command_group.name == opt.name:
+                                options = opt.options
+                                break
+                    sub_command = ctx.options['subcommand']
+                    for opt in options:
+                        if opt.name == sub_command.name and isinstance(opt, SubCommand):
+                            ctx.function = func = opt
+                            ctx.parents = None
+                            if opt.cog is not None:
+                                ctx.parents = opt.cog
+                            _option = sub_command.options
+                            break
                 if await func.can_run(ctx):
-                    await func.callback(ctx, **ctx.options)
+                    await func.callback(ctx, **_option)
             else:
                 raise commands.errors.CheckFailure('The global check once functions failed.')
         except Exception as error:
             if isinstance(error, commands.errors.CheckFailure):
                 _state.dispatch("command_permission_error", ctx, error)
-            _state.dispatch("command_error", ctx, error)
+            _state.dispatch("interaction_command_error", ctx, error)
+            raise error
         else:
             _state.dispatch("command_complete", ctx)
         return
