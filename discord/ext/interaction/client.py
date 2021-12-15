@@ -33,10 +33,13 @@ from discord.ext import commands
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from .commands import ApplicationCommand, BaseCommand, from_payload, command_types, decorator_command_types
+from .commands import (
+    ApplicationCommand, BaseCommand, CommandOption, SubCommand, SubCommandGroup,
+    ApplicationSubcommand, ApplicationSubcommandGroup, from_payload, command_types, decorator_command_types
+)
 from .components import DetectComponent
 from .http import HttpClient
-from .interaction import ApplicationContext, ComponentsContext
+from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext
 from .listener import Listener
 from .message import Message
 from .utils import _from_json
@@ -57,8 +60,8 @@ class ClientBase(commands.bot.BotBase):
         self.global_sync_command = global_sync_command
         self.interaction_http = HttpClient(self.http)
 
-        self._buffer = bytearray()
-        self._zlib = zlib.decompressobj()
+        self.__buffer = bytearray()
+        self.__zlib = zlib.decompressobj()
 
         self._application_id_value = None
         self._interactions_of_group = []
@@ -83,12 +86,12 @@ class ClientBase(commands.bot.BotBase):
 
     async def process_commands(self, message):
         if self.command_prefix is not None:
-            return super().process_commands(message)
+            return await super().process_commands(message)
         return
 
     async def get_prefix(self, message):
         if self.command_prefix is not None:
-            return super().get_prefix(message)
+            return await super().get_prefix(message)
         return
 
     async def register_command(self, command: ApplicationCommand):
@@ -301,14 +304,14 @@ class ClientBase(commands.bot.BotBase):
 
     async def on_socket_raw_receive(self, msg):
         if type(msg) is bytes:
-            self._buffer.extend(msg)
+            self.__buffer.extend(msg)
 
             if len(msg) < 4 or msg[-4:] != b'\x00\x00\xff\xff':
                 return
 
-            msg = self._zlib.decompress(self._buffer)
+            msg = self.__zlib.decompress(self.__buffer)
             msg = msg.decode('utf-8')
-            self._buffer = bytearray()
+            self.__buffer = bytearray()
         payload = _from_json(msg)
 
         data = payload.get("d", {})
@@ -331,8 +334,8 @@ class ClientBase(commands.bot.BotBase):
                 await self.process_components(result)
                 state.dispatch('components', result)
             elif data.get("type") == 4:
-                # result = ComponentsContext(data, self)
-                state.dispatch('autocomplete', data)
+                result = AutocompleteContext(data, self)
+                state.dispatch('autocomplete', result)
             return
         elif t == "MESSAGE_CREATE":
             channel, _ = getattr(state, "_get_guild_channel")(data)
@@ -351,14 +354,21 @@ class ClientBase(commands.bot.BotBase):
             return
 
         _state.dispatch("command", ctx)
-        ctx.function = command
-        if command.cog is not None:
-            ctx.parents = command.cog
 
         try:
+            func = ctx.function = command
+            if command.cog is not None:
+                ctx.parents = command.cog
             if await self.can_run(ctx, call_once=True):
-                if await command.can_run(ctx):
-                    await command.callback(ctx, **ctx.options)
+                if command.is_subcommand:
+                    for opt in command.options:
+                        if isinstance(opt, CommandOption):
+                            continue
+                        elif isinstance(opt, SubCommand):
+                            base = ctx.options[opt.name]
+
+                if await func.can_run(ctx):
+                    await func.callback(ctx, **ctx.options)
             else:
                 raise commands.errors.CheckFailure('The global check once functions failed.')
         except Exception as error:

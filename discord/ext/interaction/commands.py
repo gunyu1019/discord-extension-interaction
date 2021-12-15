@@ -109,6 +109,10 @@ class CommandOption:
         self.required = required
         self.autocomplete = autocomplete
 
+        if option_type is not None:
+            if (len(choices) > 0 or autocomplete) and not isinstance(option_type, (int, float, str)):
+                raise TypeError('choices or autocomplete should only be used in integer, string, and float.')
+
         if len(self.choices) > 0 and self.autocomplete:
             log.warning("autocomplete may not be set to true if choices are present.")
 
@@ -122,7 +126,7 @@ class CommandOption:
                 raise InvalidArgument('Single item and multiple item cannot be used for same function.')
             elif channel_type is not None:
                 if isinstance(channel_type, discord.ChannelType):
-                    self._channel_type = [channel_type.value]
+                    self._channel_type = [getattr(channel_type, "value", 0)]
                 else:
                     self._channel_type = [channel_type]
             elif channel_types is not None:
@@ -154,7 +158,11 @@ class CommandOption:
 
     @property
     def _get_type_id(self) -> int:
-        if str in self.type.__mro__:
+        if ApplicationSubcommand in self.type.__mro__:
+            return 1
+        elif ApplicationSubcommandGroup in self.type.__mro__:
+            return 2
+        elif str in self.type.__mro__:
             return 3
         elif int in self.type.__mro__:
             return 4
@@ -212,6 +220,12 @@ class CommandOption:
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = cls()
+        tp_v = data['type']
+        if tp_v == 1:
+            return ApplicationSubcommand.from_payload(data)
+        if tp_v == 2:
+            return ApplicationSubcommandGroup.from_payload(data)
+
         for x in ('name', 'description', 'required', 'autocomplete'):
             setattr(
                 new_cls, x, data.get(x)
@@ -219,10 +233,12 @@ class CommandOption:
         # optional--default false
         if new_cls.required is None:
             new_cls.required = False
+        if new_cls.autocomplete is None:
+            new_cls.autocomplete = False
 
         new_cls.type = (
             str, int, bool, discord.User, discord.abc.GuildChannel, discord.Role, Mentionable, float
-        )[(data['type'] - 3)]
+        )[(tp_v - 3)]
         if new_cls.type == discord.abc.GuildChannel and 'channel_types' in data.keys():
             new_cls._channel_type = data.get('channel_types', [])
         if (new_cls.type == int or new_cls.type == float) and 'min_value' in data.keys():
@@ -238,6 +254,74 @@ class CommandOption:
                     CommandOptionChoice.from_payload(ch)
                 )
         return new_cls
+
+
+class ApplicationSubcommand:
+    def __init__(
+            self,
+            name: str,
+            description: str = "No description.",
+            options: Optional[List[Union[CommandOption]]] = None
+    ):
+        self.name = name
+        self.description = description
+        if options is None:
+            options = []
+        self.options = options
+
+    @property
+    def _get_type_id(self) -> int:
+        return 1
+
+    @classmethod
+    def from_payload(cls, data: dict):
+        new_cls = cls(
+            name=data['name'],
+            description=data['description']
+        )
+        if 'options' in data:
+            new_cls.options = [CommandOption.from_payload(x) for x in data['options']]
+        return new_cls
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "type": self._get_type_id,
+            "options": [opt.to_dict() for opt in self.options]
+        }
+
+
+class ApplicationSubcommandGroup:
+    def __init__(
+            self,
+            name: str,
+            options: List[ApplicationSubcommand],
+            description: str = "No description."
+    ):
+        self.name = name
+        self.description = description
+        self.options = options
+
+    @property
+    def _get_type_id(self) -> int:
+        return 2
+
+    @classmethod
+    def from_payload(cls, data: dict):
+        return cls(
+            name=data['name'],
+            description=data['description'],
+            options=[ApplicationSubcommand.from_payload(x) for x in data['options']]
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "type": self._get_type_id,
+            "options": [opt.to_dict() for opt in self.options]
+        }
 
 
 class ApplicationCommand:
@@ -307,14 +391,14 @@ class ApplicationCommand:
 class SlashCommand(ApplicationCommand):
     def __init__(
             self,
-            options: List[CommandOption] = None,
+            options: List[Union[CommandOption, ApplicationSubcommandGroup, ApplicationSubcommand]] = None,
             **kwargs
     ):
         if options is None:
             options = []
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.CHAT_INPUT
-        self.options: List[CommandOption] = options
+        self.options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = options
 
     def __eq__(self, other):
         option_check = True
@@ -403,6 +487,87 @@ class BaseCore:
         return await async_all(predicate(ctx) for predicate in predicates)
 
 
+# Subcommand
+class SubCommand(BaseCore, ApplicationSubcommand):
+    def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
+        if kwargs.get('name') is None:
+            kwargs['name'] = func.__name__
+        self.parents: Union[Command, SubCommandGroup] = parents
+        self.top_parents: Command = kwargs.pop('top_parents', self.parents)
+        self.parents.options.append(self)
+
+        options = kwargs.get('options')
+        if options is None:
+            options = []
+        if hasattr(func, '__command_options__'):
+            func.__command_options__.reverse()
+            options += func.__command_options__
+        signature_arguments = inspect.signature(func).parameters
+        arguments = []
+        if len(options) == 0 and len(signature_arguments) > 0:
+            for _ in range(
+                    len(signature_arguments) - 1
+            ):
+                options.append(
+                    CommandOption()
+                )
+        elif len(signature_arguments) - 1 > len(options):
+            for _ in range(
+                    len(signature_arguments) - len(options) - 1
+            ):
+                options.append(CommandOption())
+        elif len(signature_arguments) - 1 < len(options):
+            raise TypeError("number of options and the number of arguments are different.")
+
+        sign_arguments = list(signature_arguments.values())
+        for arg in sign_arguments[1:]:
+            arguments.append(arg)
+
+        for index, opt in enumerate(options):
+            if opt.name is None:
+                options[index].name = arguments[index].name
+            if opt.type is None:
+                options[index].type = arguments[index].annotation
+            if opt.required or arguments[index].default == arguments[index].empty:
+                options[index].required = True
+        super().__init__(func=func, checks=checks, *args, **kwargs)
+
+
+class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
+    def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
+        if kwargs.get('name') is None:
+            kwargs['name'] = func.__name__
+        self.parents: Union[Command] = parents
+        super().__init__(func=func, checks=checks, *args, **kwargs)
+        self.parents.options.append(self)
+
+    def subcommand(
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            checks=None,
+            options: Optional[List[CommandOption]] = None
+    ):
+        if options is None:
+            options = []
+
+        if cls is None:
+            cls = SubCommand
+
+        def decorator(func):
+            return cls(
+                func,
+                name=name,
+                description=description,
+                checks=checks,
+                options=options,
+                top_parents=self.parents,
+                parents=self
+            )
+        return decorator
+
+
 class BaseCommand(BaseCore):
     def __init__(self, func: Callable, checks=None, sync_command: bool = False, *args, **kwargs):
         if kwargs.get('name') is None:
@@ -416,7 +581,7 @@ class Command(BaseCommand, SlashCommand):
             self,
             func: Callable,
             checks=None,
-            options: List[CommandOption] = None,
+            options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
             sync_command: bool = False,
             **kwargs
     ):
@@ -455,6 +620,66 @@ class Command(BaseCommand, SlashCommand):
             if opt.required or arguments[index].default == arguments[index].empty:
                 options[index].required = True
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
+
+    def subcommand(
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            checks=None,
+            options: List[CommandOption] = None
+    ):
+        if options is None:
+            options = []
+
+        if cls is None:
+            cls = SubCommand
+
+        def decorator(func):
+            new_cls = cls(
+                func,
+                name=name,
+                description=description,
+                checks=checks,
+                options=options,
+                top_parents=self,
+                parents=self
+            )
+
+            return new_cls
+        return decorator
+
+    def subcommand_group(
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            options: list = None
+    ):
+        if options is None:
+            options = []
+
+        if cls is None:
+            cls = SubCommandGroup
+
+        def decorator(func):
+            new_cls = cls(
+                func,
+                name=name,
+                description=description,
+                options=options,
+                parents=self
+            )
+            return new_cls
+        return decorator
+
+    @property
+    def is_subcommand(self) -> bool:
+        for opt in self.options:
+            if isinstance(opt, (SubCommand, SubCommandGroup)):
+                return True
+        else:
+            return False
 
 
 class MemberCommand(BaseCommand, UserCommand):

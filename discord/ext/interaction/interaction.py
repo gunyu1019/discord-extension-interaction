@@ -27,6 +27,7 @@ import logging
 from discord.state import ConnectionState
 from typing import Optional, List, Union
 
+from .commands import CommandOptionChoice, ApplicationSubcommand, ApplicationSubcommandGroup
 from .components import ActionRow, Button, Selection
 from .errors import InvalidArgument, AlreadyDeferred
 from .message import Message
@@ -272,11 +273,20 @@ class ApplicationContext(InteractionContext):
         self._resolved = data.get("resolved", {})
         if self.application_type == 1:
             self.options = {}
+            self.option_focused = []
             for option in data.get("options", []):
                 key = option.get("name")
                 value = option.get("value")
                 option_type = option.get("type")
-                if option_type == 3:
+                focused = option.get("focused", False)
+                if focused:
+                    self.option_focused.append(key)
+
+                if option_type == 1:
+                    self.options[key] = SubCommand
+                elif option_type == 2:
+                    self.options[key] = SubCommandGroup
+                elif option_type == 3:
                     self.options[key]: str = value
                 elif option_type == 4:
                     self.options[key]: int = value
@@ -299,6 +309,8 @@ class ApplicationContext(InteractionContext):
                     self.options[key]: float = float(value)
                 else:
                     self.options[key] = value
+
+        self.command_id = data.get("id")
 
     @property
     def content(self):
@@ -464,3 +476,20 @@ class ComponentsContext(InteractionContext):
         if files:
             for i in files:
                 i.close()
+
+
+class AutocompleteContext(ApplicationContext):
+    def __init__(self, payload: dict, client):
+        super().__init__(payload, client)
+        self.type = payload.get("type", 4)
+
+    async def autocomplete(self, choices: List[CommandOptionChoice]):
+        self.responded = True
+        return await self.http.post_initial_response(
+            data=self.data,
+            payload={
+                'choices': [
+                    x.to_dict() for x in choices
+                ]
+            }
+        )
