@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='Discord-Interaction',
-    version='1.1',
+    version='0.3.1-beta',
     packages=['discord.ext.interaction'],
     url='https://github.com/gunyu1019/PUBGpy',
     license='MIT',
