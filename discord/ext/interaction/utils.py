@@ -29,9 +29,9 @@ channel_types = [
 try:
     from deprecated import deprecated
 except ModuleNotFoundError:
-    def deprecated():
-        def decorator(*_1, **_2):
-            return
+    def deprecated(*_1, **_2):
+        def decorator(func):
+            return func
         return decorator
 
 
