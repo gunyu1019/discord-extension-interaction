@@ -5,6 +5,12 @@ class Listener:
     def __init__(self, name):
         self.name = self.__name__ = name
         self.callback = None
+        self.parents = None
+
+    def __call__(self, *args, **kwargs):
+        if self.parents is not None:
+            return self.callback(self.parents, *args, **kwargs)
+        return self.callback(*args, **kwargs)
 
 
 def listener(cls=None, name: str = None):

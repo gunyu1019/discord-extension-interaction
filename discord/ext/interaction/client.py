@@ -298,7 +298,8 @@ class ClientBase(commands.bot.BotBase):
                 attr.parents = icog
                 self.add_interaction(attr, attr.sync_command)
             elif isinstance(attr, Listener):
-                self.add_listener(attr.callback, name=attr.name)
+                attr.parents = icog
+                self.add_listener(attr.__call__, name=attr.name)
             elif isinstance(attr, DetectComponent):
                 attr.parents = icog
                 self.add_detect_component(attr)
