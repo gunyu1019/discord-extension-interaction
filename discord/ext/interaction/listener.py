@@ -7,10 +7,10 @@ class Listener:
         self.callback = None
         self.parents = None
 
-    def __call__(self, *args, **kwargs):
+    async def __call__(self, *args, **kwargs):
         if self.parents is not None:
-            return self.callback(self.parents, *args, **kwargs)
-        return self.callback(*args, **kwargs)
+            return await self.callback(self.parents, *args, **kwargs)
+        return await self.callback(*args, **kwargs)
 
 
 def listener(cls=None, name: str = None):
