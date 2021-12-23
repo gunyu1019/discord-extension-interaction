@@ -179,10 +179,12 @@ class ClientBase(commands.bot.BotBase):
 
     def load_extensions(self, package: str, directory: str = None) -> None:
         if directory is not None:
-            package = os.path.join(directory, package)
+            _package = os.path.join(directory, package)
+        else:
+            _package = package
         cogs = [
             "{0}.{1}".format(package, file[:-3])
-            for file in os.listdir(package)
+            for file in os.listdir(_package)
             if file.endswith(".py")
         ]
         for cog in cogs:

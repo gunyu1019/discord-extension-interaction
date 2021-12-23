@@ -1,8 +1,17 @@
+import re
 from setuptools import setup
+
+version = ''
+with open('discord/__init__.py') as f:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
+
+if not version:
+    raise RuntimeError('version is not set')
+
 
 setup(
     name='Discord-Interaction',
-    version='0.3.1-beta',
+    version=version,
     packages=['discord.ext.interaction'],
     url='https://github.com/gunyu1019/PUBGpy',
     license='MIT',

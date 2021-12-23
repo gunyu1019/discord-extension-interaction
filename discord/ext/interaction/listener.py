@@ -7,7 +7,10 @@ class Listener:
         self.callback = None
 
 
-def listener(cls, name: str = None):
+def listener(cls=None, name: str = None):
+    if cls is None:
+        cls = Listener
+
     def decorator(func):
         _function = func
         if isinstance(func, staticmethod):
