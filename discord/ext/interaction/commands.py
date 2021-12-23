@@ -548,10 +548,14 @@ class SubCommand(BaseCore, ApplicationSubcommand):
         for index, opt in enumerate(options):
             if opt.name is None:
                 options[index].name = arguments[index].name
-            if opt.type is None:
-                options[index].type = arguments[index].annotation
             if opt.required or arguments[index].default == arguments[index].empty:
                 options[index].required = True
+            if opt.type is None:
+                options[index].type = arguments[index].annotation
+
+            # Check Empty Option
+            if arguments[index].annotation is None:
+                del options[index]
         super().__init__(func=func, checks=checks, *args, **kwargs)
 
 
@@ -637,10 +641,14 @@ class Command(BaseCommand, SlashCommand):
         for index, opt in enumerate(options):
             if opt.name is None:
                 options[index].name = arguments[index].name
-            if opt.type is None:
-                options[index].type = arguments[index].annotation
             if opt.required or arguments[index].default == arguments[index].empty:
                 options[index].required = True
+            if opt.type is None:
+                options[index].type = arguments[index].annotation
+
+            # Check Empty Option
+            if arguments[index].annotation is None:
+                del options[index]
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
 
     def subcommand(
