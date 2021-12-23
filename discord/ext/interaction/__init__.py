@@ -4,7 +4,7 @@ __title__ = 'discord'
 __author__ = 'gunyu1019'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2021-present gunyu1019'
-__version__ = '0.3.3-beta'
+__version__ = '0.3.3-beta1'
 
 from typing import NamedTuple, Literal
 
@@ -30,4 +30,4 @@ class VersionInfo(NamedTuple):
     serial: int
 
 
-version_info: VersionInfo = VersionInfo(major=0, minor=3, micro=3, release_level='beta', serial=0)
+version_info: VersionInfo = VersionInfo(major=0, minor=3, micro=3, release_level='beta', serial=1)
