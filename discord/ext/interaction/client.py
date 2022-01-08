@@ -311,8 +311,12 @@ class ClientBase(commands.bot.BotBase):
 
             if len(msg) < 4 or msg[-4:] != b'\x00\x00\xff\xff':
                 return
-
-            msg = self.__zlib.decompress(self.__buffer)
+            try:
+                msg = self.__zlib.decompress(self.__buffer)
+            except Exception as e:
+                # Decompress Issue
+                self.__zlib = zlib.decompressobj()
+                msg = self.__zlib.decompress(self.__buffer)
             msg = msg.decode('utf-8')
             self.__buffer = bytearray()
         payload = _from_json(msg)
