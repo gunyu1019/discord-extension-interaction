@@ -314,7 +314,8 @@ class ClientBase(commands.bot.BotBase):
             try:
                 msg = self.__zlib.decompress(self.__buffer)
             except Exception as e:
-                # Decompress Issue
+                # zlib.error: Error -3 while decompressing data: invalid stored block lengths
+                print(e, msg)
                 self.__zlib = zlib.decompressobj()
                 msg = self.__zlib.decompress(self.__buffer)
             msg = msg.decode('utf-8')

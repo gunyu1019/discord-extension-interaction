@@ -8,13 +8,13 @@ class Listener:
         self.func = None
         self.parents = None
 
-    def __call__(self, *args, **kwargs):
-        return self.callback(*args, **kwargs)
+    async def __call__(self, *args, **kwargs):
+        return await self.callback(*args, **kwargs)
 
-    def callback(self, *args, **kwargs) -> Coroutine[Any, Any, Any]:
+    async def callback(self, *args, **kwargs) -> Coroutine[Any, Any, Any]:
         if self.parents is None:
             return self.func(*args, **kwargs)
-        return self.func(self.parents, *args, **kwargs)
+        return await self.func(self.parents, *args, **kwargs)
 
 
 def listener(cls=None, name: str = None):
