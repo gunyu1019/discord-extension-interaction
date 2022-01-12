@@ -255,6 +255,7 @@ class ClientBase(commands.bot.BotBase):
             raise commands.CommandRegistrationError(command.name)
 
         if _parent is not None:
+            command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
             command.parents = _parent
         self._interactions[command.name] = command
 
@@ -295,15 +296,19 @@ class ClientBase(commands.bot.BotBase):
         for func, attr in inspect.getmembers(icog):
             if isinstance(attr, BaseCommand):
                 attr: decorator_command_types
-                attr.parents = icog
-                attr.options = get_signature_option(attr.func, attr.options, skipping_argument=2)
-                self.add_interaction(attr, attr.sync_command)
+                self.add_interaction(attr, attr.sync_command, icog)
             elif isinstance(attr, Listener):
                 attr.parents = icog
                 self.add_listener(attr.__call__, name=attr.name)
             elif isinstance(attr, DetectComponent):
                 attr.parents = icog
                 self.add_detect_component(attr)
+            elif inspect.iscoroutinefunction(attr):
+                if hasattr(attr, '__cog_listener__') and hasattr(attr, '__cog_listener_names__'):
+                    if not attr.__cog_listener__:
+                        continue
+                    for name in attr.__cog_listener_names__:
+                        self.add_listener(func, name=name)
         return
 
     async def on_socket_raw_receive(self, msg):

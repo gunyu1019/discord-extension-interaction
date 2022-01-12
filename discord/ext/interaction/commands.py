@@ -524,6 +524,7 @@ class SubCommand(BaseCore, ApplicationSubcommand):
         if hasattr(func, '__command_options__'):
             func.__command_options__.reverse()
             options += func.__command_options__
+        self.base_options = options
 
         kwargs['options'] = get_signature_option(func, options)
         super().__init__(func=func, checks=checks, *args, **kwargs)
@@ -586,6 +587,8 @@ class Command(BaseCommand, SlashCommand):
         if hasattr(func, '__command_options__'):
             func.__command_options__.reverse()
             options += func.__command_options__
+        self.base_options = options
+
         options = get_signature_option(func, options)
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
 
@@ -790,14 +793,16 @@ def get_signature_option(
                 signature_arguments_count - len(options)
         ):
             options.append(CommandOption())
-    elif signature_arguments_count < len(options):
+    elif len(signature_arguments) + skipping_argument < len(options):
         raise TypeError("number of options and the number of arguments are different.")
 
     sign_arguments = list(signature_arguments.values())
     for arg in sign_arguments[skipping_argument:]:
         arguments.append(arg)
 
-    for index, opt in enumerate(options):
+    #  print([x.name for x in arguments], skipping_argument, [z.name for z in options], [x.annotation for x in arguments])
+
+    for index, opt in enumerate(options[skipping_argument-1:]):
         if opt.name is None:
             options[index].name = arguments[index].name
         if opt.required or arguments[index].default == arguments[index].empty:

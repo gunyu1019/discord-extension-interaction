@@ -13,7 +13,7 @@ class Listener:
 
     async def callback(self, *args, **kwargs) -> Coroutine[Any, Any, Any]:
         if self.parents is None:
-            return self.func(*args, **kwargs)
+            return await self.func(*args, **kwargs)
         return await self.func(self.parents, *args, **kwargs)
 
 
