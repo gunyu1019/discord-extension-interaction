@@ -524,38 +524,8 @@ class SubCommand(BaseCore, ApplicationSubcommand):
         if hasattr(func, '__command_options__'):
             func.__command_options__.reverse()
             options += func.__command_options__
-        signature_arguments = inspect.signature(func).parameters
-        arguments = []
-        if len(options) == 0 and len(signature_arguments) > 0:
-            for _ in range(
-                    len(signature_arguments) - 1
-            ):
-                options.append(
-                    CommandOption()
-                )
-        elif len(signature_arguments) - 1 > len(options):
-            for _ in range(
-                    len(signature_arguments) - len(options) - 1
-            ):
-                options.append(CommandOption())
-        elif len(signature_arguments) - 1 < len(options):
-            raise TypeError("number of options and the number of arguments are different.")
 
-        sign_arguments = list(signature_arguments.values())
-        for arg in sign_arguments[1:]:
-            arguments.append(arg)
-
-        for index, opt in enumerate(options):
-            if opt.name is None:
-                options[index].name = arguments[index].name
-            if opt.required or arguments[index].default == arguments[index].empty:
-                options[index].required = True
-            if opt.type is None:
-                options[index].type = arguments[index].annotation
-
-            # Check Empty Option
-            if arguments[index].annotation is None:
-                del options[index]
+        kwargs['options'] = get_signature_option(func, options)
         super().__init__(func=func, checks=checks, *args, **kwargs)
 
 
@@ -616,39 +586,7 @@ class Command(BaseCommand, SlashCommand):
         if hasattr(func, '__command_options__'):
             func.__command_options__.reverse()
             options += func.__command_options__
-
-        signature_arguments = inspect.signature(func).parameters
-        arguments = []
-        if len(options) == 0 and len(signature_arguments) > 0:
-            for _ in range(
-                    len(signature_arguments) - 1
-            ):
-                options.append(
-                    CommandOption()
-                )
-        elif len(signature_arguments) - 1 > len(options):
-            for _ in range(
-                    len(signature_arguments) - len(options) - 1
-            ):
-                options.append(CommandOption())
-        elif len(signature_arguments) - 1 < len(options):
-            raise TypeError("number of options and the number of arguments are different.")
-
-        sign_arguments = list(signature_arguments.values())
-        for arg in sign_arguments[1:]:
-            arguments.append(arg)
-
-        for index, opt in enumerate(options):
-            if opt.name is None:
-                options[index].name = arguments[index].name
-            if opt.required or arguments[index].default == arguments[index].empty:
-                options[index].required = True
-            if opt.type is None:
-                options[index].type = arguments[index].annotation
-
-            # Check Empty Option
-            if arguments[index].annotation is None:
-                del options[index]
+        options = get_signature_option(func, options)
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
 
     def subcommand(
@@ -831,3 +769,44 @@ def option(
         return func
 
     return decorator
+
+
+def get_signature_option(
+        func,
+        options,
+        skipping_argument: int = 1
+):
+    signature_arguments = inspect.signature(func).parameters
+    arguments = []
+    signature_arguments_count = len(signature_arguments) - skipping_argument
+
+    if len(options) == 0 and len(signature_arguments) > 0:
+        for _ in range(signature_arguments_count):
+            options.append(
+                CommandOption()
+            )
+    elif signature_arguments_count > len(options):
+        for _ in range(
+                signature_arguments_count - len(options)
+        ):
+            options.append(CommandOption())
+    elif signature_arguments_count < len(options):
+        raise TypeError("number of options and the number of arguments are different.")
+
+    sign_arguments = list(signature_arguments.values())
+    for arg in sign_arguments[skipping_argument:]:
+        arguments.append(arg)
+
+    for index, opt in enumerate(options):
+        if opt.name is None:
+            options[index].name = arguments[index].name
+        if opt.required or arguments[index].default == arguments[index].empty:
+            options[index].required = True
+        if opt.type is None:
+            options[index].type = arguments[index].annotation
+
+        # Check Empty Option
+        if arguments[index].annotation is None:
+            del options[index]
+
+    return options

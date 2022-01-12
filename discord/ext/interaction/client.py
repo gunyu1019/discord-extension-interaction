@@ -35,7 +35,7 @@ from discord.state import ConnectionState
 
 from .commands import (
     ApplicationCommand, BaseCommand, SubCommand, SubCommandGroup,
-    from_payload, command_types, decorator_command_types
+    from_payload, command_types, decorator_command_types, get_signature_option
 )
 from .components import DetectComponent
 from .http import HttpClient
@@ -296,6 +296,7 @@ class ClientBase(commands.bot.BotBase):
             if isinstance(attr, BaseCommand):
                 attr: decorator_command_types
                 attr.parents = icog
+                attr.options = get_signature_option(attr.func, attr.options, skipping_argument=2)
                 self.add_interaction(attr, attr.sync_command)
             elif isinstance(attr, Listener):
                 attr.parents = icog

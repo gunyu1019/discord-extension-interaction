@@ -63,6 +63,8 @@ class InteractionContext:
             user = payload.get("user")
             self.author = discord.User(data=user, state=self._state)
         self.created_at = discord.utils.snowflake_time(self.id)
+        self.locale = payload.get('locale')
+        self.guild_locale = payload.get('guild_locale')
 
         self.deferred = False
         self.responded = False
