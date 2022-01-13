@@ -4,7 +4,7 @@ __title__ = 'discord'
 __author__ = 'gunyu1019'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2021-present gunyu1019'
-__version__ = '0.3.3-beta4'
+__version__ = '0.4-beta'
 
 from typing import NamedTuple, Literal
 
