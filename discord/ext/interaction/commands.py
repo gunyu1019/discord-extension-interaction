@@ -566,7 +566,7 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
 
 
 class BaseCommand(BaseCore):
-    def __init__(self, func: Callable, checks=None, sync_command: bool = False, *args, **kwargs):
+    def __init__(self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs):
         if kwargs.get('name') is None:
             kwargs['name'] = func.__name__
         super().__init__(func=func, checks=checks, *args, **kwargs)
@@ -579,7 +579,7 @@ class Command(BaseCommand, SlashCommand):
             func: Callable,
             checks=None,
             options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
-            sync_command: bool = False,
+            sync_command: bool = None,
             **kwargs
     ):
         if options is None:
@@ -589,7 +589,7 @@ class Command(BaseCommand, SlashCommand):
             options += func.__command_options__
         self.base_options = options
 
-        options = get_signature_option(func, options)
+        # options = get_signature_option(func, options)
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
 
     def subcommand(
@@ -670,7 +670,7 @@ def command(
         cls: classmethod = None,
         checks=None,
         options: List[CommandOption] = None,
-        sync_command: bool = False,
+        sync_command: bool = None,
         default_permission: bool = None
 ):
     if options is None:
@@ -697,7 +697,7 @@ def user(
         name: str = None,
         cls: classmethod = None,
         checks=None,
-        sync_command: bool = False,
+        sync_command: bool = None,
         default_permission: bool = None
 ):
     if cls is None:
@@ -719,7 +719,7 @@ def context(
         name: str = None,
         cls: classmethod = None,
         checks=None,
-        sync_command: bool = False,
+        sync_command: bool = None,
         default_permission: bool = None
 ):
     if cls is None:
@@ -783,7 +783,7 @@ def get_signature_option(
     arguments = []
     signature_arguments_count = len(signature_arguments) - skipping_argument
 
-    if len(options) == 0 and len(signature_arguments) > 0:
+    if len(options) == 0 and len(signature_arguments) > skipping_argument - 1:
         for _ in range(signature_arguments_count):
             options.append(
                 CommandOption()
@@ -793,16 +793,14 @@ def get_signature_option(
                 signature_arguments_count - len(options)
         ):
             options.append(CommandOption())
-    elif len(signature_arguments) + skipping_argument < len(options):
+    elif signature_arguments_count < len(options):
         raise TypeError("number of options and the number of arguments are different.")
 
     sign_arguments = list(signature_arguments.values())
     for arg in sign_arguments[skipping_argument:]:
         arguments.append(arg)
 
-    #  print([x.name for x in arguments], skipping_argument, [z.name for z in options], [x.annotation for x in arguments])
-
-    for index, opt in enumerate(options[skipping_argument-1:]):
+    for index, opt in enumerate(options):
         if opt.name is None:
             options[index].name = arguments[index].name
         if opt.required or arguments[index].default == arguments[index].empty:

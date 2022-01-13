@@ -255,8 +255,12 @@ class ClientBase(commands.bot.BotBase):
             raise commands.CommandRegistrationError(command.name)
 
         if _parent is not None:
-            command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
             command.parents = _parent
+            if not command.is_subcommand:
+                command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
+        else:
+            if not command.is_subcommand:
+                command.options = get_signature_option(command.func, command.base_options, skipping_argument=1)
         self._interactions[command.name] = command
 
         if sync_command:
@@ -290,7 +294,7 @@ class ClientBase(commands.bot.BotBase):
 
     def add_icog(
             self,
-            icog: type
+            icog
     ):
         self._interactions_of_group.append(icog)
         for func, attr in inspect.getmembers(icog):
