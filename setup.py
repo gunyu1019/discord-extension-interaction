@@ -10,7 +10,7 @@ if not version:
 
 
 setup(
-    name='Discord-Interaction',
+    name='Discord-Extension-Interaction',
     version=version,
     packages=['discord.ext.interaction'],
     url='https://github.com/gunyu1019/PUBGpy',

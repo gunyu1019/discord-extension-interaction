@@ -4,16 +4,12 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.in
 #
-aiohttp==3.7.4.post0
-    # via discord.py
 async-timeout==3.0.1
     # via aiohttp
 attrs==21.2.0
     # via aiohttp
 chardet==4.0.0
     # via aiohttp
-discord.py==1.7.3
-    # via -r requirements.in
 idna==3.3
     # via yarl
 multidict==5.2.0

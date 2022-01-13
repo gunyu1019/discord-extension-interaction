@@ -258,8 +258,6 @@ class InteractionContext:
             await self.http.delete_followup(message_id=message_id, data=self.data)
         return
 
-
-class BaseSlashContext:
     def target(self, target_type, target_id: int = None):
         if target_id is None:
             target_id = self.target_id
@@ -322,9 +320,11 @@ class BaseSlashContext:
             return channel
 
 
-class SubcommandContext(BaseSlashContext):
-    def __init__(self, payload: dict, client):
+class SubcommandContext(InteractionContext):
+    def __init__(self, original_payload: dict, payload: dict, client):
+        super().__init__(original_payload, client)
         self.name = payload.get('name')
+        self.guild = self.guild
         self.options = {}
 
         for option in payload.get("options", []):
@@ -333,7 +333,7 @@ class SubcommandContext(BaseSlashContext):
             option_type = option.get("type")
 
             if option_type == 1:
-                self.options['subcommand'] = SubcommandContext(option, client)
+                self.options['subcommand'] = SubcommandContext(original_payload, option, client)
             elif option_type == 3:
                 self.options[key]: str = value
             elif option_type == 4:
@@ -359,7 +359,7 @@ class SubcommandContext(BaseSlashContext):
                 self.options[key] = value
 
 
-class ApplicationContext(InteractionContext, BaseSlashContext):
+class ApplicationContext(InteractionContext):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = payload.get("type", 2)
@@ -385,9 +385,9 @@ class ApplicationContext(InteractionContext, BaseSlashContext):
                     self.option_focused.append(key)
 
                 if option_type == 1:
-                    self.options['subcommand'] = SubcommandContext(option, client)
+                    self.options['subcommand'] = SubcommandContext(payload, option, client)
                 elif option_type == 2:
-                    self.options['subcommand_group'] = SubcommandContext(option, client)
+                    self.options['subcommand_group'] = SubcommandContext(payload, option, client)
                 elif option_type == 3:
                     self.options[key]: str = value
                 elif option_type == 4:
