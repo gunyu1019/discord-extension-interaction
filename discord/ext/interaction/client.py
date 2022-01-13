@@ -193,7 +193,7 @@ class ClientBase(commands.bot.BotBase):
 
     async def _sync_command_task(self):
         if len(self.__sync_command_before_ready_register) != 0:
-            log.debug(
+            log.info(
                 f"Register registered commands before bot is ready. List: "
                 f"{', '.join([x.name for x in self.__sync_command_before_ready_register])}"
             )
@@ -255,7 +255,7 @@ class ClientBase(commands.bot.BotBase):
             raise commands.CommandRegistrationError(command.name)
 
         if _parent is not None:
-            command.parents = _parent
+            command.cog = _parent
             if not command.is_subcommand:
                 command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
         else:
@@ -323,9 +323,10 @@ class ClientBase(commands.bot.BotBase):
                 return
             try:
                 msg = self.__zlib.decompress(self.__buffer)
-            except Exception as e:
+            except zlib.error as error:
                 # zlib.error: Error -3 while decompressing data: invalid stored block lengths
-                print(e, msg)
+                log.debug("zlib.error: {0}\npayload data: {1}".format([str(arg) for arg in error.args], msg))
+                log.warning('zlib.error: Client will reset zlib decompress object')
                 self.__zlib = zlib.decompressobj()
                 msg = self.__zlib.decompress(self.__buffer)
             msg = msg.decode('utf-8')
