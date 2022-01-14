@@ -384,25 +384,26 @@ class ClientBase(commands.bot.BotBase):
             if command.cog is not None:
                 ctx.parents = command.cog
             if await self.can_run(ctx, call_once=True):
-                _option = ctx.options
-                is_subcommand = getattr(command, 'is_subcommand', False)
-                if is_subcommand:
-                    options = command.options
-                    if 'subcommand_group' in ctx.options:
-                        sub_command_group = ctx.options['subcommand_group']
-                        for opt in command.options:
-                            if isinstance(opt, SubCommandGroup) and sub_command_group.name == opt.name:
-                                options = opt.options
+                if ctx.application_type == ApplicationCommandType.CHAT_INPUT.value:
+                    _option = ctx.options
+                    is_subcommand = getattr(command, 'is_subcommand', False)
+                    if is_subcommand:
+                        options = command.options
+                        if 'subcommand_group' in ctx.options:
+                            sub_command_group = ctx.options['subcommand_group']
+                            for opt in command.options:
+                                if isinstance(opt, SubCommandGroup) and sub_command_group.name == opt.name:
+                                    options = opt.options
+                                    break
+                        sub_command = ctx.options['subcommand']
+                        for opt in options:
+                            if opt.name == sub_command.name and isinstance(opt, SubCommand):
+                                ctx.function = func = opt
+                                ctx.parents = None
+                                if opt.cog is not None:
+                                    ctx.parents = opt.cog
+                                _option = sub_command.options
                                 break
-                    sub_command = ctx.options['subcommand']
-                    for opt in options:
-                        if opt.name == sub_command.name and isinstance(opt, SubCommand):
-                            ctx.function = func = opt
-                            ctx.parents = None
-                            if opt.cog is not None:
-                                ctx.parents = opt.cog
-                            _option = sub_command.options
-                            break
                 if await func.can_run(ctx):
                     await func.callback(ctx, **_option)
             else:
