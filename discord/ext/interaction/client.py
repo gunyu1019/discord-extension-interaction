@@ -255,12 +255,13 @@ class ClientBase(commands.bot.BotBase):
         if command.name in self._interactions[command.type.value - 1]:
             raise commands.CommandRegistrationError(command.name)
 
+        is_subcommand = getattr(command, 'is_subcommand', False)
         if _parent is not None:
             command.cog = _parent
-            if not command.is_subcommand:
+            if not is_subcommand:
                 command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
         else:
-            if not command.is_subcommand:
+            if not is_subcommand:
                 command.options = get_signature_option(command.func, command.base_options, skipping_argument=1)
         self._interactions[command.type.value - 1][command.name] = command
 
@@ -384,7 +385,8 @@ class ClientBase(commands.bot.BotBase):
                 ctx.parents = command.cog
             if await self.can_run(ctx, call_once=True):
                 _option = ctx.options
-                if command.is_subcommand:
+                is_subcommand = getattr(command, 'is_subcommand', False)
+                if is_subcommand:
                     options = command.options
                     if 'subcommand_group' in ctx.options:
                         sub_command_group = ctx.options['subcommand_group']
