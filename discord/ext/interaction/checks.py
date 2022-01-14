@@ -57,7 +57,7 @@ def check(predicate):
 
 
 def check_any(*checks) -> Callable:
-    r"""A :func:`check` that is added that checks if any of the checks passed
+    """A :func:`check` that is added that checks if any of the checks passed
     will pass, i.e. using logical OR.
 
     If all checks fail then :exc:`.CheckAnyFailure` is raised to signal the failure.
@@ -162,7 +162,7 @@ def has_role(item: Union[int, str]) -> Callable:
 
 
 def has_any_role(*items: Union[int, str]) -> Callable:
-    r"""A :func:`.check` that is added that checks if the member invoking the
+    """A :func:`.check` that is added that checks if the member invoking the
     command has **any** of the roles specified. This means that if they have
     one out of the three roles specified, then this check will return `True`.
 

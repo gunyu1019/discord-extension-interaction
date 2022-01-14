@@ -312,7 +312,7 @@ class ClientBase(commands.bot.BotBase):
                     if not attr.__cog_listener__:
                         continue
                     for name in attr.__cog_listener_names__:
-                        self.add_listener(func, name=name)
+                        self.add_listener(attr, name=name)
         return
 
     async def on_socket_raw_receive(self, msg):
