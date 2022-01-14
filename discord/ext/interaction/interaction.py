@@ -526,11 +526,13 @@ class AutocompleteContext(ApplicationContext):
 
     async def autocomplete(self, choices: List[CommandOptionChoice]):
         self.responded = True
+        payload = {
+            "type": 8,
+            "data": {
+                "choices": [choice.to_dict() for choice in choices]
+            }
+        }
         return await self.http.post_initial_response(
             data=self.data,
-            payload={
-                'choices': [
-                    x.to_dict() for x in choices
-                ]
-            }
+            payload=payload
         )

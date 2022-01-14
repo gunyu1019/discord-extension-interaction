@@ -38,7 +38,9 @@ from .commands import (
 )
 from .components import Components, ActionRow, Button, Selection, Options, DetectComponent, detect_component
 from .errors import InvalidArgument, AlreadyDeferred
-from .interaction import InteractionContext, ApplicationContext, ComponentsContext
+from .interaction import (
+    InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext
+)
 from .message import Message, MessageSendable
 from .listener import Listener, listener
 
