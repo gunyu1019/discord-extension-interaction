@@ -34,7 +34,7 @@ from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
 from .commands import (
-    ApplicationCommand, BaseCommand, SubCommand, SubCommandGroup,
+    ApplicationCommand, BaseCommand, SubCommand, SubCommandGroup, ApplicationCommandType,
     from_payload, command_types, decorator_command_types, get_signature_option
 )
 from .components import DetectComponent
@@ -258,10 +258,10 @@ class ClientBase(commands.bot.BotBase):
         is_subcommand = getattr(command, 'is_subcommand', False)
         if _parent is not None:
             command.cog = _parent
-            if not is_subcommand:
+            if not is_subcommand and command.type == ApplicationCommandType.CHAT_INPUT:
                 command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
         else:
-            if not is_subcommand:
+            if not is_subcommand and command.type == ApplicationCommandType.CHAT_INPUT:
                 command.options = get_signature_option(command.func, command.base_options, skipping_argument=1)
         self._interactions[command.type.value - 1][command.name] = command
 
