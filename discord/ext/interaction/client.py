@@ -65,7 +65,7 @@ class ClientBase(commands.bot.BotBase):
 
         self._application_id_value = None
         self._interactions_of_group = []
-        self._interactions: Dict[str, decorator_command_types] = dict()
+        self._interactions: List[Dict[str, decorator_command_types]] = [dict(), dict(), dict()]
         self._fetch_interactions: Optional[
             Dict[
                 str, ApplicationCommand
@@ -161,8 +161,8 @@ class ClientBase(commands.bot.BotBase):
         fetch_data = await self._fetch_command_cached()
         if command.name in fetch_data.keys():
             command_id = fetch_data[command.name].id
-            if command.name in self._interactions:
-                self._interactions[command.name].id = command_id
+            if command.name in self._interactions[command.type.value - 1]:
+                self._interactions[command.type.value - 1][command.name].id = command_id
             if fetch_data[command.name] != command:
                 await self.edit_command(command=command)
         else:
@@ -207,9 +207,10 @@ class ClientBase(commands.bot.BotBase):
         if self.global_sync_command:
             log.info("global_sync_command is activated. Delete unregistered commands on client.")
             popping_data = await self._fetch_command_cached()
-            for already_cmd in self._interactions.keys():
-                if already_cmd in popping_data:
-                    del popping_data[already_cmd]
+            for interaction in self._interactions:
+                for already_cmd in interaction:
+                    if already_cmd in popping_data:
+                        del popping_data[already_cmd]
 
             for cmd in popping_data.values():
                 await self.delete_command(cmd)
@@ -251,7 +252,7 @@ class ClientBase(commands.bot.BotBase):
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name in self._interactions:
+        if command.name in self._interactions[command.type.value - 1]:
             raise commands.CommandRegistrationError(command.name)
 
         if _parent is not None:
@@ -261,7 +262,7 @@ class ClientBase(commands.bot.BotBase):
         else:
             if not command.is_subcommand:
                 command.options = get_signature_option(command.func, command.base_options, skipping_argument=1)
-        self._interactions[command.name] = command
+        self._interactions[command.type.value - 1][command.name] = command
 
         if sync_command:
             if self.is_ready():
@@ -271,7 +272,10 @@ class ClientBase(commands.bot.BotBase):
         return
 
     def get_interaction(self):
-        return self._interactions.values()
+        result = []
+        for x in self._interactions:
+            result += x.values()
+        return result
 
     def delete_interaction(
             self,
@@ -281,10 +285,10 @@ class ClientBase(commands.bot.BotBase):
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name not in self._interactions:
+        if command.name not in self._interactions[command.type.value - 1]:
             raise commands.CommandNotFound(f'Command "{command.name}" is not found')
 
-        self._interactions.pop(command.name)
+        self._interactions[command.type.value - 1].pop(command.name)
 
         if sync_command:
             if self.is_ready():
@@ -346,7 +350,7 @@ class ClientBase(commands.bot.BotBase):
             state.dispatch('interaction_raw_create', payload)
             if data.get("type") == 2:
                 result = ApplicationContext(data, self)
-                if len(self._interactions) != 0:
+                if len(self._interactions[result.application_type - 1]) != 0:
                     state.dispatch('interaction_command', result)
             elif data.get("type") == 3:
                 result = ComponentsContext(data, self)
@@ -368,7 +372,7 @@ class ClientBase(commands.bot.BotBase):
 
     async def process_interaction(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
-        command = self._interactions.get(ctx.name)
+        command = self._interactions[ctx.application_type - 1].get(ctx.name)
         if command is None:
             return
 
