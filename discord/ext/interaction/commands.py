@@ -350,8 +350,8 @@ class ApplicationCommand:
     def __init__(
             self,
             name: str,
-            description: str,
             default_permission: bool,
+            description: str = None,
             guild_id: Optional[int] = None,
             command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT
     ):
@@ -360,7 +360,7 @@ class ApplicationCommand:
         self.type: ApplicationCommandType = command_type
         self.application_id: int = 0  # default: None
         self.guild_id: Optional[int] = guild_id
-        self.description: str = description
+        self.description: Optional[str] = description
         self.default_permission: Optional[bool] = default_permission
         self.version: int = 1  # default: None
 
