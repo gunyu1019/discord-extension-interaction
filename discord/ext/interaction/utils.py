@@ -112,7 +112,7 @@ def _allowed_mentions(state, allowed_mentions):
 
 
 def to_json(obj):
-    return json.dumps(obj, separators=(',', ':'), ensure_ascii=True)
+    return json.dumps(obj, separators=(',', ':'), ensure_ascii=False)
 
 
 async def async_all(gen, *, check=inspect.isawaitable):

@@ -67,8 +67,10 @@ class ClientBase(commands.bot.BotBase):
         self._interactions_of_group = []
         self._interactions: List[Dict[str, decorator_command_types]] = [dict(), dict(), dict()]
         self._fetch_interactions: Optional[
-            Dict[
-                str, ApplicationCommand
+            List[
+                Dict[
+                    str, ApplicationCommand
+                ]
             ]
         ] = None
 
@@ -96,7 +98,7 @@ class ClientBase(commands.bot.BotBase):
 
     async def register_command(self, command: ApplicationCommand):
         command_ids = await self._fetch_command_cached()
-        if command.name in command_ids:
+        if command.name in command_ids[command.type.value - 1]:
             raise commands.CommandRegistrationError(command.name)
 
         return await self.interaction_http.register_command(
@@ -107,10 +109,10 @@ class ClientBase(commands.bot.BotBase):
     async def edit_command(self, command: ApplicationCommand, command_id: int = None):
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
-            if command.name not in command_ids:
+            if command.name not in command_ids[command.type.value - 1]:
                 raise commands.CommandNotFound(f'Command "{command.name}" is not found')
 
-            command_id = command_ids[command.name].id
+            command_id = command_ids[command.type.value - 1][command.name].id
         return await self.interaction_http.edit_command(
             await self._application_id(),
             command_id=command_id or command.id,
@@ -120,10 +122,10 @@ class ClientBase(commands.bot.BotBase):
     async def delete_command(self, command: ApplicationCommand, command_id: int = None):
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
-            if command.name not in command_ids:
+            if command.name not in command_ids[command.type.value - 1]:
                 raise commands.CommandNotFound(f'Command "{command.name}" is not found')
 
-            command_id = command_ids[command.name].id
+            command_id = command_ids[command.type.value - 1][command.name].id
         return await self.interaction_http.delete_command(
             await self._application_id(),
             command_id=command_id or command.id,
@@ -144,14 +146,16 @@ class ClientBase(commands.bot.BotBase):
             result = {}
             for x in data:
                 _x = from_payload(x)
-                result[_x.name] = _x
+                result[_x.type-1][_x.name] = _x
             self._fetch_interactions = result
         else:
             _result = from_payload(data)
             result = {_result.name: _result}
         return result
 
-    async def _fetch_command_cached(self) -> Dict[str, ApplicationCommand]:
+    async def _fetch_command_cached(self) -> List[
+        Dict[str, ApplicationCommand]
+    ]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions
@@ -159,11 +163,11 @@ class ClientBase(commands.bot.BotBase):
     async def _sync_command(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data.keys():
-            command_id = fetch_data[command.name].id
+        if command.name in fetch_data[command.type.value-1].keys():
+            command_id = fetch_data[command.type.value-1][command.name].id
             if command.name in self._interactions[command.type.value - 1]:
                 self._interactions[command.type.value - 1][command.name].id = command_id
-            if fetch_data[command.name] != command:
+            if fetch_data[command.type.value-1][command.name] != command:
                 await self.edit_command(command=command)
         else:
             await self.register_command(command)
@@ -172,8 +176,8 @@ class ClientBase(commands.bot.BotBase):
     async def _sync_command_popping(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data.keys():
-            command_id = fetch_data[command.name].id
+        if command.name in fetch_data[command.type.value-1].keys():
+            command_id = fetch_data[command.type.value-1][command.name].id
             await self.delete_command(command, command_id=command_id)
         return
 
@@ -207,13 +211,13 @@ class ClientBase(commands.bot.BotBase):
         if self.global_sync_command:
             log.info("global_sync_command is activated. Delete unregistered commands on client.")
             popping_data = await self._fetch_command_cached()
-            for interaction in self._interactions:
-                for already_cmd in interaction:
+            for index in range(3):
+                for already_cmd in self._interactions[index]:
                     if already_cmd in popping_data:
-                        del popping_data[already_cmd]
+                        del popping_data[index][already_cmd]
 
-            for cmd in popping_data.values():
-                await self.delete_command(cmd)
+                for cmd in popping_data[index].values():
+                    await self.delete_command(cmd)
 
     def add_detect_component(
             self,
