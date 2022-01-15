@@ -110,7 +110,7 @@ class CommandOption:
         self.autocomplete = autocomplete
 
         if option_type is not None:
-            if (len(choices) > 0 or autocomplete) and not isinstance(option_type, (int, float, str)):
+            if (len(choices) > 0 or autocomplete) and not (int in option_type.__mro__ or float in option_type.__mro__ or str in option_type.__mro__):
                 raise TypeError('choices or autocomplete should only be used in integer, string, and float.')
 
         if len(self.choices) > 0 and self.autocomplete:
@@ -140,7 +140,7 @@ class CommandOption:
         if option_type is not None:
             if min_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
                 raise TypeError('min_value can only be called when the parameter types are int and float.')
-            if max_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
+            if max_value is not None and not isinstance(option_type, (int, float)):
                 raise TypeError('max_value can only be called when the parameter types are int and float.')
         self.min_value: Optional[int] = min_value
         self.max_value: Optional[int] = max_value
@@ -402,6 +402,7 @@ class ApplicationCommand:
         default_permission = self.default_permission or True
         return (
                 self.name == other.name and
+                self.type == other.type and
                 self.description == other.description and
                 default_permission == other.default_permission
         )
