@@ -24,6 +24,7 @@ SOFTWARE.
 import asyncio
 import inspect
 import logging
+import copy
 import os
 import zlib
 from typing import Optional, Dict, List
@@ -388,6 +389,7 @@ class ClientBase(commands.bot.BotBase):
             if command.cog is not None:
                 ctx.parents = command.cog
             if await self.can_run(ctx, call_once=True):
+                _option = {}
                 if ctx.application_type == ApplicationCommandType.CHAT_INPUT.value:
                     _option = ctx.options
                     is_subcommand = getattr(command, 'is_subcommand', False)
@@ -410,6 +412,12 @@ class ClientBase(commands.bot.BotBase):
                                 break
                 if await func.can_run(ctx):
                     if ctx.application_type == ApplicationCommandType.CHAT_INPUT.value:
+                        for f_opt in copy.copy(_option).keys():
+                            for opt in func.options:
+                                if opt.name == f_opt and opt.parameter_name != f_opt:
+                                    _option[opt.parameter_name] = _option.pop(f_opt)
+                                elif opt.name == f_opt:
+                                    break
                         await func.callback(ctx, **_option)
                     else:
                         await func.callback(ctx)

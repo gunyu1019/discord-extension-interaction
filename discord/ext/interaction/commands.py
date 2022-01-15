@@ -109,8 +109,13 @@ class CommandOption:
         self.required = required
         self.autocomplete = autocomplete
 
+        self.parameter_name: Optional[str] = None
+
         if option_type is not None:
-            if (len(choices) > 0 or autocomplete) and not (int in option_type.__mro__ or float in option_type.__mro__ or str in option_type.__mro__):
+            if (
+                    (len(choices) > 0 or autocomplete) and
+                    not (int in option_type.__mro__ or float in option_type.__mro__ or str in option_type.__mro__)
+            ):
                 raise TypeError('choices or autocomplete should only be used in integer, string, and float.')
 
         if len(self.choices) > 0 and self.autocomplete:
@@ -140,7 +145,7 @@ class CommandOption:
         if option_type is not None:
             if min_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
                 raise TypeError('min_value can only be called when the parameter types are int and float.')
-            if max_value is not None and not isinstance(option_type, (int, float)):
+            if max_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
                 raise TypeError('max_value can only be called when the parameter types are int and float.')
         self.min_value: Optional[int] = min_value
         self.max_value: Optional[int] = max_value
@@ -162,11 +167,11 @@ class CommandOption:
             return 1
         elif ApplicationSubcommandGroup in self.type.__mro__:
             return 2
-        elif str in self.type.__mro__:
+        elif str == self.type:
             return 3
-        elif int in self.type.__mro__:
+        elif int == self.type:
             return 4
-        elif bool in self.type.__mro__:
+        elif bool == self.type:
             return 5
         elif discord.User in self.type.__mro__:
             return 6
@@ -176,7 +181,7 @@ class CommandOption:
             return 8
         elif Mentionable in self.type.__mro__:
             return 9
-        elif float in self.type.__mro__:
+        elif float == self.type:
             return 10
         raise TypeError("option type invalid (Subcommand and Subcommand Group, please use decorator)")
 
@@ -400,10 +405,11 @@ class ApplicationCommand:
 
     def __eq__(self, other):
         default_permission = self.default_permission or True
+        description = self.description or ''
         return (
                 self.name == other.name and
                 self.type == other.type and
-                self.description == other.description and
+                description == other.description and
                 default_permission == other.default_permission
         )
 
@@ -802,6 +808,7 @@ def get_signature_option(
         arguments.append(arg)
 
     for index, opt in enumerate(options):
+        options[index].parameter_name = arguments[index].name
         if opt.name is None:
             options[index].name = arguments[index].name
         if opt.required or arguments[index].default == arguments[index].empty:

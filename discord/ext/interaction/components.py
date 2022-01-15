@@ -222,7 +222,7 @@ class Selection(Components):
     def from_dict(cls, payload: dict):
         custom_id = payload["custom_id"]
         options = [
-            Options.from_dict(payload.get("options", []))
+            Options.from_dict(x) for x in payload.get("options", [])
         ]
         placeholder = payload.get("placeholder")
         min_values = payload.get("min_values")
