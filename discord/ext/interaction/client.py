@@ -143,10 +143,10 @@ class ClientBase(commands.bot.BotBase):
             await self._application_id()
         )
         if isinstance(data, list):
-            result = {}
+            result = [{}, {}, {}]
             for x in data:
                 _x = from_payload(x)
-                result[_x.type.value-1][_x.name] = _x
+                result[_x.type.value - 1][_x.name] = _x
             self._fetch_interactions = result
         else:
             _result = from_payload(data)
@@ -213,7 +213,7 @@ class ClientBase(commands.bot.BotBase):
             popping_data = await self._fetch_command_cached()
             for index in range(3):
                 for already_cmd in self._interactions[index]:
-                    if already_cmd in popping_data:
+                    if already_cmd in popping_data[index]:
                         del popping_data[index][already_cmd]
 
                 for cmd in popping_data[index].values():
