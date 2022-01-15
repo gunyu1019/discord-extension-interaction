@@ -146,7 +146,7 @@ class ClientBase(commands.bot.BotBase):
             result = {}
             for x in data:
                 _x = from_payload(x)
-                result[_x.type-1][_x.name] = _x
+                result[_x.type.value-1][_x.name] = _x
             self._fetch_interactions = result
         else:
             _result = from_payload(data)
