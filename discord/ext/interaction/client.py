@@ -421,6 +421,8 @@ class ClientBase(commands.bot.BotBase):
                         await func.callback(ctx, **_option)
                     else:
                         await func.callback(ctx)
+                else:
+                    raise commands.errors.CheckFailure('The check functions for command failed.')
             else:
                 raise commands.errors.CheckFailure('The global check once functions failed.')
         except Exception as error:
