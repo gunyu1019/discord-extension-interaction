@@ -429,7 +429,6 @@ class ClientBase(commands.bot.BotBase):
             if isinstance(error, commands.errors.CheckFailure):
                 _state.dispatch("command_permission_error", ctx, error)
             _state.dispatch("interaction_command_error", ctx, error)
-            raise error
         else:
             _state.dispatch("command_complete", ctx)
         return
