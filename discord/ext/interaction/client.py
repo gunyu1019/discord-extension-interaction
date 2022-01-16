@@ -84,6 +84,7 @@ class ClientBase(commands.bot.BotBase):
         self.__sync_command_before_ready_popping = []
 
         self._deferred_components: Dict[str, list] = dict()
+        self._deferred_global_components: list = list()
 
         self.add_listener(self._sync_command_task, "on_ready")
 
@@ -451,7 +452,17 @@ class ClientBase(commands.bot.BotBase):
             listeners = []
             self._deferred_components[ev] = listeners
 
-        listeners.append((future, check))
+        listeners.append((future, check, False))
+        return asyncio.wait_for(future, timeout)
+
+    def wait_for_global_component(self, check=None, timeout=None):
+        future = self.loop.create_future()
+        if check is None:
+            def _check(_: ComponentsContext):
+                return True
+            check = _check
+
+        self._deferred_global_components.append((future, check, True))
         return asyncio.wait_for(future, timeout)
 
     async def process_components(self, component: ComponentsContext):
@@ -478,32 +489,45 @@ class ClientBase(commands.bot.BotBase):
                     _state.dispatch("component_complete", component)
                     active_component.append(component)
 
-        listeners = self._deferred_components.get(component.custom_id)
+        listeners = copy.copy(self._deferred_global_components)
+        listeners += copy.copy(self._deferred_components.get(component.custom_id, []))
         detect_component_wait_for = []
-        if listeners is not None:
+        if len(listeners) > 0:
             removed = []
-            for index, (future, check) in enumerate(listeners):
+            global_removed = []
+            for index, (future, check, global_component) in enumerate(listeners):
                 if future.cancelled():
-                    removed.append(index)
+                    if global_component:
+                        global_removed.append(index)
+                    else:
+                        removed.append(index)
                     continue
 
                 try:
                     result = check(component)
                 except Exception as exc:
                     future.set_exception(exc)
-                    removed.append(index)
+                    if global_component:
+                        global_removed.append(index)
+                    else:
+                        removed.append(index)
                 else:
                     if result:
                         detect_component_wait_for.append(component)
                         future.set_result(component)
-                        removed.append(index)
+                        if global_component:
+                            global_removed.append(index)
+                        else:
+                            removed.append(index)
 
             if len(removed) == len(listeners):
                 self._deferred_components.pop(component.custom_id)
             else:
                 for idx in reversed(removed):
-                    listeners.pop(idx)
+                    self._deferred_components.get(component.custom_id, []).pop(idx)
 
+            for idx in reversed(global_removed):
+                self._deferred_global_components.pop(idx)
         if len(detect_component_wait_for) == 0 and len(active_component) == 0:
             _state.dispatch("components_cancelled", component)
         return
