@@ -1,58 +1,84 @@
-<h1 align="center">Discord(Py)-Extension-Cog</h1>
+<h1 align="center">Discord Extension Interaction</h1>
 <p align="center">
-    <img src="https://img.shields.io/badge/release_version-0.4.1%20beta-0080aa?style=flat" alt="Release" >
+    <img src="https://img.shields.io/badge/release_version-0.4.8%20beta-0080aa?style=flat" alt="Release" >
 </p>
 
 # Introduce
-[discord.py](https://github.com/Rapptz/discord.py)의 [ext.commands](https://github.com/Rapptz/discord.py/tree/master/discord/ext/commands)와 비슷한 구조를 갖고 있으며, 빗금 명령어(Slash Command)와 일반 명령어(Message Command)를 한 번에 사용할 수 있도록 만들어 주는 확장 모듈입니다.
+Slash Command is supported through [discord.py](https://github.com/Rapptz/discord.py). <br/>
+Based on discord.ext.commands, compatible with existing frames.
 
 
-```py
-import discord
+#### Compatibility list
+<table>
+    <thead>
+        <tr>
+            <th>Moudle Name</th>
+            <th>Version</th>
+            <th>Tested</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>discord.py</td>
+            <td>v1.7.3</td>
+            <td>✔️</td>
+        </tr>
+        <tr>
+            <td>discord.py</td>
+            <td>v2.0.0 (alpha)</td>
+            <td>✔️</td>
+        </tr>
+        <tr>
+            <td>pycord</td>
+            <td>v2.0.0 (alpha)</td>
+            <td>✔️</td>
+        </tr>
+        <tr>
+            <td>Enhanced-discord.py</td>
+            <td>v2.0.0 (alpha)</td>
+            <td>✔️</td>
+        </tr>
+        <tr>
+            <td>disnake</td>
+            <td>v2.3.0 (beta)</td>
+            <td>❌️</td>
+        </tr>
+    </tbody>
+</table>
+
+* disnake is incompatible with different package names.
+
+# Installing
+**Python 3.7 or higher is required.**<br/>
+
+To install the library without full voice support, you can just run the following command:
+```commandline
+# Linux/macOS
+python3 -m pip install -U discord-extension-interaction
+
+# Windows
+py -3 -m pip install -U discord-extension-interaction
+```
+
+To install the development version, do the following:
+```bash
+$ git clone https://github.com/gunyu1019/discord-extension-interaction
+$ cd discord.py
+$ python3 -m pip install -U .
+```
+
+# Quick Example
+```python
 from discord.ext import interaction
-from discord.ext.interaction.commands import CommandOption
 
-client = interaction.Client(command_prefix="=", global_sync_command=True)
+# You can also set the command_prefix value to None. Just the original framework will not work.
+bot = interaction.Client(global_sync_command=True)
 
-
-@interaction.command()
-def ping1(argument: int, channel: discord.TextChannel = None):
-  return
-
-@interaction.command(
-  options=[CommandOption(description="옵션 설명")]
-)
-def ping2(argument: int, channel: discord.TextChannel = None):
-  return
-
-@interaction.command(
-    description="This is argument test.",
-)
-@interaction.option(description="This is option test.")
-@interaction.option(min_value=0, max_value=25565)
-@interaction.option(channel_type=discord.ChannelType.text)
-@interaction.permissions(
-    id=916798717208694836,
-    guild_id=844613188900356157,
-    type=interaction.PermissionType.USER,
-    permission=True
-)
-@interaction.has_role(item=844620432904552539, exception=False)
-async def ping3(
-        ctx,
-        argument1: discord.User,
-        argument2: int = None,
-        argument3: discord.TextChannel = None,
-):
-    await ctx.send(
-        "{0}님은 {1}와 {2}를 택하였습니다.".format(argument1, argument2, argument3)
-    )
+@interaction.command(description="This is ping")
+async def ping(ctx: interaction.ApplicationContext):
+    await ctx.send("pong!")
     return
 
-
-client.add_interaction(ping1, sync_command=True)
-client.add_interaction(ping2, sync_command=True)
-client.add_interaction(ping3, sync_command=True)
-
-client.run('token')
+bot.add_interaction(ping)
+bot.run("< TOKEN >")
 ```

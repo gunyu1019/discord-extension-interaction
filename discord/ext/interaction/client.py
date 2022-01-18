@@ -49,6 +49,7 @@ log = logging.getLogger()
 
 
 class ClientBase(commands.bot.BotBase):
+
     def __init__(
             self,
             command_prefix=None,
