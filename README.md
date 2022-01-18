@@ -19,27 +19,27 @@ Based on discord.ext.commands, compatible with existing frames.
     </thead>
     <tbody>
         <tr>
-            <td>discord.py</td>
+            <td><a href="https://github.com/Rapptz/discord.py">discord.py</a></td>
             <td>v1.7.3</td>
             <td>✔️</td>
         </tr>
         <tr>
-            <td>discord.py</td>
+            <td><a href="https://github.com/Rapptz/discord.py">discord.py</a></td>
             <td>v2.0.0 (alpha)</td>
             <td>✔️</td>
         </tr>
         <tr>
-            <td>pycord</td>
+            <td><a href="https://github.com/Pycord-Development/pycord">pycord</a></td>
             <td>v2.0.0 (alpha)</td>
             <td>✔️</td>
         </tr>
         <tr>
-            <td>Enhanced-discord.py</td>
+            <td><a href="https://github.com/iDevision/enhanced-discord.py">Enhanced-discord.py</a></td>
             <td>v2.0.0 (alpha)</td>
             <td>✔️</td>
         </tr>
         <tr>
-            <td>disnake</td>
+            <td><a href="https://github.com/DisnakeDev/disnake">disnake</a></td>
             <td>v2.3.0 (beta)</td>
             <td>❌️</td>
         </tr>
