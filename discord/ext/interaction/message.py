@@ -126,8 +126,8 @@ class Message(discord.Message):
             components=components,
         )
 
+        payload["attachments"] = []
         if attachments:
-            payload["attachments"] = []
             form = _files_to_form(files=attachments, payload=payload)
         else:
             form = None
