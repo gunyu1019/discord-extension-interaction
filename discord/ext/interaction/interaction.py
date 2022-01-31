@@ -25,6 +25,7 @@ import discord
 import logging
 
 from discord.state import ConnectionState
+from discord.channel import DMChannel
 from typing import Optional, List, Union
 
 from .commands import CommandOptionChoice
@@ -35,6 +36,17 @@ from .http import HttpClient, InteractionData
 from .utils import get_as_snowflake, _files_to_form, _allowed_mentions, channel_types
 
 log = logging.getLogger()
+
+
+class PartialMessageable:
+    def __init__(self, state: ConnectionState, id: int, type: Optional[discord.ChannelType] = None):
+        self._state: ConnectionState = state
+        self._channel: discord.Object = discord.Object(id=id)
+        self.id: int = id
+        self.type: Optional[discord.ChannelType] = type
+
+    async def _get_channel(self) -> discord.Object:
+        return self._channel
 
 
 class InteractionContext:
@@ -50,11 +62,6 @@ class InteractionContext:
 
         self.guild_id = payload.get("guild_id")
         self.channel_id = payload.get("channel_id")
-        if self.guild_id is not None:
-            self.guild: Optional[discord.Guild] = self.client.get_guild(int(self.guild_id))
-        else:
-            self.guild: Optional[discord.Guild] = None
-        self.channel = self._state.get_channel(int(self.channel_id))
 
         if self.guild is not None:
             member = payload.get("member")
@@ -78,6 +85,23 @@ class InteractionContext:
             self.http = self.client.interaction_http
         else:
             self.http = HttpClient(http=self.client.http)
+
+    @property
+    def guild(self) -> Optional[discord.Guild]:
+        if self.guild_id is not None:
+            return self.client.get_guild(int(self.guild_id))
+        return
+
+    @property
+    def channel(self) -> Optional:
+        if self.channel_id is not None:
+            if self.guild is not None:
+                channel = self.guild.get_channel(int(self.channel_id))
+            else:
+                tp = discord.ChannelType.text if self.guild_id is not None else discord.ChannelType.private
+                channel = PartialMessageable(state=self._state, id=self.channel_id, type=tp)
+            return channel
+        return
 
     @staticmethod
     def _get_payload(
