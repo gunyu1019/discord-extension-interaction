@@ -35,17 +35,17 @@ Based on discord.ext.commands, compatible with existing frames.
         </tr>
         <tr>
             <td><a href="https://github.com/Pycord-Development/pycord">pycord</a></td>
-            <td>v2.0.0 (alpha)</td>
+            <td>v2.0.0 (beta)</td>
             <td>⚠️</td>
         </tr>
         <tr>
             <td><a href="https://github.com/nextcord/nextcord">nextcord</a></td>
-            <td>v2.0.0 (alpha)</td>
+            <td>v2.0.0a6</td>
             <td>✔️</td>
         </tr>
         <tr>
             <td><a href="https://github.com/iDevision/enhanced-discord.py">Enhanced-discord.py</a></td>
-            <td>v2.0.0 (alpha)</td>
+            <td>v1.7.3.7.post6</td>
             <td>✔️</td>
         </tr>
         <tr>
