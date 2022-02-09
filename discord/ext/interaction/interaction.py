@@ -28,7 +28,7 @@ import discord
 from discord.state import ConnectionState
 
 from .commands import CommandOptionChoice
-from .components import ActionRow, Button, Selection
+from .components import ActionRow, Button, Selection, Components, from_payload
 from .errors import InvalidArgument, AlreadyDeferred
 from .http import HttpClient, InteractionData
 from .message import Message
@@ -281,6 +281,40 @@ class InteractionContext:
             await self.http.delete_followup(message_id=message_id, data=self.data)
         return
 
+
+class ModalPossible(InteractionContext):
+    async def modal(
+            self,
+            custom_id: str,
+            title: str,
+            components: List[Components]
+    ):
+        self.responded = True
+        payload = {
+            "type": 9,
+            "data": {
+                "custom_id": custom_id,
+                "title": title,
+                "components": [
+                    component.to_dict() for component in components
+                ]
+            }
+        }
+        return await self.http.post_initial_response(
+            data=self.data,
+            payload=payload
+        )
+
+
+class BaseApplicationContext(InteractionContext, ModalPossible):
+    def __init__(self, payload: dict, client):
+        super().__init__(payload, client)
+        self._state: ConnectionState = getattr(client, "_connection")
+
+        data = payload.get("data", {})
+        self.target_id = data.get("target_id")
+        self._resolved = data.get("resolved", {})
+
     def target(self, target_type, target_id: int = None):
         if target_id is None:
             target_id = self.target_id
@@ -343,11 +377,10 @@ class InteractionContext:
             return channel
 
 
-class SubcommandContext(InteractionContext):
+class SubcommandContext(BaseApplicationContext):
     def __init__(self, original_payload: dict, payload: dict, client):
         super().__init__(original_payload, client)
         self.name = payload.get('name')
-        self.guild = self.guild
         self.options = {}
 
         for option in payload.get("options", []):
@@ -385,7 +418,7 @@ class SubcommandContext(InteractionContext):
                 self.options[key] = value
 
 
-class ApplicationContext(InteractionContext):
+class ApplicationContext(BaseApplicationContext):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = payload.get("type", 2)
@@ -395,10 +428,7 @@ class ApplicationContext(InteractionContext):
         self.parents = None
 
         self.application_type = data.get("type")
-        self.target_id = data.get("target_id")
         self.name = data.get("name")
-
-        self._resolved = data.get("resolved", {})
         if self.application_type == 1:
             self.options = {}
             self.option_focused = []
@@ -456,7 +486,7 @@ class ApplicationContext(InteractionContext):
         return self.function is not None
 
 
-class ComponentsContext(InteractionContext):
+class ComponentsContext(InteractionContext, ModalPossible):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = payload.get("type", 3)
@@ -565,3 +595,15 @@ class AutocompleteContext(ApplicationContext):
             data=self.data,
             payload=payload
         )
+
+
+class ModalContext(InteractionContext):
+    def __init__(self, payload: dict, client):
+        super().__init__(payload, client)
+        self.type = payload.get("type", 5)
+        data = payload.get("data", {})
+
+        self.custom_id = data.get("custom_id")
+        self.components = [
+            from_payload(component) for component in data.get("", [])
+        ]

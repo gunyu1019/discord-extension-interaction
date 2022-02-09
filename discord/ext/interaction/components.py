@@ -26,14 +26,24 @@ import discord
 import inspect
 
 from .commands import BaseCore
+from abc import *
 from typing import Union, Optional, List
 
 
-class Components:
+class Components(metaclass=ABCMeta):
     TYPE: Optional[int] = None
 
     def __init__(self, components_type: int):
         self.type = components_type
+
+    @abstractmethod
+    def to_dict(self) -> dict:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, payload: dict) -> dict:
+        pass
 
 
 class Options:
@@ -236,6 +246,72 @@ class Selection(Components):
         )
 
 
+class TextInput(Components):
+    TYPE = 4
+
+    def __init__(
+            self,
+            custom_id: str,
+            style: int,
+            label: str,
+            min_length: Optional[int] = None,
+            max_length: Optional[int] = None,
+            required: bool = False,
+            value: Optional[str] = None,
+            placeholder: Optional[str] = None
+    ):
+        super().__init__(components_type=4)
+
+        self.custom_id = custom_id
+        self.style = style
+        self.label = label
+        self.placeholder = placeholder
+        self.min_length = min_length
+        self.max_length = max_length
+        self.required = required
+        self.value = value
+
+    def to_dict(self) -> dict:
+        base = {
+            "type": 4,
+            "custom_id": self.custom_id,
+            "style": self.style,
+            "label": self.label,
+            "required": self.required
+        }
+        if self.placeholder is not None:
+            base["placeholder"] = self.placeholder
+        if self.min_length is not None:
+            base["min_length"] = self.min_length
+        if self.max_length is not None:
+            base["max_length"] = self.max_length
+        if self.value is not None:
+            base["value"] = self.value
+
+        return base
+
+    @classmethod
+    def from_dict(cls, payload: dict):
+        custom_id = payload["custom_id"]
+        style = payload["style"]
+        label = payload["label"]
+        placeholder = payload.get("placeholder")
+        min_length = payload.get("min_length")
+        max_length = payload.get("max_length")
+        required = payload.get("required", False)
+        value = payload.get("value")
+        return cls(
+            custom_id=custom_id,
+            style=style,
+            label=label,
+            placeholder=placeholder,
+            min_length=min_length,
+            max_length=max_length,
+            required=required,
+            value=value
+        )
+
+
 def from_payload(payload: dict) -> list:
     components = []
 
@@ -246,6 +322,8 @@ def from_payload(payload: dict) -> list:
             components.append(Button.from_dict(i))
         elif i.get("type") == 3:
             components.append(Selection.from_dict(i))
+        elif i.get("type") == 4:
+            components.append(TextInput.from_dict(i))
     return components
 
 
