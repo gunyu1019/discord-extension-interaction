@@ -183,6 +183,8 @@ class CommandOption:
             return 9
         elif float == self.type:
             return 10
+        elif discord.Attachment == self.type:
+            return 11
         raise TypeError("option type invalid (Subcommand and Subcommand Group, please use decorator)")
 
     def to_dict(self) -> dict:

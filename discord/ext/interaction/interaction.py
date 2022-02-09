@@ -21,18 +21,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import discord
 import logging
-
-from discord.state import ConnectionState
-from discord.channel import DMChannel
 from typing import Optional, List, Union
+
+import discord
+from discord.state import ConnectionState
 
 from .commands import CommandOptionChoice
 from .components import ActionRow, Button, Selection
 from .errors import InvalidArgument, AlreadyDeferred
-from .message import Message
 from .http import HttpClient, InteractionData
+from .message import Message
 from .utils import get_as_snowflake, _files_to_form, _allowed_mentions, channel_types
 
 log = logging.getLogger()
@@ -379,6 +378,9 @@ class SubcommandContext(InteractionContext):
                 )
             elif option_type == 10:
                 self.options[key]: float = float(value)
+            elif option_type == 11:
+                state: ConnectionState = getattr(client, "_connection")
+                self.options[key]: discord.Attachment = discord.Attachment(data=value, state=state)
             else:
                 self.options[key] = value
 
@@ -433,6 +435,9 @@ class ApplicationContext(InteractionContext):
                     )
                 elif option_type == 10:
                     self.options[key]: float = float(value)
+                elif option_type == 11:
+                    state: ConnectionState = getattr(client, "_connection")
+                    self.options[key]: discord.Attachment = discord.Attachment(data=value, state=state)
                 else:
                     self.options[key] = value
 
