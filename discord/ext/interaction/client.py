@@ -40,7 +40,7 @@ from .commands import (
 )
 from .components import DetectComponent
 from .http import HttpClient
-from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext
+from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext, ModalContext
 from .listener import Listener
 from .message import Message
 from .utils import _from_json
@@ -355,7 +355,7 @@ class ClientBase(commands.bot.BotBase):
 
         state: ConnectionState = self._connection
         if t == "INTERACTION_CREATE":
-            state.dispatch('interaction_raw_create', payload)
+            state.dispatch('interaction_create', payload)
             if data.get("type") == 2:
                 result = ApplicationContext(data, self)
                 if len(self._interactions[result.application_type - 1]) != 0:
@@ -367,6 +367,9 @@ class ClientBase(commands.bot.BotBase):
             elif data.get("type") == 4:
                 result = AutocompleteContext(data, self)
                 state.dispatch('autocomplete', result)
+            elif data.get("type") == 5:
+                result = ModalContext(data, self)
+                state.dispatch('modal', result)
             return
         elif t == "MESSAGE_CREATE":
             channel, _ = getattr(state, "_get_guild_channel")(data)
@@ -431,6 +434,7 @@ class ClientBase(commands.bot.BotBase):
             if isinstance(error, commands.errors.CheckFailure):
                 _state.dispatch("command_permission_error", ctx, error)
             _state.dispatch("interaction_command_error", ctx, error)
+            raise error
         else:
             _state.dispatch("command_complete", ctx)
         return

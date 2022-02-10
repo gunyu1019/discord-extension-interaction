@@ -36,7 +36,7 @@ from .commands import (
     SubCommandGroup, SubCommand, ApplicationSubcommandGroup, ApplicationSubcommand,
     MemberCommand, ApplicationCommand, ApplicationCommandType, Mentionable, command, user, context, option
 )
-from .components import Components, ActionRow, Button, Selection, Options, DetectComponent, detect_component
+from .components import Components, ActionRow, Button, Selection, TextInput, Options, DetectComponent, detect_component
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext

@@ -282,7 +282,7 @@ class InteractionContext:
         return
 
 
-class ModalPossible(InteractionContext):
+class ModalPossible:
     async def modal(
             self,
             custom_id: str,
@@ -295,11 +295,10 @@ class ModalPossible(InteractionContext):
             "data": {
                 "custom_id": custom_id,
                 "title": title,
-                "components": [
-                    component.to_dict() for component in components
-                ]
+                "components": [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
             }
         }
+        print(payload)
         return await self.http.post_initial_response(
             data=self.data,
             payload=payload
