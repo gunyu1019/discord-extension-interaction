@@ -85,6 +85,33 @@ class InteractionContext:
         else:
             self.http = HttpClient(http=self.client.http)
 
+    @classmethod
+    def from_original_data(cls, response: discord.Interaction, client, _cls=None):
+        if _cls is not None:
+            new_cls = _cls({}, client)
+        else:
+            new_cls = cls({}, client)
+        new_cls.application = response.application_id
+        new_cls.id = response.id
+        new_cls.created_at = discord.utils.snowflake_time(new_cls.id)
+        new_cls.type = response.type
+        new_cls.token = response.token
+        new_cls.version = response.version
+
+        new_cls.guild_id = response.guild_id
+        new_cls.channel_id = response.channel_id
+        new_cls.locale = getattr(response, 'locale', None)
+        new_cls.guild_locale = getattr(response, 'guild_locale', None)
+        new_cls.author = response.user
+
+        new_cls.data = InteractionData(
+            interaction_token=new_cls.token,
+            interaction_id=new_cls.id,
+            application_id=new_cls.application
+        )
+
+        return new_cls
+
     @property
     def guild(self) -> Optional[discord.Guild]:
         if self.guild_id is not None:
@@ -298,7 +325,6 @@ class ModalPossible:
                 "components": [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
             }
         }
-        print(payload)
         return await self.http.post_initial_response(
             data=self.data,
             payload=payload
@@ -309,8 +335,19 @@ class BaseApplicationContext(InteractionContext, ModalPossible):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self._state: ConnectionState = getattr(client, "_connection")
+        self._from_data(
+            payload.get("data", {})
+        )
 
-        data = payload.get("data", {})
+    @classmethod
+    def from_original_data(cls, response: discord.Interaction, client, _cls=None):
+        new_cls: BaseApplicationContext = super().from_original_data(response, client, _cls=cls)
+        new_cls._from_data(
+            response.data
+        )
+        return new_cls
+
+    def _from_data(self, data):
         self.target_id = data.get("target_id")
         self._resolved = data.get("resolved", {})
 

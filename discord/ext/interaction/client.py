@@ -49,7 +49,6 @@ log = logging.getLogger()
 
 
 class ClientBase(commands.bot.BotBase):
-
     def __init__(
             self,
             command_prefix=None,
@@ -330,10 +329,10 @@ class ClientBase(commands.bot.BotBase):
     async def on_socket_raw_receive(self, msg):
         if type(msg) is bytes:
             self.__buffer.extend(msg)
-
             if len(msg) < 4 or msg[-4:] != b'\x00\x00\xff\xff':
                 return
             try:
+                print(msg)
                 msg = self.__zlib.decompress(self.__buffer)
             except zlib.error as error:
                 # zlib.error: Error -3 while decompressing data: invalid stored block lengths
