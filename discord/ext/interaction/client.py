@@ -223,9 +223,13 @@ class ClientBase(commands.bot.BotBase):
 
     def add_detect_component(
             self,
-            detect_component: DetectComponent
+            detect_component: DetectComponent,
+            _parent=None
     ):
         name = detect_component.custom_id
+        if _parent is not None:
+            detect_component.cog = _parent
+
         if name in self._detect_components:
             self._detect_components[name].append(detect_component)
         else:
@@ -316,8 +320,7 @@ class ClientBase(commands.bot.BotBase):
                 attr.parents = icog
                 self.add_listener(attr.__call__, name=attr.name)
             elif isinstance(attr, DetectComponent):
-                attr.parents = icog
-                self.add_detect_component(attr)
+                self.add_detect_component(attr, icog)
             elif inspect.iscoroutinefunction(attr):
                 if hasattr(attr, '__cog_listener__') and hasattr(attr, '__cog_listener_names__'):
                     if not attr.__cog_listener__:
@@ -332,7 +335,6 @@ class ClientBase(commands.bot.BotBase):
             if len(msg) < 4 or msg[-4:] != b'\x00\x00\xff\xff':
                 return
             try:
-                print(msg)
                 msg = self.__zlib.decompress(self.__buffer)
             except zlib.error as error:
                 # zlib.error: Error -3 while decompressing data: invalid stored block lengths
@@ -478,7 +480,6 @@ class ClientBase(commands.bot.BotBase):
         active_component = []
         for _component in detect_component:
             if _component.type_id == component.component_type or _component.type is None:
-
                 try:
                     if await self.can_run(component, call_once=True):
                         if await _component.can_run(component):

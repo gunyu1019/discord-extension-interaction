@@ -86,7 +86,7 @@ class InteractionContext:
             self.http = HttpClient(http=self.client.http)
 
     @classmethod
-    def from_original_data(cls, response: discord.Interaction, client, _cls=None):
+    def from_original_data(cls, response, client, _cls=None):
         if _cls is not None:
             new_cls = _cls({}, client)
         else:
@@ -340,7 +340,7 @@ class BaseApplicationContext(InteractionContext, ModalPossible):
         )
 
     @classmethod
-    def from_original_data(cls, response: discord.Interaction, client, _cls=None):
+    def from_original_data(cls, response, client, _cls=None):
         new_cls: BaseApplicationContext = super().from_original_data(response, client, _cls=cls)
         new_cls._from_data(
             response.data

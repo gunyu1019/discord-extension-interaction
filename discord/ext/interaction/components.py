@@ -27,7 +27,7 @@ import inspect
 
 from .commands import BaseCore
 from abc import *
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Type
 
 
 class Components(metaclass=ABCMeta):
@@ -329,7 +329,7 @@ def from_payload(payload: dict) -> list:
 
 # For Decorator
 class DetectComponent(BaseCore):
-    def __init__(self, func, custom_id, component_type: Components = None, checks=None):
+    def __init__(self, func, custom_id, component_type: Type[Components] = None, checks=None):
         self.custom_id = custom_id
         self.type = component_type
         self.func = func
@@ -345,7 +345,7 @@ class DetectComponent(BaseCore):
 def detect_component(
         cls: classmethod = None,
         custom_id: str = None,
-        component_type: Components = None,
+        component_type: Type[Components] = None,
         checks=None
 ):
     if cls is None:
