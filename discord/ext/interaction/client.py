@@ -321,6 +321,10 @@ class ClientBase(commands.bot.BotBase):
                 self.add_listener(attr.__call__, name=attr.name)
             elif isinstance(attr, DetectComponent):
                 self.add_detect_component(attr, icog)
+            elif isinstance(attr, commands.Command):
+                attr.cog = icog
+                if attr.parent is None:
+                    self.add_command(attr)
             elif inspect.iscoroutinefunction(attr):
                 if hasattr(attr, '__cog_listener__') and hasattr(attr, '__cog_listener_names__'):
                     if not attr.__cog_listener__:
