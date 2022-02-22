@@ -155,7 +155,7 @@ class InteractionContext:
         return payload
 
     @property
-    def voice_client(self) -> Optional[discord.VoiceProtocol]:
+    def voice_client(self) -> Optional[discord.VoiceClient]:
         if self.guild is None:
             return None
         return self.guild.voice_client

@@ -39,7 +39,9 @@ def _get_payload(
         embed=None,
         tts: bool = False,
         allowed_mentions=None,
-        components=None
+        components=None,
+        message_reference=None,
+        stickers=None,
 ) -> dict:
     payload = {'tts': tts}
     if content:
@@ -50,6 +52,8 @@ def _get_payload(
         payload['allowed_mentions'] = allowed_mentions
     if components:
         payload['components'] = components
+    if message_reference:
+        payload['sticker_ids'] = stickers
     return payload
 
 
@@ -238,7 +242,10 @@ class MessageSendable:
             file: discord.File = None,
             files: List[discord.File] = None,
             allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+            components: List[Union[ActionRow, Button, Selection]] = None,
+            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = None,
+            mention_author: bool = False,
+            stickers: list = None
     ):
         if file is not None and files is not None:
             raise InvalidArgument()
@@ -254,7 +261,19 @@ class MessageSendable:
             files = [file]
         if components is not None:
             components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
+        if stickers is not None:
+            stickers = [sticker.id for sticker in stickers]
+        if reference is not None:
+            try:
+                reference = reference.to_message_reference_dict()
+            except AttributeError:
+                raise InvalidArgument('reference parameter must be Message, MessageReference, or PartialMessage')
+        if stickers is not None:
+            stickers = [sticker.id for sticker in stickers]
         allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
+        if mention_author is not None:
+            allowed_mentions = allowed_mentions or discord.AllowedMentions().to_dict()
+            allowed_mentions['replied_user'] = bool(mention_author)
 
         payload = _get_payload(
             content=content,
@@ -262,6 +281,8 @@ class MessageSendable:
             embed=embeds,
             allowed_mentions=allowed_mentions,
             components=components,
+            message_reference=reference,
+            stickers=stickers
         )
 
         if files:
