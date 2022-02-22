@@ -53,6 +53,8 @@ def _get_payload(
     if components:
         payload['components'] = components
     if message_reference:
+        payload['message_reference'] = message_reference
+    if stickers:
         payload['sticker_ids'] = stickers
     return payload
 
