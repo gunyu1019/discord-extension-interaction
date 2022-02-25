@@ -150,7 +150,7 @@ class InteractionContext:
             payload['allowed_mentions'] = allowed_mentions
         if hidden:
             payload['flags'] = 1 << 6
-        if components:
+        if components is not None:
             payload['components'] = components
         return payload
 
@@ -581,6 +581,7 @@ class ComponentsContext(InteractionContext, ModalPossible):
             allowed_mentions=allowed_mentions,
             components=components,
         )
+        print(payload)
 
         if files:
             form = _files_to_form(files=files, payload=payload)

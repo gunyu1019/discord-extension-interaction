@@ -26,7 +26,7 @@ from discord.http import Route
 
 
 class SlashRoute(Route):
-    BASE = "https://discord.com/api/v9"
+    BASE = "https://discord.com/api/v10"
 
 
 class InteractionData:

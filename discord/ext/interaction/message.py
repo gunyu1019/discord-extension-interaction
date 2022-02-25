@@ -50,7 +50,7 @@ def _get_payload(
         payload['embeds'] = embed
     if allowed_mentions:
         payload['allowed_mentions'] = allowed_mentions
-    if components:
+    if components is not None:
         payload['components'] = components
     if message_reference:
         payload['message_reference'] = message_reference
