@@ -209,7 +209,7 @@ class CommandOption:
     def __eq__(self, other):
         default_check = (
                 self.name == other.name and
-                self.type in other.type.__mro__ and
+                other.type in self.type.__mro__ and
                 self.description == other.description and
                 self.choices == other.choices and
                 self.required == other.required and
@@ -432,15 +432,9 @@ class SlashCommand(ApplicationCommand):
         self.options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = options
 
     def __eq__(self, other):
-        option_check = True
-        for opt in self.options:
-            if opt not in other.options:
-                option_check = False
-                break
-
         return (
                 super().__eq__(other) and
-                option_check
+                self.options == other.options
         )
 
     def __ne__(self, other):
