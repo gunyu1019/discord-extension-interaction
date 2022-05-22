@@ -83,9 +83,9 @@ $ python3 -m pip install -U .
 from discord.ext import interaction
 from discord import Intents
 
-intents = Intents.default()
 
 # You can also set the command_prefix value to None. Just the original framework will not work.
+intents = Intents.default()
 bot = interaction.Client(global_sync_command=True, intents = intents)
 
 @interaction.command(description="This is ping")
