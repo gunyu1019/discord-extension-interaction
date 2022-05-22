@@ -66,7 +66,6 @@ To install the library without full voice support, you can just run the followin
 ```commandline
 # Linux/macOS
 python3 -m pip install -U discord-extension-interaction
-
 # Windows
 py -3 -m pip install -U discord-extension-interaction
 ```
@@ -81,15 +80,14 @@ $ python3 -m pip install -U .
 # Quick Example
 ```python
 from discord.ext import interaction
-
+from discord import Intents
 # You can also set the command_prefix value to None. Just the original framework will not work.
-bot = interaction.Client(global_sync_command=True)
-
+intents = Intents.default()
+bot = interaction.Client(global_sync_command=True, intents = intents)
 @interaction.command(description="This is ping")
 async def ping(ctx: interaction.ApplicationContext):
     await ctx.send("pong!")
     return
-
 bot.add_interaction(ping)
 bot.run("< TOKEN >")
 ```
