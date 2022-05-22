@@ -45,8 +45,7 @@ channel_types = [
     discord.DMChannel,
     discord.StageChannel,
     discord.GroupChannel,
-    discord.CategoryChannel,
-    discord.StoreChannel
+    discord.CategoryChannel
 ]
 
 
