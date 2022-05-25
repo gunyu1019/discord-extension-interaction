@@ -581,7 +581,6 @@ class ComponentsContext(InteractionContext, ModalPossible):
             allowed_mentions=allowed_mentions,
             components=components,
         )
-        print(payload)
 
         if files:
             form = _files_to_form(files=files, payload=payload)
