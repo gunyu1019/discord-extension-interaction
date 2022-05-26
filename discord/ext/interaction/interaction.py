@@ -647,9 +647,3 @@ class ModalContext(InteractionContext):
             _components = components
         self.custom_id = data.get("custom_id")
         self.components: List[TextInput] = _components
-
-
-[
-    {'type': 1, 'components': [{'value': 'ㅁㄴㅇㄹ', 'type': 4, 'custom_id': 'text-input1'}]},
-    {'type': 1, 'components': [{'value': 'ㅁㄴㅇㄹ', 'type': 4, 'custom_id': 'text-input2'}]}
-]

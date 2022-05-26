@@ -23,6 +23,7 @@ SOFTWARE.
 
 import json
 import inspect
+import logging
 import discord
 
 try:
@@ -52,8 +53,11 @@ channel_types = [
 try:
     from deprecated import deprecated
 except ModuleNotFoundError:
-    def deprecated(*_1, **_2):
+    def deprecated(version: str, reason: str):
         def decorator(func):
+            logging.getLogger("discord.ext.interaction.deprecated").warning(
+                f"This has been disabled due to {reason} in version {version}."
+            )
             return func
         return decorator
 

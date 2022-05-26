@@ -265,14 +265,14 @@ class MessageSendable:
         if components is not None:
             components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
         if stickers is not None:
-            stickers = [sticker.id for sticker in stickers]
+            stickers = [
+                sticker.id if not isinstance(sticker, int) else sticker for sticker in stickers
+            ]
         if reference is not None:
             try:
                 reference = reference.to_message_reference_dict()
             except AttributeError:
                 raise InvalidArgument('reference parameter must be Message, MessageReference, or PartialMessage')
-        if stickers is not None:
-            stickers = [sticker.id for sticker in stickers]
         allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
         if mention_author is not None:
             allowed_mentions = allowed_mentions or discord.AllowedMentions().to_dict()
