@@ -27,7 +27,7 @@ import logging
 import copy
 import os
 import zlib
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Coroutine
 
 import discord
 from discord.ext import commands
@@ -48,7 +48,7 @@ from .utils import _from_json
 log = logging.getLogger()
 
 
-class ClientBase(commands.bot.BotBase):
+class ClientBase(commands.bot.BotBase, discord.Client):
     def __init__(
             self,
             command_prefix=None,
@@ -108,13 +108,17 @@ class ClientBase(commands.bot.BotBase):
             payload=command.to_register_dict()
         )
 
-    async def edit_command(self, command: ApplicationCommand, command_id: int = None):
+    async def _find_command(self, command: ApplicationCommand, command_id: int):
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids[command.type.value - 1]:
                 raise commands.CommandNotFound(f'Command "{command.name}" is not found')
 
             command_id = command_ids[command.type.value - 1][command.name].id
+        return command_id
+
+    async def edit_command(self, command: ApplicationCommand, command_id: int = None):
+        command_id = await self._find_command(command, command_id)
         return await self.interaction_http.edit_command(
             await self._application_id(),
             command_id=command_id or command.id,
@@ -122,12 +126,7 @@ class ClientBase(commands.bot.BotBase):
         )
 
     async def delete_command(self, command: ApplicationCommand, command_id: int = None):
-        if command_id is None and command.id is None:
-            command_ids = await self._fetch_command_cached()
-            if command.name not in command_ids[command.type.value - 1]:
-                raise commands.CommandNotFound(f'Command "{command.name}" is not found')
-
-            command_id = command_ids[command.type.value - 1][command.name].id
+        command_id = await self._find_command(command, command_id)
         return await self.interaction_http.delete_command(
             await self._application_id(),
             command_id=command_id or command.id,
@@ -183,7 +182,12 @@ class ClientBase(commands.bot.BotBase):
             await self.delete_command(command, command_id=command_id)
         return
 
-    def load_extensions(self, package: str, directory: str = None) -> None:
+    async def _async_load_extensions(self, cogs: List[str]) -> None:
+        for cog in cogs:
+            await self.load_extension(cog)
+        return
+
+    def load_extensions(self, package: str, directory: str = None) -> Optional[Coroutine]:
         if directory is not None:
             _package = os.path.join(directory, package)
         else:
@@ -193,6 +197,10 @@ class ClientBase(commands.bot.BotBase):
             for file in os.listdir(_package)
             if file.endswith(".py")
         ]
+
+        if asyncio.iscoroutinefunction(self.load_extension):
+            return self._async_load_extensions(cogs)
+
         for cog in cogs:
             self.load_extension(cog)
         return

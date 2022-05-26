@@ -25,7 +25,7 @@ __title__ = 'Discord-Extension-Interaction'
 __author__ = 'gunyu1019'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2021-present gunyu1019'
-__version__ = '0.5.2-beta'
+__version__ = '0.5.3-beta'
 
 from typing import NamedTuple, Literal
 
@@ -39,7 +39,7 @@ from .commands import (
 from .components import Components, ActionRow, Button, Selection, TextInput, Options, DetectComponent, detect_component
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
-    InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext
+    InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext, ModalContext
 )
 from .message import Message, MessageSendable
 from .listener import Listener, listener

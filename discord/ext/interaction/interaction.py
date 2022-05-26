@@ -28,7 +28,7 @@ import discord
 from discord.state import ConnectionState
 
 from .commands import CommandOptionChoice
-from .components import ActionRow, Button, Selection, Components, from_payload
+from .components import ActionRow, Button, Selection, Components, from_payload, TextInput
 from .errors import InvalidArgument, AlreadyDeferred
 from .http import HttpClient, InteractionData
 from .message import Message
@@ -185,10 +185,10 @@ class InteractionContext:
             allowed_mentions: discord.AllowedMentions = None,
             components: List[Union[ActionRow, Button, Selection]] = None
     ):
-        if file is not None and files is not None:
-            raise InvalidArgument()
         if embed is not None and embeds is not None:
-            raise InvalidArgument()
+            raise InvalidArgument("Only one of embed and embeds must be entered.")
+        if files is not None and files is not None:
+            raise InvalidArgument("Only one of attachment and attachments must be entered.")
 
         content = str(content) if content is not None else None
         if embed is not None:
@@ -253,10 +253,10 @@ class InteractionContext:
             allowed_mentions: discord.AllowedMentions = None,
             components: List[Union[ActionRow, Button, Selection]] = None
     ):
-        if file is not None and files is not None:
-            raise InvalidArgument()
         if embed is not None and embeds is not None:
-            raise InvalidArgument()
+            raise InvalidArgument("Only one of embed and embeds must be entered.")
+        if files is not None and files is not None:
+            raise InvalidArgument("Only one of attachment and attachments must be entered.")
 
         content = str(content) if content is not None else None
         if embed is not None:
@@ -309,7 +309,7 @@ class InteractionContext:
         return
 
 
-class ModalPossible:
+class ModalPossible(InteractionContext):
     async def modal(
             self,
             custom_id: str,
@@ -331,7 +331,7 @@ class ModalPossible:
         )
 
 
-class BaseApplicationContext(InteractionContext, ModalPossible):
+class BaseApplicationContext(ModalPossible):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self._state: ConnectionState = getattr(client, "_connection")
@@ -522,7 +522,7 @@ class ApplicationContext(BaseApplicationContext):
         return self.function is not None
 
 
-class ComponentsContext(InteractionContext, ModalPossible):
+class ComponentsContext(ModalPossible):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = payload.get("type", 3)
@@ -558,10 +558,10 @@ class ComponentsContext(InteractionContext, ModalPossible):
             allowed_mentions: discord.AllowedMentions = None,
             components: List[Union[ActionRow, Button, Selection]] = None
     ):
-        if file is not None and files is not None:
-            raise InvalidArgument()
         if embed is not None and embeds is not None:
-            raise InvalidArgument()
+            raise InvalidArgument("Only one of embed and embeds must be entered.")
+        if file is not None and files is not None:
+            raise InvalidArgument("Only one of attachment and attachments must be entered.")
 
         content = str(content) if content is not None else None
         if embed is not None:
@@ -638,8 +638,18 @@ class ModalContext(InteractionContext):
         super().__init__(payload, client)
         self.type = payload.get("type", 5)
         data = payload.get("data", {})
-
+        components = from_payload(data.get("components", []))
+        if isinstance(components, List):
+            _components = []
+            for x in components:
+                _components += x.components
+        else:
+            _components = components
         self.custom_id = data.get("custom_id")
-        self.components = [
-            from_payload(component) for component in data.get("", [])
-        ]
+        self.components: List[TextInput] = _components
+
+
+[
+    {'type': 1, 'components': [{'value': 'ㅁㄴㅇㄹ', 'type': 4, 'custom_id': 'text-input1'}]},
+    {'type': 1, 'components': [{'value': 'ㅁㄴㅇㄹ', 'type': 4, 'custom_id': 'text-input2'}]}
+]

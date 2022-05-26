@@ -27,7 +27,7 @@ import inspect
 
 from .commands import BaseCore
 from abc import *
-from typing import Union, Optional, List, Type
+from typing import Union, Optional, List, Type, Dict, Any
 
 
 class Components(metaclass=ABCMeta):
@@ -293,8 +293,8 @@ class TextInput(Components):
     @classmethod
     def from_dict(cls, payload: dict):
         custom_id = payload["custom_id"]
-        style = payload["style"]
-        label = payload["label"]
+        style = payload.get("style")
+        label = payload.get("label")
         placeholder = payload.get("placeholder")
         min_length = payload.get("min_length")
         max_length = payload.get("max_length")
@@ -312,7 +312,7 @@ class TextInput(Components):
         )
 
 
-def from_payload(payload: dict) -> list:
+def from_payload(payload: List[Dict[str, Any]]) -> List[Union[ActionRow, Button, Selection, TextInput]]:
     components = []
 
     for i in payload:

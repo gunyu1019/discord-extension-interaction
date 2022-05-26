@@ -106,12 +106,13 @@ class Message(discord.Message):
             attachment: discord.File = None,
             attachments: List[discord.File] = None,
             allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+            components: List[Union[ActionRow, Button, Selection]] = None,
+            **kwargs
     ):
         if embed is not None and embeds is not None:
-            raise InvalidArgument()
+            raise InvalidArgument("Only one of embed and embeds must be entered.")
         if attachment is not None and attachments is not None:
-            raise InvalidArgument()
+            raise InvalidArgument("Only one of attachment and attachments must be entered.")
 
         content = str(content) if content is not None else None
         if embed is not None:
