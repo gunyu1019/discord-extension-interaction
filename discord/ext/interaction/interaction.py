@@ -187,7 +187,7 @@ class InteractionContext:
     ):
         if embed is not None and embeds is not None:
             raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if files is not None and files is not None:
+        if files is not None and file is not None:
             raise InvalidArgument("Only one of attachment and attachments must be entered.")
 
         content = str(content) if content is not None else None
@@ -255,7 +255,7 @@ class InteractionContext:
     ):
         if embed is not None and embeds is not None:
             raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if files is not None and files is not None:
+        if files is not None and file is not None:
             raise InvalidArgument("Only one of attachment and attachments must be entered.")
 
         content = str(content) if content is not None else None
