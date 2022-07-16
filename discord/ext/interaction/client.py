@@ -26,42 +26,38 @@ import inspect
 import logging
 import copy
 import os
-import types
 import zlib
-import sys
-import importlib
-import importlib.util
-import importlib.machinery
-from typing import Optional, Dict, List, Coroutine, Any, Union
+from typing import Optional, Dict, List, Coroutine
 
 import discord
+from discord.ext import commands
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from ._types import CoroutineFunction
 from .commands import (
     ApplicationCommand, BaseCommand, SubCommand, SubCommandGroup, ApplicationCommandType,
     from_payload, command_types, decorator_command_types, get_signature_option
 )
 from .components import DetectComponent
-from .errors import *
 from .http import HttpClient
 from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext, ModalContext
+from .listener import Listener
 from .message import Message
-from .utils import _from_json, async_all
+from .utils import _from_json
 
 log = logging.getLogger()
 
 
-class ClientBase(discord.Client):
+class ClientBase(commands.bot.BotBase, discord.Client):
     def __init__(
             self,
+            command_prefix=None,
             global_sync_command: bool = False,
             **options
     ):
         if discord.version_info.major >= 2:
             options['enable_debug_events'] = True
-        super().__init__(**options)
+        super().__init__(command_prefix, **options)
         self.global_sync_command = global_sync_command
         self.interaction_http = HttpClient(self.http)
 
@@ -88,21 +84,20 @@ class ClientBase(discord.Client):
         self.__sync_command_before_ready_popping = []
 
         self._deferred_components: Dict[str, list] = dict()
-        self._deferred_global_components: List = list()
-
-        self.extra_events: Dict[str, List[CoroutineFunction]] = dict()
-        self.__extensions: Dict[str, types.ModuleType] = dict()
+        self._deferred_global_components: list = list()
 
         self.add_listener(self._sync_command_task, "on_ready")
 
-    def dispatch(self, event_name: str, /, *args: Any, **kwargs: Any) -> None:
-        # super() will resolve to Client
-        super().dispatch(event_name, *args, **kwargs)  # type: ignore
-        ev = 'on_' + event_name
-        for event in self.extra_events.get(ev, []):
-            self._schedule_event(event, ev, *args, **kwargs)  # type: ignore
+    async def process_commands(self, message):
+        if self.command_prefix is not None:
+            return await super().process_commands(message)
+        return
 
-    # Command
+    async def get_prefix(self, message):
+        if self.command_prefix is not None:
+            return await super().get_prefix(message)
+        return
+
     async def register_command(self, command: ApplicationCommand):
         command_ids = await self._fetch_command_cached()
         if command.name in command_ids[command.type.value - 1]:
@@ -138,33 +133,6 @@ class ClientBase(discord.Client):
             payload=command.to_register_dict()
         )
 
-    # Listener
-    def add_listener(self, func: CoroutineFunction, name: str = None):
-        name = name or func.__name__
-
-        if not asyncio.iscoroutinefunction(func):
-            raise TypeError('Listeners must be coroutines')
-
-        if name in self.extra_events:
-            self.extra_events[name].append(func)
-        else:
-            self.extra_events[name] = [func]
-
-    def remove_listener(self, func: CoroutineFunction, name: str = None):
-        if name in self.extra_events:
-            try:
-                self.extra_events[name].remove(func)
-            except ValueError:
-                pass
-
-    def listen(self, name: str = None):
-        def decorator(func: CoroutineFunction) -> CoroutineFunction:
-            self.add_listener(func, name)
-            return func
-
-        return decorator
-
-    # Application ID (from store data)
     async def _application_id(self):
         if self._application_id_value is None:
             application_info: discord.AppInfo = await self.application_info()
@@ -214,47 +182,9 @@ class ClientBase(discord.Client):
             await self.delete_command(command, command_id=command_id)
         return
 
-    def _load_from_module_spec(self, spec: importlib.machinery.ModuleSpec, key: str) -> None:
-        # precondition: key not in self.__extensions
-        lib = importlib.util.module_from_spec(spec)
-        sys.modules[key] = lib
-        try:
-            spec.loader.exec_module(lib)  # type: ignore
-        except Exception as e:
-            del sys.modules[key]
-            raise errors.ExtensionFailed(key, e)
-
-        try:
-            setup = getattr(lib, 'setup')
-        except AttributeError:
-            del sys.modules[key]
-            raise errors.NoEntryPointError(key)
-
-        try:
-            setup(self)
-        except Exception as e:
-            del sys.modules[key]
-            raise errors.ExtensionFailed(key, e) from e
-        else:
-            self.__extensions[key] = lib
-
-    @staticmethod
-    def _resolve_name(name: str, package: Optional[str]) -> str:
-        try:
-            return importlib.util.resolve_name(name, package)
-        except ImportError:
-            raise errors.ExtensionNotFound(name)
-
-    def load_extension(self, name: str, *, package: Optional[str] = None) -> None:
-        name = self._resolve_name(name, package)
-        if name in self.__extensions:
-            raise errors.ExtensionAlreadyLoaded(name)
-
-        spec = importlib.util.find_spec(name)
-        if spec is None:
-            raise errors.ExtensionNotFound(name)
-
-        self._load_from_module_spec(spec, name)
+    async def _async_load_extensions(self, cogs: List[str]) -> None:
+        for cog in cogs:
+            await self.load_extension(cog)
         return
 
     def load_extensions(self, package: str, directory: str = None) -> Optional[Coroutine]:
@@ -267,6 +197,9 @@ class ClientBase(discord.Client):
             for file in os.listdir(_package)
             if file.endswith(".py")
         ]
+
+        if asyncio.iscoroutinefunction(self.load_extension):
+            return self._async_load_extensions(cogs)
 
         for cog in cogs:
             self.load_extension(cog)
@@ -314,7 +247,7 @@ class ClientBase(discord.Client):
     def get_detect_component(self):
         return self._detect_components
 
-    def remove_detect_component(
+    def delete_detect_component(
             self,
             custom_id: str,
             detect_component: DetectComponent = None
@@ -382,17 +315,24 @@ class ClientBase(discord.Client):
             else:
                 self.__sync_command_before_ready_popping.append(command)
 
-    def add_interaction_cog(
+    def add_icog(
             self,
-            interaction_cog
+            icog
     ):
-        self._interactions_of_group.append(interaction_cog)
-        for func, attr in inspect.getmembers(interaction_cog):
+        self._interactions_of_group.append(icog)
+        for func, attr in inspect.getmembers(icog):
             if isinstance(attr, BaseCommand):
                 attr: decorator_command_types
-                self.add_interaction(attr, attr.sync_command, interaction_cog)
+                self.add_interaction(attr, attr.sync_command, icog)
+            elif isinstance(attr, Listener):
+                attr.parents = icog
+                self.add_listener(attr.__call__, name=attr.name)
             elif isinstance(attr, DetectComponent):
-                self.add_detect_component(attr, interaction_cog)
+                self.add_detect_component(attr, icog)
+            elif isinstance(attr, commands.Command):
+                attr.cog = icog
+                if attr.parent is None:
+                    self.add_command(attr)
             elif inspect.iscoroutinefunction(attr):
                 if hasattr(attr, '__cog_listener__') and hasattr(attr, '__cog_listener_names__'):
                     if not attr.__cog_listener__:
@@ -400,8 +340,6 @@ class ClientBase(discord.Client):
                     for name in attr.__cog_listener_names__:
                         self.add_listener(attr, name=name)
         return
-
-    # Socket Decoding
 
     async def on_socket_raw_receive(self, msg):
         if type(msg) is bytes:
@@ -456,7 +394,6 @@ class ClientBase(discord.Client):
             #     state.dispatch('interaction_command', command)
             return
 
-    # Application Context
     async def process_interaction(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
         command = self._interactions[ctx.application_type - 1].get(ctx.name)
@@ -519,8 +456,6 @@ class ClientBase(discord.Client):
         await self.process_interaction(ctx)
         return
 
-    # Components
-
     def wait_for_component(self, custom_id: str, check=None, timeout=None):
         future = self.loop.create_future()
         if check is None:
@@ -547,14 +482,6 @@ class ClientBase(discord.Client):
 
         self._deferred_global_components.append((future, check, True))
         return asyncio.wait_for(future, timeout)
-
-    async def can_run(self, ctx: Union[ApplicationContext, ComponentsContext], /, *, call_once: bool = False) -> bool:
-        data = self._check_once if call_once else self._checks
-
-        if len(data) == 0:
-            return True
-
-        return await async_all(f(ctx) for f in data)  # type: ignore
 
     async def process_components(self, component: ComponentsContext):
         _state: ConnectionState = self._connection
