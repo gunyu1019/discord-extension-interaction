@@ -34,6 +34,7 @@ import importlib.util
 import importlib.machinery
 from typing import Optional, Dict, List, Coroutine, Any, Union
 
+import discord
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
@@ -105,7 +106,7 @@ class ClientBase(discord.Client):
     async def register_command(self, command: ApplicationCommand):
         command_ids = await self._fetch_command_cached()
         if command.name in command_ids[command.type.value - 1]:
-            raise CommandRegistrationError(command.name)
+            raise commands.CommandRegistrationError(command.name)
 
         return await self.interaction_http.register_command(
             await self._application_id(),
@@ -116,7 +117,7 @@ class ClientBase(discord.Client):
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids[command.type.value - 1]:
-                raise CommandNotFound(f'Command "{command.name}" is not found')
+                raise commands.CommandNotFound(f'Command "{command.name}" is not found')
 
             command_id = command_ids[command.type.value - 1][command.name].id
         return command_id
@@ -219,21 +220,21 @@ class ClientBase(discord.Client):
         sys.modules[key] = lib
         try:
             spec.loader.exec_module(lib)  # type: ignore
-        except Exception as error:
+        except Exception as e:
             del sys.modules[key]
-            raise ExtensionFailed(key, error) from error
+            raise errors.ExtensionFailed(key, e)
 
         try:
             setup = getattr(lib, 'setup')
         except AttributeError:
             del sys.modules[key]
-            raise NoEntryPointError(key)
+            raise errors.NoEntryPointError(key)
 
         try:
             setup(self)
-        except Exception as error:
+        except Exception as e:
             del sys.modules[key]
-            raise ExtensionFailed(key, error) from error
+            raise errors.ExtensionFailed(key, e) from e
         else:
             self.__extensions[key] = lib
 
@@ -242,16 +243,16 @@ class ClientBase(discord.Client):
         try:
             return importlib.util.resolve_name(name, package)
         except ImportError:
-            raise ExtensionNotFound(name)
+            raise errors.ExtensionNotFound(name)
 
     def load_extension(self, name: str, *, package: Optional[str] = None) -> None:
         name = self._resolve_name(name, package)
         if name in self.__extensions:
-            raise ExtensionAlreadyLoaded(name)
+            raise errors.ExtensionAlreadyLoaded(name)
 
         spec = importlib.util.find_spec(name)
         if spec is None:
-            raise ExtensionNotFound(name)
+            raise errors.ExtensionNotFound(name)
 
         self._load_from_module_spec(spec, name)
         return
@@ -337,7 +338,7 @@ class ClientBase(discord.Client):
             sync_command = self.global_sync_command
 
         if command.name in self._interactions[command.type.value - 1]:
-            raise CommandRegistrationError(command.name)
+            raise commands.CommandRegistrationError(command.name)
 
         is_subcommand = getattr(command, 'is_subcommand', False)
         if _parent is not None:
@@ -371,7 +372,7 @@ class ClientBase(discord.Client):
             sync_command = self.global_sync_command
 
         if command.name not in self._interactions[command.type.value - 1]:
-            raise CommandNotFound(f'Command "{command.name}" is not found')
+            raise commands.CommandNotFound(f'Command "{command.name}" is not found')
 
         self._interactions[command.type.value - 1].pop(command.name)
 
@@ -502,11 +503,11 @@ class ClientBase(discord.Client):
                     else:
                         await func.callback(ctx)
                 else:
-                    raise CheckFailure('The check functions for command failed.')
+                    raise commands.errors.CheckFailure('The check functions for command failed.')
             else:
-                raise CheckFailure('The global check once functions failed.')
+                raise commands.errors.CheckFailure('The global check once functions failed.')
         except Exception as error:
-            if isinstance(error, CheckFailure):
+            if isinstance(error, commands.errors.CheckFailure):
                 _state.dispatch("command_permission_error", ctx, error)
             _state.dispatch("interaction_command_error", ctx, error)
             raise error
@@ -569,9 +570,9 @@ class ClientBase(discord.Client):
                         if await _component.can_run(component):
                             await _component.callback(component)
                     else:
-                        raise CheckFailure('The global check once functions failed.')
+                        raise commands.errors.CheckFailure('The global check once functions failed.')
                 except Exception as error:
-                    if isinstance(error, CheckFailure):
+                    if isinstance(error, commands.errors.CheckFailure):
                         _state.dispatch("component_permission_error", component, error)
                     _state.dispatch("component_error", component, error)
                 else:

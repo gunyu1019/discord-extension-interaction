@@ -42,7 +42,7 @@ from .interaction import (
     InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext, ModalContext
 )
 from .message import Message, MessageSendable
-from .listener import listener
+from .listener import Listener, listener
 
 
 class VersionInfo(NamedTuple):
