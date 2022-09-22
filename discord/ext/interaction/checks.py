@@ -166,7 +166,7 @@ def has_any_role(*items: Union[int, str]) -> Callable:
     command has **any** of the roles specified. This means that if they have
     one out of the three roles specified, then this check will return `True`.
 
-    Similar to :func:`.has_role`\, the names or IDs passed in must be exact.
+    Similar to :func:`.has_role`, the names or IDs passed in must be exact.
 
     This check raises one of two special exceptions, :exc:`.MissingAnyRole` if the user
     is missing all roles, or :exc:`.NoPrivateMessage` if it is used in a private message.
@@ -311,7 +311,7 @@ def bot_has_permissions(**perms: bool) -> Callable:
 
     def predicate(ctx: InteractionContext) -> bool:
         guild = ctx.guild
-        me = guild.me if guild is not None else ctx.bot.user
+        me = guild.me if guild is not None else ctx.client.user
         permissions = ctx.channel.permissions_for(me)  # type: ignore
 
         missing = [perm for perm, value in perms.items() if getattr(permissions, perm) != value]
@@ -420,7 +420,7 @@ def is_owner() -> Callable:
     """
 
     async def predicate(ctx: InteractionContext) -> bool:
-        if not await ctx.bot.is_owner(ctx.author):
+        if not await ctx.client.is_owner(ctx.author):
             raise NotOwner('You do not own this bot.')
         return True
 

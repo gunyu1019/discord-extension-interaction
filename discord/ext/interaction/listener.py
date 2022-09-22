@@ -22,7 +22,6 @@ SOFTWARE.
 """
 
 import inspect
-from typing import Coroutine, Any
 
 
 def listener(name: str = None):

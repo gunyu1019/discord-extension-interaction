@@ -128,7 +128,7 @@ class CommandOption:
                     raise TypeError('Channel options can be set only when they are set to a channel type.')
 
             if channel_types is not None and channel_type is not None:
-                raise InvalidArgument('Single item and multiple item cannot be used for same function.')
+                raise InvalidArgument()
             elif channel_type is not None:
                 if isinstance(channel_type, discord.ChannelType):
                     self._channel_type = [getattr(channel_type, "value", 0)]

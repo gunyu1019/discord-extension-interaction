@@ -52,7 +52,7 @@ from .utils import _from_json, async_all
 log = logging.getLogger()
 
 
-class ClientBase(discord.Client):
+class ClientBase:
     def __init__(
             self,
             global_sync_command: bool = False,
