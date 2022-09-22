@@ -69,7 +69,7 @@ def check_any(*checks) -> Callable:
 
     Parameters
     ------------
-    \*checks: Callable[[:class:`Context`], :class:`bool`]
+    checks: Callable[[:class:`Context`], :class:`bool`]
         An argument list of checks that have been decorated with
         the :func:`check` decorator.
 

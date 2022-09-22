@@ -22,30 +22,21 @@ SOFTWARE.
 """
 
 import logging
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Sequence
 
 import discord
+from discord.channel import _channel_factory
 from discord.state import ConnectionState
+from discord.utils import MISSING
 
 from .commands import CommandOptionChoice
 from .components import ActionRow, Button, Selection, Components, from_payload, TextInput
-from .errors import InvalidArgument, AlreadyDeferred
-from .http import HttpClient, InteractionData
+from .errors import AlreadyDeferred
+from .http import InteractionHTTPClient, InteractionData, handler_message_parameter
 from .message import Message
-from .utils import get_as_snowflake, _files_to_form, _allowed_mentions, channel_types
+from .utils import get_as_snowflake, channel_types
 
 log = logging.getLogger()
-
-
-class PartialMessageable:
-    def __init__(self, state: ConnectionState, id: int, type: Optional[discord.ChannelType] = None):
-        self._state: ConnectionState = state
-        self._channel: discord.Object = discord.Object(id=id)
-        self.id: int = id
-        self.type: Optional[discord.ChannelType] = type
-
-    async def _get_channel(self) -> discord.Object:
-        return self._channel
 
 
 class InteractionContext:
@@ -76,41 +67,14 @@ class InteractionContext:
         self.responded = False
 
         self.data = InteractionData(
-            interaction_token=self.token,
-            interaction_id=self.id,
+            token=self.token,
+            id=self.id,
             application_id=self.application
         )
         if hasattr(self.client, "interaction_http"):
             self.http = self.client.interaction_http
         else:
-            self.http = HttpClient(http=self.client.http)
-
-    @classmethod
-    def from_original_data(cls, response, client, _cls=None):
-        if _cls is not None:
-            new_cls = _cls({}, client)
-        else:
-            new_cls = cls({}, client)
-        new_cls.application = response.application_id
-        new_cls.id = response.id
-        new_cls.created_at = discord.utils.snowflake_time(new_cls.id)
-        new_cls.type = response.type
-        new_cls.token = response.token
-        new_cls.version = response.version
-
-        new_cls.guild_id = response.guild_id
-        new_cls.channel_id = response.channel_id
-        new_cls.locale = getattr(response, 'locale', None)
-        new_cls.guild_locale = getattr(response, 'guild_locale', None)
-        new_cls.author = response.user
-
-        new_cls.data = InteractionData(
-            interaction_token=new_cls.token,
-            interaction_id=new_cls.id,
-            application_id=new_cls.application
-        )
-
-        return new_cls
+            self.http = InteractionHTTPClient(http=self.client.http)
 
     @property
     def guild(self) -> Optional[discord.Guild]:
@@ -125,7 +89,7 @@ class InteractionContext:
                 channel = self.guild.get_channel(int(self.channel_id))
             else:
                 tp = discord.ChannelType.text if self.guild_id is not None else discord.ChannelType.private
-                channel = PartialMessageable(state=self._state, id=self.channel_id, type=tp)
+                channel = discord.PartialMessageable(state=self._state, id=self.channel_id, type=tp)
             return channel
         return
 
@@ -174,71 +138,62 @@ class InteractionContext:
 
     async def send(
             self,
-            content=None,
+            content: Optional[str] = MISSING,
             *,
             tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
+            embed: discord.Embed = MISSING,
+            embeds: List[discord.Embed] = MISSING,
+            file: discord.File = MISSING,
+            files: List[discord.File] = MISSING,
             hidden: bool = False,
             allowed_mentions: discord.AllowedMentions = None,
+            suppress_embeds: bool = False,
             components: List[Union[ActionRow, Button, Selection]] = None
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if files is not None and files is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
-
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-        payload = self._get_payload(
-            content=content,
-            embed=embeds,
-            tts=tts,
-            hidden=hidden,
-            allowed_mentions=allowed_mentions,
-            components=components,
-        )
-
-        if files:
-            form = _files_to_form(files=files, payload=payload)
+        if suppress_embeds or hidden:
+            flags = discord.MessageFlags(
+                phemeral=hidden,
+                suppress_embeds=suppress_embeds if suppress_embeds and not self.responded else False
+            )
         else:
-            form = None
+            flags = MISSING
+
+        params = handler_message_parameter(
+            content=content, tts=tts, embed=embed, embeds=embeds,
+            file=file, files=files, allowed_mentions=allowed_mentions,
+            components=components, flags=flags
+        )
 
         if not self.responded:
             if files and not self.deferred:
                 await self.defer(hidden=hidden)
 
             if self.deferred:
-                resp = await self.http.edit_initial_response(payload=payload, form=form, files=files, data=self.data)
+                resp = await self.http.edit_initial_response(
+                    payload=params.payload,
+                    form=params.multipart,
+                    files=params.files,
+                    data=self.data
+                )
                 self.deferred = False
             else:
                 await self.http.post_initial_response(
                     payload={
                         "type": 4,
-                        "data": payload
+                        "data": params.payload
                     },
                     data=self.data
                 )
                 resp = await self.http.get_initial_response(data=self.data)
             self.responded = True
         else:
-            resp = await self.http.post_followup(payload=payload, form=form, files=files, data=self.data)
+            resp = await self.http.post_followup(
+                payload=params.payload,
+                form=params.multipart,
+                files=params.files,
+                data=self.data
+            )
         ret = Message(state=self._state, channel=self.channel, data=resp)
-
-        if files:
-            for i in files:
-                i.close()
         return ret
 
     async def edit(
@@ -246,59 +201,37 @@ class InteractionContext:
             message_id="@original",
             content=None,
             *,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+            embed: discord.Embed = MISSING,
+            embeds: List[discord.Embed] = MISSING,
+            attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+            allowed_mentions: discord.AllowedMentions = MISSING,
+            components: List[Union[ActionRow, Button, Selection]] = MISSING
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if files is not None and files is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
-
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-
-        payload = self._get_payload(
-            content=content,
-            embed=embeds,
-            allowed_mentions=allowed_mentions,
-            components=components,
+        params = handler_message_parameter(
+            content=content, embed=embed, embeds=embeds,
+            previous_allowed_mentions=self._state.allowed_mentions,
+            attachments=attachments, allowed_mentions=allowed_mentions,
+            components=components
         )
 
-        if files:
-            form = _files_to_form(files=files, payload=payload)
-        else:
-            form = None
-
         if message_id == "@original":
-            resp = await self.http.edit_initial_response(payload=payload, form=form, files=files, data=self.data)
+            resp = await self.http.edit_initial_response(
+                payload=params.payload,
+                form=params.forms,
+                files=params.files,
+                data=self.data
+            )
         else:
             resp = await self.http.edit_followup(
                 message_id=message_id,
-                payload=payload,
-                form=form,
-                files=files,
+                payload=params.payload,
+                form=params.forms,
+                files=params.files,
                 data=self.data
             )
         ret = Message(state=self._state, channel=self.channel, data=resp)
         if self.deferred:
             self.deferred = False
-
-        if files:
-            for file in files:
-                file.close()
         return ret
 
     async def delete(self, message_id="@original"):
@@ -338,14 +271,6 @@ class BaseApplicationContext(ModalPossible):
         self._from_data(
             payload.get("data", {})
         )
-
-    @classmethod
-    def from_original_data(cls, response, client, _cls=None):
-        new_cls: BaseApplicationContext = super().from_original_data(response, client, _cls=cls)
-        new_cls._from_data(
-            response.data
-        )
-        return new_cls
 
     def _from_data(self, data):
         self.target_id = data.get("target_id")
@@ -396,7 +321,7 @@ class BaseApplicationContext(ModalPossible):
             if data is None:
                 return
 
-            factory, ch_type = discord._channel_factory(data['type'])
+            factory, ch_type = _channel_factory(data['type'])
             if factory is None:
                 raise discord.InvalidData('Unknown channel type {type} for channel ID {id}.'.format_map(data))
 
@@ -548,70 +473,54 @@ class ComponentsContext(ModalPossible):
 
     async def update(
             self,
-            content=None,
+            content: Optional[str] = MISSING,
             *,
             tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
+            embed: discord.Embed = MISSING,
+            embeds: List[discord.Embed] = MISSING,
+            file: discord.File = MISSING,
+            files: List[discord.File] = MISSING,
+            hidden: bool = False,
             allowed_mentions: discord.AllowedMentions = None,
+            suppress_embeds: bool = False,
             components: List[Union[ActionRow, Button, Selection]] = None
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if file is not None and files is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
-
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-        payload = self._get_payload(
-            content=content,
-            embed=embeds,
-            tts=tts,
-            allowed_mentions=allowed_mentions,
-            components=components,
-        )
-
-        if files:
-            form = _files_to_form(files=files, payload=payload)
+        if suppress_embeds or hidden:
+            flags = discord.MessageFlags(
+                phemeral=hidden,
+                suppress_embeds=suppress_embeds if suppress_embeds and not self.responded else False
+            )
         else:
-            form = None
+            flags = MISSING
+
+        params = handler_message_parameter(
+            content=content, tts=tts, embed=embed, embeds=embeds,
+            file=file, files=files, allowed_mentions=allowed_mentions,
+            components=components, flags=flags
+        )
 
         if not self.responded:
             if files:
                 await self.defer_update()
 
             if self.deferred:
-                await self.http.edit_message(
-                    channel_id=self.channel.id, message_id=self.message.id,
-                    payload=payload, form=form, files=files
+                await self.client.http.edit_message(
+                    channel_id=self.channel.id,
+                    message_id=self.message.id,
+                    params=params
                 )
                 self.deferred = False
             else:
                 await self.http.post_initial_response(
                     payload={
                         "type": 7,
-                        "data": payload
+                        "data": params.payload
                     },
                     data=self.data
                 )
             self.responded = True
         else:
-            await self.http.post_followup(payload=payload, form=form, files=files, data=self.data)
-
-        if files:
-            for i in files:
-                i.close()
+            await self.http.post_followup(payload=params.payload, form=params.form, files=params.files, data=self.data)
 
 
 class AutocompleteContext(ApplicationContext):

@@ -26,42 +26,18 @@ import asyncio
 import discord
 
 from discord.state import ConnectionState
-from typing import List, Union, Optional
+from discord.utils import MISSING
+from typing import List, Union, Sequence, Optional
 
 from .components import ActionRow, Button, Selection, from_payload
 from .errors import InvalidArgument, AlreadyDeferred
-from .http import HttpClient
-from .utils import _allowed_mentions, _files_to_form, deprecated
-
-
-def _get_payload(
-        content=None,
-        embed=None,
-        tts: bool = False,
-        allowed_mentions=None,
-        components=None,
-        message_reference=None,
-        stickers=None,
-) -> dict:
-    payload = {'tts': tts}
-    if content:
-        payload['content'] = content
-    if embed:
-        payload['embeds'] = embed
-    if allowed_mentions:
-        payload['allowed_mentions'] = allowed_mentions
-    if components is not None:
-        payload['components'] = components
-    if message_reference:
-        payload['message_reference'] = message_reference
-    if stickers:
-        payload['sticker_ids'] = stickers
-    return payload
+from .http import handler_message_parameter
+from .utils import deprecated
 
 
 class Message(discord.Message):
     def __init__(
-            self,
+           self,
             *,
             state: ConnectionState,
             channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
@@ -71,19 +47,22 @@ class Message(discord.Message):
             data["message_reference"]["channel_id"] = channel.id
         super().__init__(state=state, channel=channel, data=data)
         self.components = from_payload(data.get("components", []))
-        self.http = HttpClient(http=self._state.http)
 
     async def send(
             self,
-            content=None,
+            content: Optional[str] = MISSING,
             *,
             tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+            embed: discord.Embed = MISSING,
+            embeds: List[discord.Embed] = MISSING,
+            file: Optional[discord.File] = MISSING,
+            files: Optional[List[discord.File]] = MISSING,
+            allowed_mentions: discord.AllowedMentions = MISSING,
+            components: List[Union[ActionRow, Button, Selection]] = MISSING,
+            reference: Union[discord.Message, discord.MessageReference, discord.PartialMessage] = MISSING,
+            mention_author: bool = None,
+            stickers: List[Union[discord.Sticker, int]] = MISSING,
+            suppress_embeds: bool = False
     ):
         channel = MessageSendable(state=self._state, channel=self.channel)
         return await channel.send(
@@ -94,59 +73,39 @@ class Message(discord.Message):
             file=file,
             files=files,
             allowed_mentions=allowed_mentions,
-            components=components
+            components=components,
+            reference=reference,
+            mention_author=mention_author,
+            stickers=stickers,
+            suppress_embeds=suppress_embeds
         )
 
     async def edit(
             self,
-            content: Optional[str] = None,
+            content: Optional[str] = MISSING,
             *,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            attachment: discord.File = None,
-            attachments: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None,
-            **kwargs
+            embed: discord.Embed = MISSING,
+            embeds: List[discord.Embed] = MISSING,
+            attachment: Union[discord.Attachment, discord.File] = MISSING,
+            attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+            allowed_mentions: discord.AllowedMentions = MISSING,
+            components: List[Union[ActionRow, Button, Selection]] = MISSING,
+            stickers: List[discord.Sticker] = MISSING
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if attachment is not None and attachments is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
-
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if attachment:
+        if attachment is not MISSING:
+            if attachment is not MISSING and attachments is not MISSING:
+                raise InvalidArgument()
             attachments = [attachment]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-
-        payload = _get_payload(
-            content=content,
-            embed=embeds,
-            allowed_mentions=allowed_mentions,
-            components=components,
+        params = handler_message_parameter(
+            content=content, embed=embed, embeds=embeds,
+            previous_allowed_mentions=self._state.allowed_mentions,
+            attachments=attachments, allowed_mentions=allowed_mentions,
+            components=components, stickers=stickers
         )
 
-        payload["attachments"] = []
-        if attachments:
-            form = _files_to_form(files=attachments, payload=payload)
-        else:
-            form = None
-
-        await self.http.edit_message(
-            channel_id=self.channel.id, message_id=self.id,
-            payload=payload, form=form, files=attachments
+        await self._state.http.edit_message(
+            channel_id=self.channel.id, message_id=self.id, params=params
         )
-
-        if attachments:
-            for attachment in attachments:
-                attachment.close()
         return
 
 
@@ -184,11 +143,11 @@ class MessageCommand(Message):
             pass
 
     async def _do_deferred(self) -> None:
-        for count in range(0, 300, 5):
-            await super().channel.trigger_typing()
+        for count in range(0, 300, 10):
+            await super().channel.typing()
             if not self.deferred:
                 break
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
 
     async def defer(
             self,
@@ -211,7 +170,11 @@ class MessageCommand(Message):
             file: discord.File = None,
             files: List[discord.File] = None,
             allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+            components: List[Union[ActionRow, Button, Selection]] = None,
+            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = MISSING,
+            mention_author: bool = None,
+            stickers: List[Union[discord.Sticker, int]] = MISSING,
+            suppress_embeds: bool = False
     ) -> Optional[Message]:
         self.deferred = False
         if self.deferred_task is not None:
@@ -225,77 +188,55 @@ class MessageCommand(Message):
             file=file,
             files=files,
             allowed_mentions=allowed_mentions,
-            components=components
+            components=components,
+            reference=reference,
+            mention_author=mention_author,
+            stickers=stickers,
+            suppress_embeds=suppress_embeds
         )
 
 
 class MessageSendable:
     def __init__(self, state: ConnectionState, channel):
         self._state = state
-        self.http = HttpClient(http=self._state.http)
         self.channel = channel
 
     async def send(
             self,
-            content=None,
+            content: Optional[str] = MISSING,
             *,
             tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None,
-            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = None,
-            mention_author: bool = False,
-            stickers: list = None
+            embed: discord.Embed = MISSING,
+            embeds: Sequence[discord.Embed] = MISSING,
+            file: discord.File = MISSING,
+            files: List[discord.File] = MISSING,
+            allowed_mentions: discord.AllowedMentions = MISSING,
+            components: List[Union[ActionRow, Button, Selection]] = MISSING,
+            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = MISSING,
+            mention_author: bool = None,
+            stickers: List[Union[discord.Sticker, int]] = MISSING,
+            suppress_embeds: bool = False
     ):
-        if file is not None and files is not None:
-            raise InvalidArgument()
-        if embed is not None and embeds is not None:
-            raise InvalidArgument()
-
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-        if stickers is not None:
-            stickers = [
-                sticker.id if not isinstance(sticker, int) else sticker for sticker in stickers
-            ]
         if reference is not None:
             try:
-                reference = reference.to_message_reference_dict()
+                reference_dict = reference.to_message_reference_dict()
             except AttributeError:
-                raise InvalidArgument('reference parameter must be Message, MessageReference, or PartialMessage')
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-        if mention_author is not None:
-            allowed_mentions = allowed_mentions or discord.AllowedMentions().to_dict()
-            allowed_mentions['replied_user'] = bool(mention_author)
+                raise TypeError('reference parameter must be Message, MessageReference, or PartialMessage') from None
+        else:
+            reference_dict = MISSING
 
-        payload = _get_payload(
-            content=content,
-            tts=tts,
-            embed=embeds,
-            allowed_mentions=allowed_mentions,
-            components=components,
-            message_reference=reference,
-            stickers=stickers
+        if suppress_embeds:
+            flags = discord.MessageFlags(suppress_embeds=suppress_embeds)
+        else:
+            flags = MISSING
+
+        params = handler_message_parameter(
+            content=content, tts=tts, embed=embed, embeds=embeds,
+            previous_allowed_mentions=self._state.allowed_mentions,
+            file=file, files=files, allowed_mentions=allowed_mentions, flags=flags,
+            components=components, reference=reference_dict, mention_author=mention_author, stickers=stickers
         )
 
-        if files:
-            form = _files_to_form(files=files, payload=payload)
-            resp = await self.http.create_message(form=form, files=files, channel_id=self.channel.id)
-        else:
-            resp = await self.http.create_message(payload=payload, channel_id=self.channel.id)
+        resp = await self._state.http.send_message(params=params, channel_id=self.channel.id)
         ret = Message(state=self._state, channel=self.channel, data=resp)
-
-        if files:
-            for i in files:
-                i.close()
         return ret

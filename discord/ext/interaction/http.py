@@ -22,170 +22,208 @@ SOFTWARE.
 """
 
 import discord
-from discord.http import Route
+from discord.http import Route, MultipartParameters
+from discord.utils import MISSING
+from typing import Any, Dict, NamedTuple, Sequence, List, Union, Optional
+
+from .components import ActionRow, Button, Selection
+from .utils import to_json
 
 
-class SlashRoute(Route):
-    BASE = "https://discord.com/api/v10"
+def handler_message_parameter(
+    content: Optional[str] = MISSING,
+    *,
+    tts: bool = False,
+    embed: discord.Embed = MISSING,
+    embeds: Sequence[discord.Embed] = MISSING,
+    nonce: Optional[Union[int, str]] = None,
+    flags: discord.MessageFlags = MISSING,
+    file: discord.File = MISSING,
+    files: Sequence[discord.File] = MISSING,
+    allowed_mentions: discord.AllowedMentions = MISSING,
+    attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+    components: List[Union[ActionRow, Button, Selection]] = MISSING,
+    reference: Union[discord.MessageReference, discord.PartialMessage] = MISSING,
+    previous_allowed_mentions: Optional[discord.AllowedMentions] = None,
+    mention_author: bool = None,
+    stickers: List[Union[discord.Sticker, int]] = MISSING
+):
+    if files is not MISSING and file is not MISSING:
+        raise TypeError('Cannot mix file and files keyword arguments.')
+    if embeds is not MISSING and embed is not MISSING:
+        raise TypeError('Cannot mix embed and embeds keyword arguments.')
+
+    if file is not MISSING:
+        files = [file]
+
+    payload = {"tts": tts}
+    if embeds is not MISSING:
+        if len(embeds) > 10:
+            raise ValueError('embeds has a maximum of 10 elements.')
+        payload['embeds'] = [e.to_dict() for e in embeds]
+
+    if embed is not MISSING:
+        if embed is None:
+            payload['embeds'] = []
+        else:
+            payload['embeds'] = [embed.to_dict()]
+
+    if content is not MISSING:
+        if content is not None:
+            payload['content'] = str(content)
+        else:
+            payload['content'] = None
+
+    if components is not MISSING:
+        if components is not None:
+            payload['components'] = [
+                i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components
+            ]
+        else:
+            payload['components'] = []
+
+    if nonce is not None:
+        payload['nonce'] = str(nonce)
+
+    if reference is not MISSING:
+        payload['message_reference'] = reference
+
+    if stickers is not MISSING:
+        if stickers is not None:
+            payload['sticker_ids'] = [
+                sticker.id if isinstance(stickers, discord.Sticker) else stickers for sticker in stickers
+            ]
+        else:
+            payload['sticker_ids'] = []
+
+    if flags is not MISSING:
+        payload['flags'] = flags.value
+
+    if allowed_mentions:
+        if previous_allowed_mentions is not None:
+            payload['allowed_mentions'] = previous_allowed_mentions.merge(allowed_mentions).to_dict()
+        else:
+            payload['allowed_mentions'] = allowed_mentions.to_dict()
+    elif previous_allowed_mentions is not None:
+        payload['allowed_mentions'] = previous_allowed_mentions.to_dict()
+
+    if mention_author is not None:
+        if 'allowed_mentions' not in payload:
+            payload['allowed_mentions'] = discord.AllowedMentions().to_dict()
+        payload['allowed_mentions']['replied_user'] = mention_author
+
+    if attachments is MISSING:
+        attachments = files
+    else:
+        files = [a for a in attachments if isinstance(a, discord.File)]
+
+    if attachments is not MISSING:
+        file_index = 0
+        attachments_payload = []
+        for attachment in attachments:
+            if isinstance(attachment, discord.File):
+                attachments_payload.append(attachment.to_dict(file_index))
+                file_index += 1
+            else:
+                attachments_payload.append(attachment.to_dict())
+
+        payload['attachments'] = attachments_payload
+
+    multipart = []
+    if files:
+        multipart.append({'name': 'payload_json', 'value': to_json(payload)})
+        payload = None
+        for index, file in enumerate(files):
+            multipart.append(
+                {
+                    'name': f'files[{index}]',
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream',
+                }
+            )
+
+    return MultipartParameters(payload=payload, multipart=multipart, files=files)
 
 
-class InteractionData:
-    def __init__(self, interaction_token, interaction_id=None, application_id=None):
-        self.id = str(interaction_id)
-        self.application = str(application_id)
-        self.token: str = interaction_token
+class InteractionData(NamedTuple):
+    id: int
+    application_id: str
+    token: str
 
 
-class HttpClient:
+class InteractionHTTPClient:
     def __init__(self, http: discord.http.HTTPClient):
         self.http = http
 
-    # Interaction Response ▼
-    async def post_initial_response(self, data: InteractionData, payload: dict):
-        r = SlashRoute(
+    # Interaction Response
+    async def post_initial_response(self, data: InteractionData, payload: Dict[str, Any]):
+        r = Route(
             "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
         return await self.http.request(r, json=payload)
 
     async def get_initial_response(self, data: InteractionData):
-        r = SlashRoute(
-            "GET", "/webhooks/{id}/{token}/messages/@original", id=data.application, token=data.token
+        r = Route(
+            "GET", "/webhooks/{id}/{token}/messages/@original", id=data.application_id, token=data.token
         )
         return await self.http.request(r)
 
-    async def edit_initial_response(self, data: InteractionData, payload: dict = None, form=None, files=None):
-        if files is not None or form is not None:
+    async def edit_initial_response(
+            self,
+            data: InteractionData,
+            payload: Dict[str, Any] = None,
+            form: List[Dict[str, Any]] = None,
+            files: Optional[Sequence[discord.File]] = MISSING
+    ):
+        if form is None:
+            form = []
+
+        if len(form) > 0:
             return await self.edit_followup(message_id="@original", form=form, files=files, data=data)
         return await self.edit_followup(message_id="@original", payload=payload, data=data)
 
     async def delete_initial_response(self, data: InteractionData):
         await self.delete_followup(message_id="@original", data=data)
 
-    # Interaction Response (Followup) ▼
-    async def post_followup(self, data: InteractionData, payload: dict = None, form=None, files=None):
-        r = SlashRoute(
-            "POST", "/webhooks/{id}/{token}", id=data.application, token=data.token
+    # Interaction Response (Followup)
+    async def post_followup(
+            self,
+            data: InteractionData,
+            payload: Dict[str, Any] = None,
+            form: List[Dict[str, Any]] = None,
+            files: Optional[Sequence[discord.File]] = MISSING
+    ):
+        if form is None:
+            form = []
+        r = Route(
+            "POST", "/webhooks/{id}/{token}", id=data.application_id, token=data.token
         )
-        if files is not None or form is not None:
+        if len(form) > 0:
             return await self.http.request(r, form=form, files=files)
         return await self.http.request(r, json=payload)
 
-    async def edit_followup(self, data: InteractionData, message_id, payload: dict = None, form=None, files=None):
-        r = SlashRoute(
+    async def edit_followup(
+            self,
+            data: InteractionData,
+            message_id,
+            payload: Dict[str, Any] = None,
+            form: List[Dict[str, Any]] = None,
+            files: Optional[Sequence[discord.File]] = MISSING
+    ):
+        if form is None:
+            form = []
+        r = Route(
             "PATCH", "/webhooks/{id}/{token}/messages/{message_id}",
-            id=data.application, token=data.token, message_id=message_id
+            id=data.application_id, token=data.token, message_id=message_id
         )
-        if files is not None or form is not None:
+        if len(form) > 0:
             return await self.http.request(r, form=form, files=files)
         return await self.http.request(r, json=payload)
 
     async def delete_followup(self, data: InteractionData, message_id):
-        r = SlashRoute(
+        r = Route(
             "DELETE", "/webhooks/{id}/{token}/messages/{message_id}",
-            id=data.application, token=data.token, message_id=message_id
+            id=data.application_id, token=data.token, message_id=message_id
         )
         await self.http.request(r)
-
-    # Manage Message ▼
-    async def create_message(self, channel_id, payload: dict = None, form=None, files=None):
-        r = SlashRoute(
-            'POST', '/channels/{channel_id}/messages', channel_id=channel_id
-        )
-        if files is not None or form is not None:
-            return await self.http.request(r, form=form, files=files)
-        return await self.http.request(r, json=payload)
-
-    async def edit_message(self, channel_id, message_id, payload: dict = None, form=None, files=None):
-        r = SlashRoute(
-            'PATCH', '/channels/{channel_id}/messages/{message_id}', channel_id=channel_id, message_id=message_id
-        )
-        if files is not None or form is not None:
-            return await self.http.request(r, form=form, files=files)
-        return await self.http.request(r, json=payload)
-
-    # Application Command Register ▼
-    async def register_command(self, application_id: int, payload: dict = None, guild_id: int = None):
-        if guild_id is None:
-            r = SlashRoute(
-                'POST', '/applications/{application_id}/commands', application_id=application_id
-            )
-        else:
-            r = SlashRoute(
-                'POST', '/applications/{application_id}/guilds/{guild_id}/commands',
-                application_id=application_id, guild_id=guild_id
-            )
-        return await self.http.request(r, json=payload)
-
-    async def get_commands(self, application_id: int, guild_id: int = None):
-        if guild_id is None:
-            r = SlashRoute(
-                'GET', '/applications/{application_id}/commands', application_id=application_id
-            )
-        else:
-            r = SlashRoute(
-                'GET', '/applications/{application_id}/guilds/{guild_id}/commands',
-                application_id=application_id, guild_id=guild_id
-            )
-        return await self.http.request(r)
-
-    async def get_command(self, application_id: int, command_id: int, guild_id: int = None):
-        if guild_id is None:
-            r = SlashRoute(
-                'GET', '/applications/{application_id}/commands/{command_id}',
-                application_id=application_id, command_id=command_id
-            )
-        else:
-            r = SlashRoute(
-                'GET', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
-                application_id=application_id, guild_id=guild_id, command_id=command_id
-            )
-        return await self.http.request(r)
-
-    async def edit_command(self, application_id: int, command_id: int, payload: dict = None, guild_id: int = None):
-        if guild_id is None:
-            r = SlashRoute(
-                'PATCH', '/applications/{application_id}/commands/{command_id}',
-                application_id=application_id, command_id=command_id
-            )
-        else:
-            r = SlashRoute(
-                'PATCH', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
-                application_id=application_id, guild_id=guild_id, command_id=command_id
-            )
-        return await self.http.request(r, json=payload)
-
-    async def delete_command(self, application_id: int, command_id: int, payload: dict = None, guild_id: int = None):
-        if guild_id is None:
-            r = SlashRoute(
-                'DELETE', '/applications/{application_id}/commands/{command_id}',
-                application_id=application_id, command_id=command_id
-            )
-        else:
-            r = SlashRoute(
-                'DELETE', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
-                application_id=application_id, guild_id=guild_id, command_id=command_id
-            )
-
-        return await self.http.request(r, json=payload)
-
-    # ▼ Add Command Permission
-    async def get_command_permission(self, application_id: int, command_id: int, guild_id: int):
-        r = SlashRoute(
-            'GET', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
-            application_id=application_id, command_id=command_id, guild_id=guild_id
-        )
-        return await self.http.request(r)
-
-    async def get_commands_permission(self, application_id: int, guild_id: int):
-        r = SlashRoute(
-            'GET', '/applications/{application_id}/guilds/{guild_id}/commands/permissions',
-            application_id=application_id, guild_id=guild_id
-        )
-        return await self.http.request(r)
-
-    async def edit_command_permission(self, application_id: int, command_id: int, guild_id: int, payload: dict):
-        r = SlashRoute(
-            'PUT', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
-            application_id=application_id, command_id=command_id, guild_id=guild_id
-        )
-        return await self.http.request(r, json=payload)

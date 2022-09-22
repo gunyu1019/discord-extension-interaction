@@ -20,18 +20,65 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+import discord
+from discord.ext import commands
 
 
-class InvalidArgument(Exception):
+class InvalidArgument(discord.DiscordException):
     """
         Occurs when the Argument value is incorrect.
         Typically, a single item and a variety of items are in the same declaration.
     """
+
+    def __init__(self):
+        super(InvalidArgument, self).__init__('Single item and multiple item cannot be used for same function.')
+
+
+class ExtensionFailed(commands.ExtensionFailed):
+    pass
+
+
+class NoEntryPointError(commands.NoEntryPointError):
+    pass
+
+
+class ExtensionNotFound(commands.ExtensionNotFound):
+    pass
+
+
+class ExtensionAlreadyLoaded(commands.ExtensionAlreadyLoaded):
     pass
 
 
 class AlreadyDeferred(Exception):
+    """Occurs when a defer is called while a defer is already called."""
+    pass
+
+
+class CheckFailure(commands.CheckFailure):
+    """Exception raised when the predicates in :attr:`.Command.checks` have failed.
+
+        This inherits from :exc:`CommandError`
     """
-        Occurs when a defer is called while a defer is already called.
+    pass
+
+
+class CommandRegistrationError(commands.CommandRegistrationError):
+    """An exception raised when the command can't be added
+        because the name is already taken by a different command.
+
+        This inherits from :exc:`discord.ClientException`
+    """
+    pass
+
+
+class CommandNotFound(commands.CommandNotFound):
+    """Exception raised when a command is attempted to be invoked
+        but no command under that name is found.
+
+        This is not raised for invalid subcommands, rather just the
+        initial main command that is attempted to be invoked.
+
+        This inherits from :exc:`CommandError`.
     """
     pass
