@@ -91,11 +91,12 @@ class ClientBase:
         self._deferred_components: Dict[str, list] = dict()
         self._deferred_global_components: List = list()
 
+        self._multiple_setup_hook: List[CoroutineFunction] = list()
+
         self.extra_events: Dict[str, List[CoroutineFunction]] = dict()
         self.__extensions: Dict[str, types.ModuleType] = dict()
 
         self.interaction_http = InteractionHTTPClient(self.http)
-        self.add_listener(self._sync_command_task, "on_ready")
 
     def dispatch(self, event_name: str, /, *args: Any, **kwargs: Any) -> None:
         # super() will resolve to Client
@@ -103,6 +104,15 @@ class ClientBase:
         ev = 'on_' + event_name
         for event in self.extra_events.get(ev, []):
             self._schedule_event(event, ev, *args, **kwargs)  # type: ignore
+
+    async def on_ready(self):
+        await self._sync_command_task()
+
+    async def setup_hook(self):
+        await super(ClientBase, self).setup_hook()
+        for func in self._multiple_setup_hook:
+            await func()
+        return
 
     # Command
     async def register_command(self, command: ApplicationCommand):
@@ -163,6 +173,24 @@ class ClientBase:
             self.add_listener(func, name)
             return func
 
+        return decorator
+
+    # Multiple setup_hook
+    def add_setup_hook(self, func: CoroutineFunction):
+        self._multiple_setup_hook.append(func)
+        return
+
+    def remove_setup_hook(self, func: CoroutineFunction):
+        try:
+            self._multiple_setup_hook.append(func)
+        except ValueError:
+            pass
+        return
+
+    def multiple_setup_hook(self):
+        def decorator(func: CoroutineFunction) -> CoroutineFunction:
+            self.add_setup_hook(func)
+            return func
         return decorator
 
     # Application ID (from store data)
