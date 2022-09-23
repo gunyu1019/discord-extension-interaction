@@ -478,10 +478,6 @@ class ClientBase:
             channel, _ = getattr(state, "_get_guild_channel")(data)
             message = Message(state=state, data=data, channel=channel)
             state.dispatch('interaction_message', message)
-            # @deprecated
-            # if len(self._interactions) != 0:
-            #     command = MessageCommand(state=state, data=data, channel=channel)
-            #     state.dispatch('interaction_command', command)
             return
 
     # Application Context

@@ -27,7 +27,7 @@ import discord
 
 from discord.state import ConnectionState
 from discord.utils import MISSING
-from typing import List, Union, Sequence, Optional
+from typing import Any, Dict, List, Union, Sequence, Optional
 
 from .components import ActionRow, Button, Selection, from_payload
 from .errors import InvalidArgument, AlreadyDeferred
@@ -41,7 +41,7 @@ class Message(discord.Message):
             *,
             state: ConnectionState,
             channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
-            data: dict
+            data: Dict[str, Any]
     ):
         if "message_reference" in data and "channel_id" not in data.get("message_reference", {}):
             data["message_reference"]["channel_id"] = channel.id
@@ -59,7 +59,7 @@ class Message(discord.Message):
             files: Optional[List[discord.File]] = MISSING,
             allowed_mentions: discord.AllowedMentions = MISSING,
             components: List[Union[ActionRow, Button, Selection]] = MISSING,
-            reference: Union[discord.Message, discord.MessageReference, discord.PartialMessage] = MISSING,
+            reference: Union[discord.Message, discord.MessageReference, discord.PartialMessage] = None,
             mention_author: bool = None,
             stickers: List[Union[discord.Sticker, int]] = MISSING,
             suppress_embeds: bool = False
@@ -109,14 +109,13 @@ class Message(discord.Message):
         return
 
 
-@deprecated(version='0.1.2', reason='According to the recommendation to stop message command')
 class MessageCommand(Message):
     def __init__(
             self,
             *,
             state: ConnectionState,
             channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
-            data: dict
+            data: Dict[str, Any]
     ):
         super().__init__(state=state, channel=channel, data=data)
         options = self.content.split()
@@ -171,7 +170,7 @@ class MessageCommand(Message):
             files: List[discord.File] = None,
             allowed_mentions: discord.AllowedMentions = None,
             components: List[Union[ActionRow, Button, Selection]] = None,
-            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = MISSING,
+            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = None,
             mention_author: bool = None,
             stickers: List[Union[discord.Sticker, int]] = MISSING,
             suppress_embeds: bool = False
@@ -212,7 +211,7 @@ class MessageSendable:
             files: List[discord.File] = MISSING,
             allowed_mentions: discord.AllowedMentions = MISSING,
             components: List[Union[ActionRow, Button, Selection]] = MISSING,
-            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = MISSING,
+            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = None,
             mention_author: bool = None,
             stickers: List[Union[discord.Sticker, int]] = MISSING,
             suppress_embeds: bool = False
