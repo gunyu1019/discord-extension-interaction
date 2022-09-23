@@ -165,7 +165,7 @@ class InteractionContext:
         )
 
         if not self.responded:
-            if files and not self.deferred:
+            if (files is not MISSING or file is not MISSING) and not self.deferred:
                 await self.defer(hidden=hidden)
 
             if self.deferred:
@@ -500,7 +500,7 @@ class ComponentsContext(ModalPossible):
         )
 
         if not self.responded:
-            if files:
+            if files is not MISSING or file is not MISSING:
                 await self.defer_update()
 
             if self.deferred:
