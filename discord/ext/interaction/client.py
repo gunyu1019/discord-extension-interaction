@@ -372,11 +372,8 @@ class ClientBase:
         is_subcommand = getattr(command, 'is_subcommand', False)
         if _parent is not None:
             command.cog = _parent
-            if not is_subcommand and command.type == ApplicationCommandType.CHAT_INPUT:
-                command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
-        else:
-            if not is_subcommand and command.type == ApplicationCommandType.CHAT_INPUT:
-                command.options = get_signature_option(command.func, command.base_options, skipping_argument=1)
+
+        command.set_signature_option()
         self._interactions[command.type.value - 1][command.name] = command
 
         if sync_command:
