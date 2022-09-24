@@ -217,7 +217,7 @@ class InteractionContext:
         if message_id == "@original":
             resp = await self.http.edit_initial_response(
                 payload=params.payload,
-                form=params.forms,
+                form=params.multipart,
                 files=params.files,
                 data=self.data
             )
@@ -225,7 +225,7 @@ class InteractionContext:
             resp = await self.http.edit_followup(
                 message_id=message_id,
                 payload=params.payload,
-                form=params.forms,
+                form=params.multipart,
                 files=params.files,
                 data=self.data
             )
