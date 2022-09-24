@@ -373,7 +373,8 @@ class ClientBase:
         if _parent is not None:
             command.cog = _parent
 
-        command.set_signature_option()
+        if command.type == ApplicationCommandType.CHAT_INPUT:
+            command.set_signature_option()
         self._interactions[command.type.value - 1][command.name] = command
 
         if sync_command:
