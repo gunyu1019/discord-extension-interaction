@@ -152,7 +152,7 @@ class InteractionContext:
     ):
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
-                phemeral=hidden,
+                ephemeral=hidden,
                 suppress_embeds=suppress_embeds if suppress_embeds and not self.responded else False
             )
         else:
@@ -487,7 +487,7 @@ class ComponentsContext(ModalPossible):
     ):
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
-                phemeral=hidden,
+                ephemeral=hidden,
                 suppress_embeds=suppress_embeds if suppress_embeds and not self.responded else False
             )
         else:
