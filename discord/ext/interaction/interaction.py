@@ -520,7 +520,7 @@ class ComponentsContext(ModalPossible):
                 )
             self.responded = True
         else:
-            await self.http.post_followup(payload=params.payload, form=params.form, files=params.files, data=self.data)
+            await self.http.post_followup(payload=params.payload, form=params.multipart, files=params.files, data=self.data)
 
 
 class AutocompleteContext(ApplicationContext):
