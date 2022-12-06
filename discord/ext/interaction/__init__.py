@@ -41,7 +41,7 @@ from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext, ModalContext
 )
-from .message import Message, MessageSendable
+from .message import Message, MessageSendable, MessageEditable
 from .listener import listener
 
 
