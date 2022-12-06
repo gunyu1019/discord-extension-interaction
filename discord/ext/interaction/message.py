@@ -22,17 +22,15 @@ SOFTWARE.
 """
 
 import asyncio
+from typing import Any, Dict, List, Union, Sequence, Optional
 
 import discord
-
 from discord.state import ConnectionState
 from discord.utils import MISSING
-from typing import Any, Dict, List, Union, Sequence, Optional
 
 from .components import ActionRow, Button, Selection, from_payload
 from .errors import InvalidArgument, AlreadyDeferred
 from .http import handler_message_parameter
-from .utils import deprecated
 
 
 class Message(discord.Message):
@@ -92,21 +90,17 @@ class Message(discord.Message):
             components: List[Union[ActionRow, Button, Selection]] = MISSING,
             stickers: List[discord.Sticker] = MISSING
     ):
-        if attachment is not MISSING:
-            if attachment is not MISSING and attachments is not MISSING:
-                raise InvalidArgument()
-            attachments = [attachment]
-        params = handler_message_parameter(
-            content=content, embed=embed, embeds=embeds,
-            previous_allowed_mentions=self._state.allowed_mentions,
-            attachments=attachments, allowed_mentions=allowed_mentions,
-            components=components, stickers=stickers
+        message = MessageEditable(self.channel, self.id)
+        return await message.edit(
+            content=content,
+            embed=embed,
+            embeds=embeds,
+            attachment=attachment,
+            attachments=attachments,
+            allowed_mentions=allowed_mentions,
+            components=components,
+            stickers=stickers
         )
-
-        await self._state.http.edit_message(
-            channel_id=self.channel.id, message_id=self.id, params=params
-        )
-        return
 
 
 class MessageCommand(Message):
@@ -239,3 +233,38 @@ class MessageSendable:
         resp = await self._state.http.send_message(params=params, channel_id=self.channel.id)
         ret = Message(state=self._state, channel=self.channel, data=resp)
         return ret
+
+
+class MessageEditable:
+    def __init__(self, channel, message_id: int):
+        self.id = message_id
+        self.channel = channel
+        self._state = getattr(channel, "_state")
+
+    async def edit(
+            self,
+            content: Optional[str] = MISSING,
+            *,
+            embed: discord.Embed = MISSING,
+            embeds: List[discord.Embed] = MISSING,
+            attachment: Union[discord.Attachment, discord.File] = MISSING,
+            attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+            allowed_mentions: discord.AllowedMentions = MISSING,
+            components: List[Union[ActionRow, Button, Selection]] = MISSING,
+            stickers: List[discord.Sticker] = MISSING
+    ):
+        if attachment is not MISSING:
+            if attachment is not MISSING and attachments is not MISSING:
+                raise InvalidArgument()
+            attachments = [attachment]
+        params = handler_message_parameter(
+            content=content, embed=embed, embeds=embeds,
+            previous_allowed_mentions=self._state.allowed_mentions,
+            attachments=attachments, allowed_mentions=allowed_mentions,
+            components=components, stickers=stickers
+        )
+
+        await self._state.http.edit_message(
+            channel_id=self.channel.id, message_id=self.id, params=params
+        )
+        return
