@@ -374,9 +374,15 @@ class ClientBase:
         if command.name in self._interactions[command.type.value - 1]:
             raise CommandRegistrationError(command.name)
 
-        # is_subcommand = getattr(command, 'is_subcommand', False)
         if _parent is not None:
             command.cog = _parent
+
+            # Add cog to subcommand in command's option.
+            if getattr(command, 'is_subcommand', False):
+                for index, sub_command in enumerate(command.options):
+                    if not isinstance(sub_command, (SubCommand, SubCommandGroup)):
+                        continue
+                    command.options[index].cog = command.cog
 
         if command.type == ApplicationCommandType.CHAT_INPUT:
             command.set_signature_option()
@@ -496,6 +502,7 @@ class ClientBase:
             func = ctx.function = command
             if command.cog is not None:
                 ctx.parents = command.cog
+
             if await self.can_run(ctx):
                 _option = {}
                 if ctx.application_type == ApplicationCommandType.CHAT_INPUT.value:
