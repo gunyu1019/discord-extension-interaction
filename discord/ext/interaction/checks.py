@@ -23,7 +23,7 @@ SOFTWARE.
 
 import functools
 import inspect
-from typing import Union, Callable
+from typing import Callable
 
 import discord.utils
 from discord.ext.commands.errors import *
@@ -123,7 +123,7 @@ def check_any(*checks) -> Callable:
     return check(predicate)
 
 
-def has_role(item: Union[int, str]) -> Callable:
+def has_role(item: int | str) -> Callable:
     """A :func:`.check` that is added that checks if the member invoking the
     command has the role specified via the name or ID specified.
 
@@ -161,7 +161,7 @@ def has_role(item: Union[int, str]) -> Callable:
     return check(predicate)
 
 
-def has_any_role(*items: Union[int, str]) -> Callable:
+def has_any_role(*items: int | str) -> Callable:
     """A :func:`.check` that is added that checks if the member invoking the
     command has **any** of the roles specified. This means that if they have
     one out of the three roles specified, then this check will return `True`.

@@ -32,7 +32,8 @@ import os
 import sys
 import types
 import zlib
-from typing import Optional, Dict, List, Coroutine, Any, Union
+from collections.abc import Coroutine
+from typing import Any
 
 import discord.http
 from discord.gateway import DiscordWebSocket
@@ -74,32 +75,30 @@ class ClientBase:
 
         self._application_id_value = None
         self._interactions_of_group = []
-        self._interactions: List[Dict[str, decorator_command_types]] = [dict(), dict(), dict()]
-        self._fetch_interactions: Optional[
-            List[
-                Dict[
-                    str, ApplicationCommand
-                ]
+        self._interactions: list[dict[str, decorator_command_types]] = [dict(), dict(), dict()]
+        self._fetch_interactions: list[
+            dict[
+                str, ApplicationCommand
             ]
-        ] = None
+        ] | None = None
 
-        self._detect_components: Dict[
+        self._detect_components: dict[
             str,
-            List[DetectComponent]
+            list[DetectComponent]
         ] = dict()
 
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
 
-        self._checks: List[UserCheck] = []
+        self._checks: list[UserCheck] = []
 
-        self._deferred_components: Dict[str, list] = dict()
-        self._deferred_global_components: List = list()
+        self._deferred_components: dict[str, list] = dict()
+        self._deferred_global_components: list = list()
 
-        self._multiple_setup_hook: List[CoroutineFunction] = list()
+        self._multiple_setup_hook: list[CoroutineFunction] = list()
 
-        self.extra_events: Dict[str, List[CoroutineFunction]] = dict()
-        self.__extensions: Dict[str, types.ModuleType] = dict()
+        self.extra_events: dict[str, list[CoroutineFunction]] = dict()
+        self.__extensions: dict[str, types.ModuleType] = dict()
 
         self.interaction_http = InteractionHTTPClient(self.http)
 
@@ -205,7 +204,7 @@ class ClientBase:
             self._application_id_value = application_info.id
         return self._application_id_value
 
-    async def fetch_commands(self) -> Dict[str, command_types]:
+    async def fetch_commands(self) -> dict[str, command_types]:
         data = await self.http.get_global_commands(
             await self._application_id()
         )
@@ -220,8 +219,8 @@ class ClientBase:
             result = {_result.name: _result}
         return result
 
-    async def _fetch_command_cached(self) -> List[
-        Dict[str, ApplicationCommand]
+    async def _fetch_command_cached(self) -> list[
+        dict[str, ApplicationCommand]
     ]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
@@ -273,13 +272,13 @@ class ClientBase:
             self.__extensions[key] = lib
 
     @staticmethod
-    def _resolve_name(name: str, package: Optional[str]) -> str:
+    def _resolve_name(name: str, package: str | None) -> str:
         try:
             return importlib.util.resolve_name(name, package)
         except ImportError:
             raise ExtensionNotFound(name)
 
-    def load_extension(self, name: str, *, package: Optional[str] = None, **kwargs) -> None:
+    def load_extension(self, name: str, *, package: str | None = None, **kwargs) -> None:
         name = self._resolve_name(name, package)
         if name in self.__extensions:
             raise ExtensionAlreadyLoaded(name)
@@ -291,7 +290,7 @@ class ClientBase:
         self._load_from_module_spec(spec, name, **kwargs)
         return
 
-    def load_extensions(self, package: str, directory: str = None, **kwargs) -> Optional[Coroutine]:
+    def load_extensions(self, package: str, directory: str = None, **kwargs) -> Coroutine | None:
         if directory is not None:
             _package = os.path.join(directory, package)
         else:
@@ -582,7 +581,7 @@ class ClientBase:
         self._deferred_global_components.append((future, check, True))
         return asyncio.wait_for(future, timeout)
 
-    async def can_run(self, ctx: Union[ApplicationContext, ComponentsContext]) -> bool:
+    async def can_run(self, ctx: ApplicationContext | ComponentsContext) -> bool:
         data = self._checks
         if len(data) == 0:
             return True

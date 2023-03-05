@@ -27,11 +27,11 @@ import inspect
 
 from .commands import BaseCore
 from abc import *
-from typing import Union, Optional, List, Type, Dict, Any
+from typing import Any
 
 
 class Components(metaclass=ABCMeta):
-    TYPE: Optional[int] = None
+    TYPE: int | None = None
 
     def __init__(self, components_type: int):
         self.type = components_type
@@ -51,8 +51,8 @@ class Options:
             self,
             label: str,
             value: str,
-            description: Optional[str] = None,
-            emoji: Union[discord.PartialEmoji, dict] = None,
+            description: str | None = None,
+            emoji: discord.PartialEmoji | dict = None,
             default: bool = False
     ):
         self.label = label
@@ -80,7 +80,7 @@ class Options:
     def from_dict(cls, payload: dict):
         label: str = payload.get("label")
         value: str = payload.get("value")
-        description: Optional[str] = payload.get("description")
+        description: str | None = payload.get("description")
         emoji: discord.PartialEmoji = payload.get("emoji")
         default: bool = payload.get("default", False)
         return cls(
@@ -131,7 +131,7 @@ class Button(Components):
     def __init__(self,
                  style: int,
                  label: str = None,
-                 emoji: Union[discord.PartialEmoji, str, dict] = None,
+                 emoji: discord.PartialEmoji | str | dict = None,
                  custom_id: str = None,
                  url: str = None,
                  disabled: bool = None):
@@ -193,7 +193,7 @@ class Selection(Components):
 
     def __init__(self,
                  custom_id: str,
-                 options: List[Union[dict, Options]],
+                 options: list[dict | Options],
                  disabled: bool = False,
                  placeholder: str = None,
                  min_values: int = None,
@@ -254,11 +254,11 @@ class TextInput(Components):
             custom_id: str,
             style: int,
             label: str,
-            min_length: Optional[int] = None,
-            max_length: Optional[int] = None,
+            min_length: int | None = None,
+            max_length: int | None = None,
             required: bool = False,
-            value: Optional[str] = None,
-            placeholder: Optional[str] = None
+            value: str | None = None,
+            placeholder: str | None = None
     ):
         super().__init__(components_type=4)
 
@@ -312,7 +312,7 @@ class TextInput(Components):
         )
 
 
-def from_payload(payload: List[Dict[str, Any]]) -> List[Union[ActionRow, Button, Selection, TextInput]]:
+def from_payload(payload: list[dict[str, Any]]) -> list[ActionRow | Button | Selection | TextInput]:
     components = []
 
     for i in payload:
@@ -329,14 +329,14 @@ def from_payload(payload: List[Dict[str, Any]]) -> List[Union[ActionRow, Button,
 
 # For Decorator
 class DetectComponent(BaseCore):
-    def __init__(self, func, custom_id, component_type: Type[Components] = None, checks=None):
+    def __init__(self, func, custom_id, component_type: type[Components] = None, checks=None):
         self.custom_id = custom_id
         self.type = component_type
         self.func = func
         super().__init__(func=func, checks=checks)
 
     @property
-    def type_id(self) -> Optional[int]:
+    def type_id(self) -> int | None:
         if isinstance(self.type, Components):
             return self.type.TYPE
         return
@@ -345,7 +345,7 @@ class DetectComponent(BaseCore):
 def detect_component(
         cls: classmethod = None,
         custom_id: str = None,
-        component_type: Type[Components] = None,
+        component_type: type[Components] = None,
         checks=None
 ):
     if cls is None:

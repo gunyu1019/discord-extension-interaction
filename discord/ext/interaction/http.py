@@ -24,29 +24,31 @@ SOFTWARE.
 import discord
 from discord.http import Route, MultipartParameters
 from discord.utils import MISSING
-from typing import Any, Dict, NamedTuple, Sequence, List, Union, Optional
+from typing import Any, NamedTuple
+from collections.abc import Sequence
+
 
 from .components import ActionRow, Button, Selection
 from .utils import to_json
 
 
 def handler_message_parameter(
-    content: Optional[str] = MISSING,
+    content: str | None = MISSING,
     *,
     tts: bool = False,
     embed: discord.Embed = MISSING,
     embeds: Sequence[discord.Embed] = MISSING,
-    nonce: Optional[Union[int, str]] = None,
+    nonce: int | str | None = None,
     flags: discord.MessageFlags = MISSING,
     file: discord.File = MISSING,
     files: Sequence[discord.File] = MISSING,
     allowed_mentions: discord.AllowedMentions = MISSING,
-    attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
-    components: List[Union[ActionRow, Button, Selection]] = MISSING,
-    reference: Union[discord.MessageReference, discord.PartialMessage] = MISSING,
-    previous_allowed_mentions: Optional[discord.AllowedMentions] = None,
+    attachments: Sequence[discord.Attachment | discord.File] = MISSING,
+    components: list[ActionRow | Button | Selection] = MISSING,
+    reference: discord.MessageReference | discord.PartialMessage = MISSING,
+    previous_allowed_mentions: discord.AllowedMentions | None = None,
     mention_author: bool = None,
-    stickers: List[Union[discord.Sticker, int]] = MISSING
+    stickers: list[discord.Sticker | int] = MISSING
 ):
     if files is not MISSING and file is not MISSING:
         raise TypeError('Cannot mix file and files keyword arguments.')
@@ -157,7 +159,7 @@ class InteractionHTTPClient:
         self.http = http
 
     # Interaction Response
-    async def post_initial_response(self, data: InteractionData, payload: Dict[str, Any]):
+    async def post_initial_response(self, data: InteractionData, payload: dict[str, Any]):
         r = Route(
             "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
@@ -172,9 +174,9 @@ class InteractionHTTPClient:
     async def edit_initial_response(
             self,
             data: InteractionData,
-            payload: Dict[str, Any] = None,
-            form: List[Dict[str, Any]] = None,
-            files: Optional[Sequence[discord.File]] = MISSING
+            payload: dict[str, Any] = None,
+            form: list[dict[str, Any]] = None,
+            files: Sequence[discord.File] | None = MISSING
     ):
         if form is None:
             form = []
@@ -190,9 +192,9 @@ class InteractionHTTPClient:
     async def post_followup(
             self,
             data: InteractionData,
-            payload: Dict[str, Any] = None,
-            form: List[Dict[str, Any]] = None,
-            files: Optional[Sequence[discord.File]] = MISSING
+            payload: dict[str, Any] = None,
+            form: list[dict[str, Any]] = None,
+            files: Sequence[discord.File] | None = MISSING
     ):
         if form is None:
             form = []
@@ -207,9 +209,9 @@ class InteractionHTTPClient:
             self,
             data: InteractionData,
             message_id,
-            payload: Dict[str, Any] = None,
-            form: List[Dict[str, Any]] = None,
-            files: Optional[Sequence[discord.File]] = MISSING
+            payload: dict[str, Any] = None,
+            form: list[dict[str, Any]] = None,
+            files: Sequence[discord.File] | None = MISSING
     ):
         if form is None:
             form = []

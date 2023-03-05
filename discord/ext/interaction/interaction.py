@@ -22,7 +22,7 @@ SOFTWARE.
 """
 
 import logging
-from typing import Optional, List, Union, Sequence
+from collections.abc import Sequence
 
 import discord
 from discord.channel import _channel_factory
@@ -77,13 +77,13 @@ class InteractionContext:
             self.http = InteractionHTTPClient(http=self.client.http)
 
     @property
-    def guild(self) -> Optional[discord.Guild]:
+    def guild(self) -> discord.Guild | None:
         if self.guild_id is not None:
             return self.client.get_guild(int(self.guild_id))
         return
 
     @property
-    def channel(self) -> Optional:
+    def channel(self) -> discord.abc.GuildChannel | discord.PartialMessageable | None:
         if self.channel_id is not None:
             if self.guild is not None:
                 channel = self.guild.get_channel(int(self.channel_id))
@@ -119,7 +119,7 @@ class InteractionContext:
         return payload
 
     @property
-    def voice_client(self) -> Optional[discord.VoiceClient]:
+    def voice_client(self) -> discord.VoiceClient | None:
         if self.guild is None:
             return None
         return self.guild.voice_client
@@ -138,17 +138,17 @@ class InteractionContext:
 
     async def send(
             self,
-            content: Optional[str] = MISSING,
+            content: str | None = MISSING,
             *,
             tts: bool = False,
             embed: discord.Embed = MISSING,
-            embeds: List[discord.Embed] = MISSING,
+            embeds: list[discord.Embed] = MISSING,
             file: discord.File = MISSING,
-            files: List[discord.File] = MISSING,
+            files: list[discord.File] = MISSING,
             hidden: bool = False,
             allowed_mentions: discord.AllowedMentions = None,
             suppress_embeds: bool = False,
-            components: List[Union[ActionRow, Button, Selection]] = None
+            components: list[ActionRow | Button | Selection] = None
     ):
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
@@ -202,10 +202,10 @@ class InteractionContext:
             content=None,
             *,
             embed: discord.Embed = MISSING,
-            embeds: List[discord.Embed] = MISSING,
-            attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+            embeds: list[discord.Embed] = MISSING,
+            attachments: Sequence[discord.Attachment | discord.File] = MISSING,
             allowed_mentions: discord.AllowedMentions = MISSING,
-            components: List[Union[ActionRow, Button, Selection]] = MISSING
+            components: list[ActionRow | Button | Selection] = MISSING
     ):
         params = handler_message_parameter(
             content=content, embed=embed, embeds=embeds,
@@ -247,7 +247,7 @@ class ModalPossible(InteractionContext):
             self,
             custom_id: str,
             title: str,
-            components: List[Components]
+            components: list[Components]
     ):
         self.responded = True
         payload = {
@@ -363,11 +363,11 @@ class SubcommandContext(BaseApplicationContext):
                 else:
                     self.options[key] = client.get_user(value) or self.target('users', target_id=value)
             elif option_type == 7:
-                self.options[key]: Optional[Union[channel_types]] = (
+                self.options[key]: channel_types | None = (
                         client.get_channel(value) or self.target('channels', target_id=value)
                 )
             elif option_type == 8:
-                self.options[key]: Optional[discord.Role] = (
+                self.options[key]: discord.Role | None = (
                         self.guild.get_role(value) or self.target('roles', target_id=value)
                 )
             elif option_type == 10:
@@ -417,11 +417,11 @@ class ApplicationContext(BaseApplicationContext):
                     else:
                         self.options[key] = client.get_user(value) or self.target('users', target_id=value)
                 elif option_type == 7:
-                    self.options[key]: Optional[Union[channel_types]] = (
+                    self.options[key]: channel_types | None = (
                             client.get_channel(value) or self.target('channels', target_id=value)
                     )
                 elif option_type == 8:
-                    self.options[key]: Optional[discord.Role] = (
+                    self.options[key]: discord.Role | None = (
                             self.guild.get_role(value) or self.target('roles', target_id=value)
                     )
                 elif option_type == 10:
@@ -456,9 +456,9 @@ class ComponentsContext(ModalPossible):
         self.custom_id = data.get("custom_id")
         self.component_type = data.get("component_type")
         if self.component_type == 3:
-            self.values: List[str] = data.get("values")
+            self.values: list[str] = data.get("values")
         else:
-            self.values: List[str] = []
+            self.values: list[str] = []
 
         self.message = Message(state=self._state, channel=self.channel, data=payload.get("message", {}))
 
@@ -473,17 +473,17 @@ class ComponentsContext(ModalPossible):
 
     async def update(
             self,
-            content: Optional[str] = MISSING,
+            content: str | None = MISSING,
             *,
             tts: bool = False,
             embed: discord.Embed = MISSING,
-            embeds: List[discord.Embed] = MISSING,
+            embeds: list[discord.Embed] = MISSING,
             file: discord.File = MISSING,
-            files: List[discord.File] = MISSING,
+            files: list[discord.File] = MISSING,
             hidden: bool = False,
             allowed_mentions: discord.AllowedMentions = None,
             suppress_embeds: bool = False,
-            components: List[Union[ActionRow, Button, Selection]] = None
+            components: list[ActionRow | Button | Selection] = None
     ):
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
@@ -528,7 +528,7 @@ class AutocompleteContext(ApplicationContext):
         super().__init__(payload, client)
         self.type = payload.get("type", 4)
 
-    async def autocomplete(self, choices: List[CommandOptionChoice]):
+    async def autocomplete(self, choices: list[CommandOptionChoice]):
         self.responded = True
         payload = {
             "type": 8,
@@ -548,11 +548,11 @@ class ModalContext(InteractionContext):
         self.type = payload.get("type", 5)
         data = payload.get("data", {})
         components = from_payload(data.get("components", []))
-        if isinstance(components, List):
+        if isinstance(components, list):
             _components = []
             for x in components:
                 _components += x.components
         else:
             _components = components
         self.custom_id = data.get("custom_id")
-        self.components: List[TextInput] = _components
+        self.components: list[TextInput] = _components

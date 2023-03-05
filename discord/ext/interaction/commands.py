@@ -24,7 +24,8 @@ SOFTWARE.
 import inspect
 import logging
 from enum import Enum
-from typing import List, Optional, Union, Callable, Coroutine, Any
+from typing import Any, Callable
+from collections.abc import Coroutine
 
 import discord
 
@@ -58,7 +59,7 @@ class CommandOptionChoice:
     def __init__(
             self,
             name: str,
-            value: Union[int, str, float],
+            value: int | str | float,
     ):
         self.name = name
         self.value = value
@@ -92,11 +93,11 @@ class CommandOption:
             name: str = None,
             option_type: type = None,
             description: str = "No description.",
-            choices: List[CommandOptionChoice] = None,
-            channel_type: Union[discord.ChannelType, int] = None,
-            channel_types: List[Union[discord.ChannelType, int]] = None,
-            min_value: Union[float, int] = None,
-            max_value: Union[float, int] = None,
+            choices: list[CommandOptionChoice] = None,
+            channel_type: discord.ChannelType | int = None,
+            channel_types: list[discord.ChannelType | int] = None,
+            min_value: float | int = None,
+            max_value: float | int = None,
             required: bool = False,
             autocomplete: bool = False
     ):
@@ -109,7 +110,7 @@ class CommandOption:
         self.required = required
         self.autocomplete = autocomplete
 
-        self.parameter_name: Optional[str] = None
+        self.parameter_name: str | None = None
 
         if option_type is not None:
             if (
@@ -121,7 +122,7 @@ class CommandOption:
         if len(self.choices) > 0 and self.autocomplete:
             log.warning("autocomplete may not be set to true if choices are present.")
 
-        self._channel_type: Optional[List[int]] = None
+        self._channel_type: list[int] | None = None
         if channel_type is not None or channel_types is not None:
             if option_type is not None:
                 if discord.abc.GuildChannel not in option_type.__mro__:
@@ -147,11 +148,11 @@ class CommandOption:
                 raise TypeError('min_value can only be called when the parameter types are int and float.')
             if max_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
                 raise TypeError('max_value can only be called when the parameter types are int and float.')
-        self.min_value: Optional[int] = min_value
-        self.max_value: Optional[int] = max_value
+        self.min_value: int | None = min_value
+        self.max_value: int | None = max_value
 
     @property
-    def channel_type(self) -> Optional[List[discord.ChannelType]]:
+    def channel_type(self) -> list[discord.ChannelType] | None:
         if discord.abc.GuildChannel not in self.type.__mro__:
             return
         channel_type = []
@@ -268,7 +269,7 @@ class ApplicationSubcommand:
             self,
             name: str,
             description: str = "No description.",
-            options: Optional[List[Union[CommandOption]]] = None
+            options: list[CommandOption] | None = None
     ):
         self.name = name
         self.description = description
@@ -314,7 +315,7 @@ class ApplicationSubcommandGroup:
     def __init__(
             self,
             name: str,
-            options: List[ApplicationSubcommand],
+            options: list[ApplicationSubcommand],
             description: str = "No description."
     ):
         self.name = name
@@ -359,16 +360,16 @@ class ApplicationCommand:
             name: str,
             default_permission: bool,
             description: str = None,
-            guild_id: Optional[int] = None,
+            guild_id: int | None = None,
             command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT
     ):
         self.id: int = 0  # default: None
         self.name: str = name
         self.type: ApplicationCommandType = command_type
         self.application_id: int = 0  # default: None
-        self.guild_id: Optional[int] = guild_id
-        self.description: Optional[str] = description
-        self.default_permission: Optional[bool] = default_permission
+        self.guild_id: int | None = guild_id
+        self.description: str | None = description
+        self.default_permission: bool | None = default_permission
         self.version: int = 1  # default: None
 
     @classmethod
@@ -422,14 +423,14 @@ class ApplicationCommand:
 class SlashCommand(ApplicationCommand):
     def __init__(
             self,
-            options: List[Union[CommandOption, ApplicationSubcommandGroup, ApplicationSubcommand]] = None,
+            options: list[CommandOption | ApplicationSubcommandGroup | ApplicationSubcommand] = None,
             **kwargs
     ):
         if options is None:
             options = []
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.CHAT_INPUT
-        self.options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = options
+        self.options: list[CommandOption | SubCommand | SubCommandGroup] = options
 
     def __eq__(self, other):
         return (
@@ -464,7 +465,7 @@ class ContextMenu(ApplicationCommand):
         self.type = ApplicationCommandType.MESSAGE
 
 
-command_types = Union[SlashCommand, UserCommand, ContextMenu]
+command_types = SlashCommand | UserCommand | ContextMenu
 
 
 def from_payload(data: dict) -> command_types:
@@ -517,7 +518,7 @@ class SubCommand(BaseCore, ApplicationSubcommand):
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
         if kwargs.get('name') is None:
             kwargs['name'] = func.__name__
-        self.parents: Union[Command, SubCommandGroup] = parents
+        self.parents: Command | SubCommandGroup = parents
         self.top_parents: Command = kwargs.pop('top_parents', self.parents)
         self.parents.options.append(self)
 
@@ -543,12 +544,12 @@ class SubCommand(BaseCore, ApplicationSubcommand):
 
 
 class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
-    options: List[SubCommand]
+    options: list[SubCommand]
 
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
         if kwargs.get('name') is None:
             kwargs['name'] = func.__name__
-        self.parents: Union[Command] = parents
+        self.parents: Command = parents
         super().__init__(func=func, checks=checks, *args, **kwargs)
         self.parents.options.append(self)
 
@@ -558,7 +559,7 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
             description: str = "No description.",
             cls: classmethod = None,
             checks=None,
-            options: Optional[List[CommandOption]] = None
+            options: list[CommandOption] | None = None
     ):
         if options is None:
             options = []
@@ -599,7 +600,7 @@ class Command(BaseCommand, SlashCommand):
             self,
             func: Callable,
             checks=None,
-            options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
+            options: list[CommandOption | SubCommand | SubCommandGroup] = None,
             sync_command: bool = None,
             **kwargs
     ):
@@ -633,7 +634,7 @@ class Command(BaseCommand, SlashCommand):
             description: str = "No description.",
             cls: classmethod = None,
             checks=None,
-            options: List[CommandOption] = None
+            options: list[CommandOption] = None
     ):
         if options is None:
             options = []
@@ -696,7 +697,7 @@ class ContextMenuCommand(BaseCommand, ContextMenu):
     pass
 
 
-decorator_command_types = Union[Command, MemberCommand, ContextMenuCommand]
+decorator_command_types = Command | MemberCommand | ContextMenuCommand
 
 
 def command(
@@ -704,7 +705,7 @@ def command(
         description: str = "No description.",
         cls: classmethod = None,
         checks=None,
-        options: List[CommandOption] = None,
+        options: list[CommandOption] = None,
         sync_command: bool = None,
         default_permission: bool = None
 ):
@@ -776,11 +777,11 @@ def option(
         name: str = None,
         option_type: type = None,
         description: str = "No description.",
-        choices: List[CommandOptionChoice] = None,
-        channel_type: Union[discord.ChannelType, int] = None,
-        channel_types: List[Union[discord.ChannelType, int]] = None,
-        min_value: Union[float, int] = None,
-        max_value: Union[float, int] = None,
+        choices: list[CommandOptionChoice] = None,
+        channel_type: discord.ChannelType | int = None,
+        channel_types: list[discord.ChannelType | int] = None,
+        min_value: float | int = None,
+        max_value: float | int = None,
         required: bool = False,
         autocomplete: bool = False
 ):
