@@ -529,11 +529,22 @@ class SubCommand(BaseCore, ApplicationSubcommand):
             options += func.__command_options__
         self.base_options = options
 
-        kwargs['options'] = get_signature_option(func, options)
+        # kwargs['options'] = get_signature_option(func, options)
         super().__init__(func=func, checks=checks, *args, **kwargs)
+
+    def set_signature_option(self) -> None:
+        """ Since add_interaction is called and cog information is entered in parents,
+            parents value is reflected and skipping_argument value is determined.
+        """
+        if self.top_parents.cog is not None:
+            self.options = get_signature_option(self.func, self.base_options, skipping_argument=2)
+        else:
+            self.options = get_signature_option(self.func, self.base_options, skipping_argument=1)
 
 
 class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
+    options: List[SubCommand]
+
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
         if kwargs.get('name') is None:
             kwargs['name'] = func.__name__
@@ -567,6 +578,13 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
             )
         return decorator
 
+    def set_signature_option(self) -> None:
+        """ Since add_interaction is called and cog information is entered in parents,
+            parents value is reflected and skipping_argument value is determined.
+        """
+        for opt in self.options:
+            opt.set_signature_option()
+
 
 class BaseCommand(BaseCore):
     def __init__(self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs):
@@ -594,6 +612,20 @@ class Command(BaseCommand, SlashCommand):
 
         # options = get_signature_option(func, options)
         super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
+
+    def set_signature_option(self) -> None:
+        """ Since add_interaction is called and cog information is entered in parents,
+            parents value is reflected and skipping_argument value is determined.
+        """
+        if self.is_subcommand:
+            for opt in self.options:
+                opt.set_signature_option()
+        else:
+            if self.cog is not None:
+                self.options = get_signature_option(self.func, self.base_options, skipping_argument=2)
+            else:
+                self.options = get_signature_option(self.func, self.base_options, skipping_argument=1)
+        return
 
     def subcommand(
             self,

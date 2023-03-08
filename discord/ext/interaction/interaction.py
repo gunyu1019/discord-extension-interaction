@@ -152,7 +152,7 @@ class InteractionContext:
     ):
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
-                phemeral=hidden,
+                ephemeral=hidden,
                 suppress_embeds=suppress_embeds if suppress_embeds and not self.responded else False
             )
         else:
@@ -165,7 +165,7 @@ class InteractionContext:
         )
 
         if not self.responded:
-            if files and not self.deferred:
+            if (files is not MISSING or file is not MISSING) and not self.deferred:
                 await self.defer(hidden=hidden)
 
             if self.deferred:
@@ -217,7 +217,7 @@ class InteractionContext:
         if message_id == "@original":
             resp = await self.http.edit_initial_response(
                 payload=params.payload,
-                form=params.forms,
+                form=params.multipart,
                 files=params.files,
                 data=self.data
             )
@@ -225,7 +225,7 @@ class InteractionContext:
             resp = await self.http.edit_followup(
                 message_id=message_id,
                 payload=params.payload,
-                form=params.forms,
+                form=params.multipart,
                 files=params.files,
                 data=self.data
             )
@@ -487,7 +487,7 @@ class ComponentsContext(ModalPossible):
     ):
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
-                phemeral=hidden,
+                ephemeral=hidden,
                 suppress_embeds=suppress_embeds if suppress_embeds and not self.responded else False
             )
         else:
@@ -500,7 +500,7 @@ class ComponentsContext(ModalPossible):
         )
 
         if not self.responded:
-            if files:
+            if files is not MISSING or file is not MISSING:
                 await self.defer_update()
 
             if self.deferred:
@@ -520,7 +520,7 @@ class ComponentsContext(ModalPossible):
                 )
             self.responded = True
         else:
-            await self.http.post_followup(payload=params.payload, form=params.form, files=params.files, data=self.data)
+            await self.http.post_followup(payload=params.payload, form=params.multipart, files=params.files, data=self.data)
 
 
 class AutocompleteContext(ApplicationContext):

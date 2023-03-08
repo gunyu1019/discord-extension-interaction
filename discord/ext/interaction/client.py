@@ -34,13 +34,14 @@ import types
 import zlib
 from typing import Optional, Dict, List, Coroutine, Any, Union
 
+import discord.http
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
 from ._types import CoroutineFunction, UserCheck
 from .commands import (
     ApplicationCommand, BaseCommand, SubCommand, SubCommandGroup, ApplicationCommandType,
-    from_payload, command_types, decorator_command_types, get_signature_option
+    from_payload, command_types, decorator_command_types
 )
 from .components import DetectComponent
 from .errors import *
@@ -53,6 +54,10 @@ log = logging.getLogger()
 
 
 class ClientBase:
+    _connection: discord.state.ConnectionState
+    loop: asyncio.AbstractEventLoop
+    http: discord.http.HTTPClient
+
     def __init__(
             self,
             global_sync_command: bool = False,
@@ -243,7 +248,7 @@ class ClientBase:
             await self.delete_command(command, command_id=command_id)
         return
 
-    def _load_from_module_spec(self, spec: importlib.machinery.ModuleSpec, key: str) -> None:
+    def _load_from_module_spec(self, spec: importlib.machinery.ModuleSpec, key: str, **kwargs) -> None:
         # precondition: key not in self.__extensions
         lib = importlib.util.module_from_spec(spec)
         sys.modules[key] = lib
@@ -260,7 +265,7 @@ class ClientBase:
             raise NoEntryPointError(key)
 
         try:
-            setup(self)
+            setup(self, **kwargs)
         except Exception as e:
             del sys.modules[key]
             raise ExtensionFailed(key, e) from e
@@ -274,7 +279,7 @@ class ClientBase:
         except ImportError:
             raise ExtensionNotFound(name)
 
-    def load_extension(self, name: str, *, package: Optional[str] = None) -> None:
+    def load_extension(self, name: str, *, package: Optional[str] = None, **kwargs) -> None:
         name = self._resolve_name(name, package)
         if name in self.__extensions:
             raise ExtensionAlreadyLoaded(name)
@@ -283,10 +288,10 @@ class ClientBase:
         if spec is None:
             raise ExtensionNotFound(name)
 
-        self._load_from_module_spec(spec, name)
+        self._load_from_module_spec(spec, name, **kwargs)
         return
 
-    def load_extensions(self, package: str, directory: str = None) -> Optional[Coroutine]:
+    def load_extensions(self, package: str, directory: str = None, **kwargs) -> Optional[Coroutine]:
         if directory is not None:
             _package = os.path.join(directory, package)
         else:
@@ -298,7 +303,7 @@ class ClientBase:
         ]
 
         for cog in cogs:
-            self.load_extension(cog)
+            self.load_extension(cog, **kwargs)
         return
 
     async def _sync_command_task(self):
@@ -369,14 +374,18 @@ class ClientBase:
         if command.name in self._interactions[command.type.value - 1]:
             raise CommandRegistrationError(command.name)
 
-        is_subcommand = getattr(command, 'is_subcommand', False)
         if _parent is not None:
             command.cog = _parent
-            if not is_subcommand and command.type == ApplicationCommandType.CHAT_INPUT:
-                command.options = get_signature_option(command.func, command.base_options, skipping_argument=2)
-        else:
-            if not is_subcommand and command.type == ApplicationCommandType.CHAT_INPUT:
-                command.options = get_signature_option(command.func, command.base_options, skipping_argument=1)
+
+            # Add cog to subcommand in command's option.
+            if getattr(command, 'is_subcommand', False):
+                for index, sub_command in enumerate(command.options):
+                    if not isinstance(sub_command, (SubCommand, SubCommandGroup)):
+                        continue
+                    command.options[index].cog = command.cog
+
+        if command.type == ApplicationCommandType.CHAT_INPUT:
+            command.set_signature_option()
         self._interactions[command.type.value - 1][command.name] = command
 
         if sync_command:
@@ -493,6 +502,7 @@ class ClientBase:
             func = ctx.function = command
             if command.cog is not None:
                 ctx.parents = command.cog
+
             if await self.can_run(ctx):
                 _option = {}
                 if ctx.application_type == ApplicationCommandType.CHAT_INPUT.value:

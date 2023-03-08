@@ -1,6 +1,6 @@
 <h1 align="center">Discord Extension Interaction</h1>
 <p align="center">
-    <img src="https://img.shields.io/badge/release_version-0.5.2%20beta-0080aa?style=flat" alt="Release" >
+    <img src="https://img.shields.io/badge/release_version-0.5.5%20beta-0080aa?style=flat" alt="Release" >
 </p>
 
 # Introduce

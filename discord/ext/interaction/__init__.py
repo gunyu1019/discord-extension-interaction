@@ -25,7 +25,7 @@ __title__ = 'Discord-Extension-Interaction'
 __author__ = 'gunyu1019'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2021-present gunyu1019'
-__version__ = '0.5.3-beta'
+__version__ = '0.5.5-beta'
 
 from typing import NamedTuple, Literal
 
@@ -41,7 +41,7 @@ from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext, ModalContext
 )
-from .message import Message, MessageSendable
+from .message import Message, MessageSendable, MessageEditable
 from .listener import listener
 
 
@@ -53,4 +53,4 @@ class VersionInfo(NamedTuple):
     serial: int
 
 
-version_info: VersionInfo = VersionInfo(major=0, minor=5, micro=2, release_level='beta', serial=0)
+version_info: VersionInfo = VersionInfo(major=0, minor=5, micro=5, release_level='beta', serial=0)
