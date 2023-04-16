@@ -703,7 +703,6 @@ def command(
         checks=None,
         options: List[CommandOption] = None,
         sync_command: bool = None,
-        default_permission: bool = None
 ):
     if options is None:
         options = []
@@ -718,8 +717,7 @@ def command(
             description=description,
             checks=checks,
             options=options,
-            sync_command=sync_command,
-            default_permission=default_permission
+            sync_command=sync_command
         )
 
     return decorator
@@ -730,7 +728,6 @@ def user(
         cls: classmethod = None,
         checks=None,
         sync_command: bool = None,
-        default_permission: bool = None
 ):
     if cls is None:
         cls = MemberCommand
@@ -740,8 +737,7 @@ def user(
             func,
             name=name,
             checks=checks,
-            sync_command=sync_command,
-            default_permission=default_permission
+            sync_command=sync_command
         )
 
     return decorator
@@ -752,7 +748,6 @@ def context(
         cls: classmethod = None,
         checks=None,
         sync_command: bool = None,
-        default_permission: bool = None
 ):
     if cls is None:
         cls = ContextMenuCommand
@@ -762,8 +757,7 @@ def context(
             func,
             name=name,
             checks=checks,
-            sync_command=sync_command,
-            default_permission=default_permission
+            sync_command=sync_command
         )
 
     return decorator
