@@ -357,10 +357,10 @@ class ApplicationCommand:
     def __init__(
             self,
             name: str,
-            default_permission: bool,
             description: str = None,
             guild_id: Optional[int] = None,
-            command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT
+            command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
+            default_member_permissions: str = None
     ):
         self.id: int = 0  # default: None
         self.name: str = name
@@ -368,7 +368,7 @@ class ApplicationCommand:
         self.application_id: int = 0  # default: None
         self.guild_id: Optional[int] = guild_id
         self.description: Optional[str] = description
-        self.default_permission: Optional[bool] = default_permission
+        self.default_member_permissions: Optional[str] = default_member_permissions
         self.version: int = 1  # default: None
 
     @classmethod
@@ -376,7 +376,7 @@ class ApplicationCommand:
         new_cls = cls(
             name=data['name'],
             description=data['description'],
-            default_permission=data['default_permission'],
+            default_member_permissions=data.get('default_member_permissions'),
             guild_id=data.get('guild_id')
         )
 
@@ -397,8 +397,6 @@ class ApplicationCommand:
             "type": self.type.value,
             "description": self.description
         }
-        if self.default_permission is not None:
-            data['default_permission'] = self.default_permission
         return data
 
     @property
@@ -406,13 +404,12 @@ class ApplicationCommand:
         return self.guild_id is not None
 
     def __eq__(self, other):
-        default_permission = self.default_permission or True
         description = self.description or ''
         return (
                 self.name == other.name and
                 self.type == other.type and
                 description == other.description and
-                default_permission == other.default_permission
+                self.default_member_permissions == other.default_member_permissions
         )
 
     def __ne__(self, other):
