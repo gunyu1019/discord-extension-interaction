@@ -121,6 +121,14 @@ class ClientBase:
 
     # Command
     async def register_command(self, command: ApplicationCommand):
+        """
+        Register application commands with Discord Bot.
+
+        Parameters
+        ----------
+        command: ApplicationCommand
+            Application Command to register with discord bot.
+        """
         command_ids = await self._fetch_command_cached()
         if command.name in command_ids[command.type.value - 1]:
             raise CommandRegistrationError(command.name)
@@ -130,7 +138,7 @@ class ClientBase:
             payload=command.to_register_dict()
         )
 
-    async def _find_command(self, command: ApplicationCommand, command_id: int):
+    async def _find_command(self, command: ApplicationCommand, command_id: int) -> Optional[int]:
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids[command.type.value - 1]:
@@ -139,7 +147,16 @@ class ClientBase:
             command_id = command_ids[command.type.value - 1][command.name].id
         return command_id
 
-    async def edit_command(self, command: ApplicationCommand, command_id: int = None):
+    async def edit_command(self, command: ApplicationCommand, command_id: Optional[int] = None):
+        """Edit application commands with Discord Bot.
+
+        Parameters
+        ----------
+        command : ApplicationCommand
+            Application Command to edit with discord bot.
+        command_id : Optional[int]
+            Edit application command's id
+        """
         command_id = await self._find_command(command, command_id)
         return await self.http.edit_global_command(
             await self._application_id(),
@@ -148,6 +165,15 @@ class ClientBase:
         )
 
     async def delete_command(self, command: ApplicationCommand, command_id: int = None):
+        """Delete application commands with Discord Bot.
+
+        Parameters
+        ----------
+        command : ApplicationCommand
+            Application Command to delete with discord bot.
+        command_id : Optional[int]
+            Delete application command's id
+        """
         command_id = await self._find_command(command, command_id)
         return await self.http.delete_global_command(
             await self._application_id(),
@@ -156,6 +182,14 @@ class ClientBase:
 
     # Listener
     def add_listener(self, func: CoroutineFunction, name: str = None):
+        """Add a listener for discord bot event call.
+
+        Parameters
+        ----------
+        func
+            Coroutine function to call when an event is called in Discord Bot
+        name
+        """
         name = name or func.__name__
 
         if not asyncio.iscoroutinefunction(func):
@@ -167,6 +201,15 @@ class ClientBase:
             self.extra_events[name] = [func]
 
     def remove_listener(self, func: CoroutineFunction, name: str = None):
+        """Delete a listener for discord bot event call.
+
+        Parameters
+        ----------
+        func
+            Coroutine function to delete from bot listeners
+        name : Optional[str]
+            Name of the listener for the invoked event.
+        """
         if name in self.extra_events:
             try:
                 self.extra_events[name].remove(func)
@@ -174,6 +217,13 @@ class ClientBase:
                 pass
 
     def listen(self, name: str = None):
+        """A decorator that add a listener to discord bot.
+
+        Parameters
+        ----------
+        name : Optional[str]
+            Name of the listener for the invoked event.
+        """
         def decorator(func: CoroutineFunction) -> CoroutineFunction:
             self.add_listener(func, name)
             return func
@@ -182,10 +232,27 @@ class ClientBase:
 
     # Multiple setup_hook
     def add_setup_hook(self, func: CoroutineFunction):
+        """Add a setup_hook
+
+        Unlike the setup_hook in class:discord.Client,
+        when discord bot ready to setup, it calls all the registered corutine functions at the same time.
+
+        Parameters
+        ----------
+        func
+            Coroutine function to call when setting up the loop
+        """
         self._multiple_setup_hook.append(func)
         return
 
     def remove_setup_hook(self, func: CoroutineFunction):
+        """Delete a setup_hook function from multi_setup_hook.
+
+        Parameters
+        ----------
+        func
+            Coroutine function to call when setting up the loop
+        """
         try:
             self._multiple_setup_hook.append(func)
         except ValueError:
@@ -193,6 +260,7 @@ class ClientBase:
         return
 
     def multiple_setup_hook(self):
+        """A decorator that add a setup_hook to discord bot."""
         def decorator(func: CoroutineFunction) -> CoroutineFunction:
             self.add_setup_hook(func)
             return func
@@ -205,20 +273,59 @@ class ClientBase:
             self._application_id_value = application_info.id
         return self._application_id_value
 
-    async def fetch_commands(self) -> Dict[str, command_types]:
+    async def fetch_commands(self) -> List[Dict[str, command_types]]:
+        """Fetch and update all application commands registered in discord to discord bot."""
         data = await self.http.get_global_commands(
             await self._application_id()
         )
-        if isinstance(data, list):
-            result = [{}, {}, {}]
-            for x in data:
-                _x = from_payload(x)
-                result[_x.type.value - 1][_x.name] = _x
-            self._fetch_interactions = result
-        else:
-            _result = from_payload(data)
-            result = {_result.name: _result}
+        result = [{}, {}, {}]  # list order: [
+        #     ApplicationCommandType.CHAT_INPUT,
+        #     ApplicationCommandType.USER,
+        #     ApplicationCommandType.MESSAGE
+        # ]
+        for x in data:
+            _x = from_payload(x)
+            result[_x.type.value - 1][_x.name] = _x
+        self._fetch_interactions = result
         return result
+
+    async def fetch_command(
+            self,
+            command_id: int,
+            use_cached: bool = False,
+            command_type: ApplicationCommandType = None
+    ) -> command_types:
+        """Fetches and updates the application commands specified in the discord to the client.
+
+        Parameters
+        ----------
+        command_id : int
+            ID of application command to load
+        use_cached : Optional[bool]
+            Look for it in preloaded application command list.
+            If application command list is not found in preloaded list, it is automatically updated.
+        command_type : Optional[ApplicationCommandType]
+            Application Command Type. Default value is `CHAT_INPUT`
+
+        Returns
+        -------
+            Retrieves application command data registered in discord.
+        """
+        if command_type is None:
+            command_type = ApplicationCommandType.CHAT_INPUT
+
+        if use_cached:
+            cached_command_list = await self._fetch_command_cached()
+            if command_id in cached_command_list[command_type.value - 1].keys():
+                return cached_command_list[command_type.value - 1][command_id]
+        data = await self.http.get_global_command(
+            application_id=await self._application_id(),
+            command_id=command_id
+        )
+        _result = from_payload(data)
+        if use_cached and command_id not in self._fetch_interactions[command_type.value - 1].keys():
+            self._fetch_interactions[command_type.value - 1][_result.name] = _result
+        return _result
 
     async def _fetch_command_cached(self) -> List[
         Dict[str, ApplicationCommand]
@@ -280,6 +387,26 @@ class ClientBase:
             raise ExtensionNotFound(name)
 
     def load_extension(self, name: str, *, package: Optional[str] = None, **kwargs) -> None:
+        """Loads an extension.
+
+        An extension is a python module that contains commands, cogs, or listeners.
+
+        An extension must have a global function,
+         setup defined as the entry point on what to do when the extension is loaded.
+        This entry point must have a single argument, the bot.
+
+        Parameters
+        ----------
+        name : str
+            The extension name to load. It must be dot separated like regular Python imports if accessing a sub-module.
+            e.g. `foo.test` if you want to import `foo/test.py`.
+        package : Optional[str]
+            The package name to resolve relative imports with.
+            This is required when loading an extension using a relative path,
+            e.g `.foo.test.` Defaults to None.
+        kwargs :
+            Additional argument values to pass to predefined setup function.
+        """
         name = self._resolve_name(name, package)
         if name in self.__extensions:
             raise ExtensionAlreadyLoaded(name)
@@ -292,6 +419,19 @@ class ClientBase:
         return
 
     def load_extensions(self, package: str, directory: str = None, **kwargs) -> Optional[Coroutine]:
+        """Fetches all extensions in the specified folder.
+        They must have the setup function configured.
+
+        Parameters
+        ----------
+        package :
+            The package name to resolve relative imports with.
+        directory : Optional[str]
+            The path to the package address to read
+            Usually takes an absolute path value.
+        kwargs :
+            Additional argument values to pass to predefined setup function.
+        """
         if directory is not None:
             _package = os.path.join(directory, package)
         else:
@@ -335,6 +475,18 @@ class ClientBase:
             detect_component: DetectComponent,
             _parent=None
     ):
+        """Register for the detect_component event.
+
+        When the user presses a specific button or makes a selection,
+        the appropriate detect_component event for the custom_id is called.
+
+        Parameters
+        ----------
+        detect_component: DetectComponent
+            Coroutine functions that are called when a button is pressed or a selection is made.
+        _parent
+            This parameters is used for cog.
+        """
         name = detect_component.custom_id
         if _parent is not None:
             detect_component.cog = _parent
@@ -346,6 +498,7 @@ class ClientBase:
         return
 
     def get_detect_component(self):
+        """Get all of detect_components"""
         return self._detect_components
 
     def remove_detect_component(
@@ -353,6 +506,18 @@ class ClientBase:
             custom_id: str,
             detect_component: DetectComponent = None
     ):
+        """Remove detect_component function.
+
+        If detect_component is empty, all detect_components corresponding to the custom_id are deleted.
+
+        Parameters
+        ----------
+        custom_id : str
+            Custom_id value to detect. This can be a Button or a Selection.
+        detect_component : Optional[DetectComponent]
+            The detect_component function to delete, which defaults to None.
+            If detect_component is None, delete all detect_components corresponding to custom_id.
+        """
         if detect_component is None:
             self._detect_components.pop(custom_id)
         else:
@@ -368,6 +533,32 @@ class ClientBase:
             sync_command: bool = None,
             _parent=None
     ):
+        """Add interaction command to discord bot
+
+        If sync_command is True,
+        it will be synchronized with Discord and
+        registered to a command in the Discord application if one does not exist.
+
+        Parameters
+        ----------
+        command : Union[Command, MemberCommand, ContextMenuCommand]
+            Application commands to register
+        sync_command : Optional[bool]
+            It synchronizes with Discord.
+            If it's not in the Discord application command list,
+            it will automatically add the command to the register_command function.
+
+            The default value is None,
+            which means that if it is None,
+            it will follow the synchronization status `global_sync_command` attribute set by discord bot client.
+        _parent
+            This parameters is used for cog.
+
+        Warnings
+        --------
+            If a command synchronization request is made before the Discord Bot is ready,
+            it will wait and synchronize the command when it is ready.
+        """
         if sync_command is None:
             sync_command = self.global_sync_command
 
@@ -396,6 +587,7 @@ class ClientBase:
         return
 
     def get_interaction(self):
+        """Get all interaction command included Application Command, User Command and Context Menu Command"""
         result = []
         for x in self._interactions:
             result += x.values()
@@ -406,6 +598,30 @@ class ClientBase:
             command: command_types,
             sync_command: bool = None
     ):
+        """Remove interaction command from discord bot
+
+        If sync_command is True
+        it will be synchronized with Discord and
+        Delete the command if it exists in Discord.
+
+        Parameters
+        ----------
+        command : Union[Command, MemberCommand, ContextMenuCommand]
+            Application commands to delete
+        sync_command : Optional[bool]
+            It synchronizes with Discord.
+            If it's not in the Discord application command list,
+            it will automatically add the command to the delete_command function.
+
+            The default value is None,
+            which means that if it is None,
+            it will follow the synchronization status `global_sync_command` attribute set by discord bot client.
+
+        Warnings
+        --------
+            If a command synchronization request is made before the Discord Bot is ready,
+            it will wait and synchronize the command when it is ready.
+        """
         if sync_command is None:
             sync_command = self.global_sync_command
 
@@ -424,6 +640,15 @@ class ClientBase:
             self,
             interaction_cog
     ):
+        """Add a "cog" to the bot.
+
+        A cog is a class that has its own event listeners, detect_components and commands.
+
+        Parameters
+        ----------
+        interaction_cog : type
+            The cog to register to the bot.
+        """
         self._interactions_of_group.append(interaction_cog)
         for func, attr in inspect.getmembers(interaction_cog):
             if isinstance(attr, BaseCommand):
@@ -554,7 +779,6 @@ class ClientBase:
         return
 
     # Components
-
     def wait_for_component(self, custom_id: str, check=None, timeout=None):
         future = self.loop.create_future()
         if check is None:

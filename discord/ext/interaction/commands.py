@@ -47,6 +47,10 @@ class ApplicationCommandType(Enum):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @property
+    def value(self) -> Any:
+        return super(ApplicationCommandType, self).value
+
 
 # OptionType
 class Mentionable:
