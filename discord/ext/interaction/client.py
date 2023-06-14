@@ -305,7 +305,7 @@ class ClientBase:
             Look for it in preloaded application command list.
             If application command list is not found in preloaded list, it is automatically updated.
         command_type : Optional[ApplicationCommandType]
-            Application Command Type. Default value is `CHAT_INPUT`
+            Application Command Type. Default value is ``CHAT_INPUT``
 
         Returns
         -------
@@ -550,7 +550,7 @@ class ClientBase:
 
             The default value is None,
             which means that if it is None,
-            it will follow the synchronization status `global_sync_command` attribute set by discord bot client.
+            it will follow the synchronization status ``global_sync_command`` attribute set by discord bot client.
         _parent
             This parameters is used for cog.
 
@@ -615,7 +615,7 @@ class ClientBase:
 
             The default value is None,
             which means that if it is None,
-            it will follow the synchronization status `global_sync_command` attribute set by discord bot client.
+            it will follow the synchronization status ``global_sync_command`` attribute set by discord bot client.
 
         Warnings
         --------
@@ -779,7 +779,27 @@ class ClientBase:
         return
 
     # Components
-    def wait_for_component(self, custom_id: str, check=None, timeout=None):
+    def wait_for_component(self, custom_id: str, check=None, timeout=None) -> ComponentsContext:
+        """Wait for the component with the specified custom_id to be sent.
+
+        The ``timeout`` parameter is passed to :func:`asyncio.wait_for()`.
+        Note that by default it will not time out; if it does,
+        it will propagate an :exc:`asyncio.TimeoutError`, which is provided for ease of use.
+
+        Parameters
+        ----------
+        custom_id : str
+            Custom ID for detect component
+        check : Optional[Callable[..., bool]]
+            A predicate to check what to wait for.
+            The arguments must meet the parameters of the event being waited for.
+        timeout : Optional[float]
+            The number of seconds to wait before timing out and raising :exc:`asyncio.TimeoutError`.
+
+        Returns
+        -------
+            Returns a `ComponentsContext` that satisfies the custom_id.
+        """
         future = self.loop.create_future()
         if check is None:
             def _check(_: ComponentsContext):
@@ -796,7 +816,25 @@ class ClientBase:
         listeners.append((future, check, False))
         return asyncio.wait_for(future, timeout)
 
-    def wait_for_global_component(self, check=None, timeout=None):
+    def wait_for_global_component(self, check=None, timeout=None) -> ComponentsContext:
+        """Unconstrained by custom_id, waits for any component_id.
+
+        The ``timeout`` parameter is passed to :func:`asyncio.wait_for()`.
+        Note that by default it will not time out; if it does,
+        it will propagate an :exc:`asyncio.TimeoutError`, which is provided for ease of use.
+
+        Parameters
+        ----------
+        check : Optional[Callable[..., bool]]
+            A predicate to check what to wait for.
+            The arguments must meet the parameters of the event being waited for.
+        timeout : Optional[float]
+            The number of seconds to wait before timing out and raising :exc:`asyncio.TimeoutError`.
+
+        Returns
+        -------
+            Returns a :class:`ComponentContext` that satisfies the condition on `check`.
+        """
         future = self.loop.create_future()
         if check is None:
             def _check(_: ComponentsContext):
