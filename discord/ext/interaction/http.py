@@ -46,12 +46,12 @@ def handler_message_parameter(
     reference: Union[discord.MessageReference, discord.PartialMessage] = MISSING,
     previous_allowed_mentions: Optional[discord.AllowedMentions] = None,
     mention_author: bool = None,
-    stickers: List[Union[discord.Sticker, int]] = MISSING
+    stickers: List[Union[discord.Sticker, int]] = MISSING,
 ):
     if files is not MISSING and file is not MISSING:
-        raise TypeError('Cannot mix file and files keyword arguments.')
+        raise TypeError("Cannot mix file and files keyword arguments.")
     if embeds is not MISSING and embed is not MISSING:
-        raise TypeError('Cannot mix embed and embeds keyword arguments.')
+        raise TypeError("Cannot mix embed and embeds keyword arguments.")
 
     if file is not MISSING:
         files = [file]
@@ -59,58 +59,62 @@ def handler_message_parameter(
     payload = {"tts": tts}
     if embeds is not MISSING:
         if len(embeds) > 10:
-            raise ValueError('embeds has a maximum of 10 elements.')
-        payload['embeds'] = [e.to_dict() for e in embeds]
+            raise ValueError("embeds has a maximum of 10 elements.")
+        payload["embeds"] = [e.to_dict() for e in embeds]
 
     if embed is not MISSING:
         if embed is None:
-            payload['embeds'] = []
+            payload["embeds"] = []
         else:
-            payload['embeds'] = [embed.to_dict()]
+            payload["embeds"] = [embed.to_dict()]
 
     if content is not MISSING:
         if content is not None:
-            payload['content'] = str(content)
+            payload["content"] = str(content)
         else:
-            payload['content'] = None
+            payload["content"] = None
 
     if components is not MISSING:
         if components is not None:
-            payload['components'] = [
-                i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components
+            payload["components"] = [
+                i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict()
+                for i in components
             ]
         else:
-            payload['components'] = []
+            payload["components"] = []
 
     if nonce is not None:
-        payload['nonce'] = str(nonce)
+        payload["nonce"] = str(nonce)
 
     if reference is not MISSING:
-        payload['message_reference'] = reference
+        payload["message_reference"] = reference
 
     if stickers is not MISSING:
         if stickers is not None:
-            payload['sticker_ids'] = [
-                sticker.id if isinstance(stickers, discord.Sticker) else stickers for sticker in stickers
+            payload["sticker_ids"] = [
+                sticker.id if isinstance(stickers, discord.Sticker) else stickers
+                for sticker in stickers
             ]
         else:
-            payload['sticker_ids'] = []
+            payload["sticker_ids"] = []
 
     if flags is not MISSING:
-        payload['flags'] = flags.value
+        payload["flags"] = flags.value
 
     if allowed_mentions:
         if previous_allowed_mentions is not None:
-            payload['allowed_mentions'] = previous_allowed_mentions.merge(allowed_mentions).to_dict()
+            payload["allowed_mentions"] = previous_allowed_mentions.merge(
+                allowed_mentions
+            ).to_dict()
         else:
-            payload['allowed_mentions'] = allowed_mentions.to_dict()
+            payload["allowed_mentions"] = allowed_mentions.to_dict()
     elif previous_allowed_mentions is not None:
-        payload['allowed_mentions'] = previous_allowed_mentions.to_dict()
+        payload["allowed_mentions"] = previous_allowed_mentions.to_dict()
 
     if mention_author is not None:
-        if 'allowed_mentions' not in payload:
-            payload['allowed_mentions'] = discord.AllowedMentions().to_dict()
-        payload['allowed_mentions']['replied_user'] = mention_author
+        if "allowed_mentions" not in payload:
+            payload["allowed_mentions"] = discord.AllowedMentions().to_dict()
+        payload["allowed_mentions"]["replied_user"] = mention_author
 
     if attachments is MISSING:
         attachments = files
@@ -127,19 +131,19 @@ def handler_message_parameter(
             else:
                 attachments_payload.append(attachment.to_dict())
 
-        payload['attachments'] = attachments_payload
+        payload["attachments"] = attachments_payload
 
     multipart = []
     if files:
-        multipart.append({'name': 'payload_json', 'value': to_json(payload)})
+        multipart.append({"name": "payload_json", "value": to_json(payload)})
         payload = None
         for index, file in enumerate(files):
             multipart.append(
                 {
-                    'name': f'files[{index}]',
-                    'value': file.fp,
-                    'filename': file.filename,
-                    'content_type': 'application/octet-stream',
+                    "name": f"files[{index}]",
+                    "value": file.fp,
+                    "filename": file.filename,
+                    "content_type": "application/octet-stream",
                 }
             )
 
@@ -157,7 +161,9 @@ class InteractionHTTPClient:
         self.http = http
 
     # Interaction Response
-    async def post_initial_response(self, data: InteractionData, payload: Dict[str, Any]):
+    async def post_initial_response(
+        self, data: InteractionData, payload: Dict[str, Any]
+    ):
         r = Route(
             "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
@@ -165,34 +171,41 @@ class InteractionHTTPClient:
 
     async def get_initial_response(self, data: InteractionData):
         r = Route(
-            "GET", "/webhooks/{id}/{token}/messages/@original", id=data.application_id, token=data.token
+            "GET",
+            "/webhooks/{id}/{token}/messages/@original",
+            id=data.application_id,
+            token=data.token,
         )
         return await self.http.request(r)
 
     async def edit_initial_response(
-            self,
-            data: InteractionData,
-            payload: Dict[str, Any] = None,
-            form: List[Dict[str, Any]] = None,
-            files: Optional[Sequence[discord.File]] = MISSING
+        self,
+        data: InteractionData,
+        payload: Dict[str, Any] = None,
+        form: List[Dict[str, Any]] = None,
+        files: Optional[Sequence[discord.File]] = MISSING,
     ):
         if form is None:
             form = []
 
         if len(form) > 0:
-            return await self.edit_followup(message_id="@original", form=form, files=files, data=data)
-        return await self.edit_followup(message_id="@original", payload=payload, data=data)
+            return await self.edit_followup(
+                message_id="@original", form=form, files=files, data=data
+            )
+        return await self.edit_followup(
+            message_id="@original", payload=payload, data=data
+        )
 
     async def delete_initial_response(self, data: InteractionData):
         await self.delete_followup(message_id="@original", data=data)
 
     # Interaction Response (Followup)
     async def post_followup(
-            self,
-            data: InteractionData,
-            payload: Dict[str, Any] = None,
-            form: List[Dict[str, Any]] = None,
-            files: Optional[Sequence[discord.File]] = MISSING
+        self,
+        data: InteractionData,
+        payload: Dict[str, Any] = None,
+        form: List[Dict[str, Any]] = None,
+        files: Optional[Sequence[discord.File]] = MISSING,
     ):
         if form is None:
             form = []
@@ -204,18 +217,21 @@ class InteractionHTTPClient:
         return await self.http.request(r, json=payload)
 
     async def edit_followup(
-            self,
-            data: InteractionData,
-            message_id,
-            payload: Dict[str, Any] = None,
-            form: List[Dict[str, Any]] = None,
-            files: Optional[Sequence[discord.File]] = MISSING
+        self,
+        data: InteractionData,
+        message_id,
+        payload: Dict[str, Any] = None,
+        form: List[Dict[str, Any]] = None,
+        files: Optional[Sequence[discord.File]] = MISSING,
     ):
         if form is None:
             form = []
         r = Route(
-            "PATCH", "/webhooks/{id}/{token}/messages/{message_id}",
-            id=data.application_id, token=data.token, message_id=message_id
+            "PATCH",
+            "/webhooks/{id}/{token}/messages/{message_id}",
+            id=data.application_id,
+            token=data.token,
+            message_id=message_id,
         )
         if len(form) > 0:
             return await self.http.request(r, form=form, files=files)
@@ -223,7 +239,10 @@ class InteractionHTTPClient:
 
     async def delete_followup(self, data: InteractionData, message_id):
         r = Route(
-            "DELETE", "/webhooks/{id}/{token}/messages/{message_id}",
-            id=data.application_id, token=data.token, message_id=message_id
+            "DELETE",
+            "/webhooks/{id}/{token}/messages/{message_id}",
+            id=data.application_id,
+            token=data.token,
+            message_id=message_id,
         )
         await self.http.request(r)

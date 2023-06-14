@@ -31,7 +31,7 @@ def listener(name: str = None):
             actual = func.__func__
 
         if not inspect.iscoroutinefunction(actual):
-            raise TypeError(f'{func.__name__} function must be a coroutine function.')
+            raise TypeError(f"{func.__name__} function must be a coroutine function.")
 
         actual.__cog_listener__ = True
         listener_name = name or func.__name__
@@ -39,4 +39,5 @@ def listener(name: str = None):
             actual.__cog_listener_names__ = []
         actual.__cog_listener_names__.append(listener_name)
         return func
+
     return decorator

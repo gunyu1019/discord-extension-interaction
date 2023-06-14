@@ -48,12 +48,12 @@ class Components(metaclass=ABCMeta):
 
 class Options:
     def __init__(
-            self,
-            label: str,
-            value: str,
-            description: Optional[str] = None,
-            emoji: Union[discord.PartialEmoji, dict] = None,
-            default: bool = False
+        self,
+        label: str,
+        value: str,
+        description: Optional[str] = None,
+        emoji: Union[discord.PartialEmoji, dict] = None,
+        default: bool = False,
     ):
         self.label = label
         self.value = value
@@ -62,15 +62,16 @@ class Options:
         self.default = default
 
     def to_dict(self) -> dict:
-        data = {
-            "label": self.label,
-            "value": self.value
-        }
+        data = {"label": self.label, "value": self.value}
 
         if self.description is not None:
             data["description"] = self.description
         if self.emoji is not None:
-            data["emoji"] = self.emoji.to_dict() if isinstance(self.emoji, discord.PartialEmoji) else self.emoji
+            data["emoji"] = (
+                self.emoji.to_dict()
+                if isinstance(self.emoji, discord.PartialEmoji)
+                else self.emoji
+            )
         if self.default is not None:
             data["default"] = self.default
 
@@ -88,7 +89,7 @@ class Options:
             value=value,
             description=description,
             emoji=emoji,
-            default=default
+            default=default,
         )
 
 
@@ -101,16 +102,10 @@ class ActionRow(Components):
         self.components: list = components
 
     def to_dict(self) -> dict:
-        return {
-            "type": 1,
-            "components": self.components
-        }
+        return {"type": 1, "components": self.components}
 
     def to_all_dict(self) -> dict:
-        return {
-            "type": 1,
-            "components": [i.to_dict() for i in self.components]
-        }
+        return {"type": 1, "components": [i.to_dict() for i in self.components]}
 
     @classmethod
     def from_dict(cls, payload: dict):
@@ -119,22 +114,22 @@ class ActionRow(Components):
 
     @classmethod
     def from_payload(cls, payload: dict):
-        components = from_payload(
-            payload.get("components")
-        )
+        components = from_payload(payload.get("components"))
         return cls(components=components)
 
 
 class Button(Components):
     TYPE = 2
 
-    def __init__(self,
-                 style: int,
-                 label: str = None,
-                 emoji: Union[discord.PartialEmoji, str, dict] = None,
-                 custom_id: str = None,
-                 url: str = None,
-                 disabled: bool = None):
+    def __init__(
+        self,
+        style: int,
+        label: str = None,
+        emoji: Union[discord.PartialEmoji, str, dict] = None,
+        custom_id: str = None,
+        url: str = None,
+        disabled: bool = None,
+    ):
         super().__init__(components_type=2)
 
         self.style = style
@@ -145,19 +140,14 @@ class Button(Components):
         self.disabled = disabled
 
     def to_dict(self) -> dict:
-        base = {
-            "type": 2,
-            "style": self.style
-        }
+        base = {"type": 2, "style": self.style}
 
         if self.label is not None:
             base["label"] = self.label
         if self.emoji is not None and isinstance(self.emoji, discord.PartialEmoji):
             base["emoji"] = self.emoji.to_dict()
         elif self.emoji is not None and isinstance(self.emoji, str):
-            base["emoji"] = {
-                "name": self.emoji
-            }
+            base["emoji"] = {"name": self.emoji}
         elif self.emoji is not None:
             base["emoji"] = self.emoji
 
@@ -184,20 +174,22 @@ class Button(Components):
             emoji=emoji,
             custom_id=custom_id,
             url=url,
-            disabled=disabled
+            disabled=disabled,
         )
 
 
 class Selection(Components):
     TYPE = 3
 
-    def __init__(self,
-                 custom_id: str,
-                 options: List[Union[dict, Options]],
-                 disabled: bool = False,
-                 placeholder: str = None,
-                 min_values: int = None,
-                 max_values: int = None):
+    def __init__(
+        self,
+        custom_id: str,
+        options: List[Union[dict, Options]],
+        disabled: bool = False,
+        placeholder: str = None,
+        min_values: int = None,
+        max_values: int = None,
+    ):
         super().__init__(components_type=3)
 
         self.disabled = disabled
@@ -213,11 +205,9 @@ class Selection(Components):
             "custom_id": self.custom_id,
             "disabled": self.disabled,
             "options": [
-                option.to_dict()
-                if isinstance(option, Options)
-                else option
+                option.to_dict() if isinstance(option, Options) else option
                 for option in self.options
-            ]
+            ],
         }
         if self.placeholder is not None:
             base["placeholder"] = self.placeholder
@@ -231,9 +221,7 @@ class Selection(Components):
     @classmethod
     def from_dict(cls, payload: dict):
         custom_id = payload["custom_id"]
-        options = [
-            Options.from_dict(x) for x in payload.get("options", [])
-        ]
+        options = [Options.from_dict(x) for x in payload.get("options", [])]
         placeholder = payload.get("placeholder")
         min_values = payload.get("min_values")
         max_values = payload.get("max_values")
@@ -242,7 +230,7 @@ class Selection(Components):
             options=options,
             placeholder=placeholder,
             min_values=min_values,
-            max_values=max_values
+            max_values=max_values,
         )
 
 
@@ -250,15 +238,15 @@ class TextInput(Components):
     TYPE = 4
 
     def __init__(
-            self,
-            custom_id: str,
-            style: int,
-            label: str,
-            min_length: Optional[int] = None,
-            max_length: Optional[int] = None,
-            required: bool = False,
-            value: Optional[str] = None,
-            placeholder: Optional[str] = None
+        self,
+        custom_id: str,
+        style: int,
+        label: str,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        required: bool = False,
+        value: Optional[str] = None,
+        placeholder: Optional[str] = None,
     ):
         super().__init__(components_type=4)
 
@@ -277,7 +265,7 @@ class TextInput(Components):
             "custom_id": self.custom_id,
             "style": self.style,
             "label": self.label,
-            "required": self.required
+            "required": self.required,
         }
         if self.placeholder is not None:
             base["placeholder"] = self.placeholder
@@ -308,11 +296,13 @@ class TextInput(Components):
             min_length=min_length,
             max_length=max_length,
             required=required,
-            value=value
+            value=value,
         )
 
 
-def from_payload(payload: List[Dict[str, Any]]) -> List[Union[ActionRow, Button, Selection, TextInput]]:
+def from_payload(
+    payload: List[Dict[str, Any]]
+) -> List[Union[ActionRow, Button, Selection, TextInput]]:
     components = []
 
     for i in payload:
@@ -329,7 +319,9 @@ def from_payload(payload: List[Dict[str, Any]]) -> List[Union[ActionRow, Button,
 
 # For Decorator
 class DetectComponent(BaseCore):
-    def __init__(self, func, custom_id, component_type: Type[Components] = None, checks=None):
+    def __init__(
+        self, func, custom_id, component_type: Type[Components] = None, checks=None
+    ):
         self.custom_id = custom_id
         self.type = component_type
         self.func = func
@@ -343,10 +335,10 @@ class DetectComponent(BaseCore):
 
 
 def detect_component(
-        cls: classmethod = None,
-        custom_id: str = None,
-        component_type: Type[Components] = None,
-        checks=None
+    cls: classmethod = None,
+    custom_id: str = None,
+    component_type: Type[Components] = None,
+    checks=None,
 ):
     if cls is None:
         cls = DetectComponent
@@ -357,13 +349,14 @@ def detect_component(
             _function = func.__func__
 
         if not inspect.iscoroutinefunction(_function):
-            raise TypeError('Detect Component function must be a coroutine function.')
+            raise TypeError("Detect Component function must be a coroutine function.")
 
         new_cls = cls(
             func=_function,
             custom_id=custom_id or _function.__name__,
             component_type=component_type,
-            checks=checks
+            checks=checks,
         )
         return new_cls
+
     return decorator

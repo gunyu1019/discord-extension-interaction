@@ -47,19 +47,21 @@ channel_types = [
     discord.StageChannel,
     discord.GroupChannel,
     discord.CategoryChannel,
-    discord.ForumChannel
+    discord.ForumChannel,
 ]
 
 
 try:
     from deprecated import deprecated
 except ModuleNotFoundError:
+
     def deprecated(version: str, reason: str):
         def decorator(func):
             logging.getLogger("discord.ext.interaction.deprecated").warning(
                 f"This has been disabled due to {reason} in version {version}."
             )
             return func
+
         return decorator
 
 
@@ -80,7 +82,7 @@ def get_enum(cls, val):
 
 
 def to_json(obj):
-    return json.dumps(obj, separators=(',', ':'), ensure_ascii=False)
+    return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
 
 
 async def async_all(gen, *, check=inspect.isawaitable):

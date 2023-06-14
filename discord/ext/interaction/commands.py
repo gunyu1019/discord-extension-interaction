@@ -60,31 +60,22 @@ class Mentionable:
 # Option
 class CommandOptionChoice:
     def __init__(
-            self,
-            name: str,
-            value: Union[int, str, float],
+        self,
+        name: str,
+        value: Union[int, str, float],
     ):
         self.name = name
         self.value = value
 
     @classmethod
     def from_payload(cls, data):
-        return cls(
-            name=data['name'],
-            value=data['value']
-        )
+        return cls(name=data["name"], value=data["value"])
 
     def to_dict(self) -> dict:
-        return {
-            'name': self.name,
-            'value': self.value
-        }
+        return {"name": self.name, "value": self.value}
 
     def __eq__(self, other):
-        return (
-                self.name == other.name and
-                self.value == other.value
-        )
+        return self.name == other.name and self.value == other.value
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -92,17 +83,17 @@ class CommandOptionChoice:
 
 class CommandOption:
     def __init__(
-            self,
-            name: str = None,
-            option_type: type = None,
-            description: str = "No description.",
-            choices: List[CommandOptionChoice] = None,
-            channel_type: Union[discord.ChannelType, int] = None,
-            channel_types: List[Union[discord.ChannelType, int]] = None,
-            min_value: Union[float, int] = None,
-            max_value: Union[float, int] = None,
-            required: bool = False,
-            autocomplete: bool = False
+        self,
+        name: str = None,
+        option_type: type = None,
+        description: str = "No description.",
+        choices: List[CommandOptionChoice] = None,
+        channel_type: Union[discord.ChannelType, int] = None,
+        channel_types: List[Union[discord.ChannelType, int]] = None,
+        min_value: Union[float, int] = None,
+        max_value: Union[float, int] = None,
+        required: bool = False,
+        autocomplete: bool = False,
     ):
         if choices is None:
             choices = []
@@ -116,11 +107,14 @@ class CommandOption:
         self.parameter_name: Optional[str] = None
 
         if option_type is not None:
-            if (
-                    (len(choices) > 0 or autocomplete) and
-                    not (int in option_type.__mro__ or float in option_type.__mro__ or str in option_type.__mro__)
+            if (len(choices) > 0 or autocomplete) and not (
+                int in option_type.__mro__
+                or float in option_type.__mro__
+                or str in option_type.__mro__
             ):
-                raise TypeError('choices or autocomplete should only be used in integer, string, and float.')
+                raise TypeError(
+                    "choices or autocomplete should only be used in integer, string, and float."
+                )
 
         if len(self.choices) > 0 and self.autocomplete:
             log.warning("autocomplete may not be set to true if choices are present.")
@@ -129,7 +123,9 @@ class CommandOption:
         if channel_type is not None or channel_types is not None:
             if option_type is not None:
                 if discord.abc.GuildChannel not in option_type.__mro__:
-                    raise TypeError('Channel options can be set only when they are set to a channel type.')
+                    raise TypeError(
+                        "Channel options can be set only when they are set to a channel type."
+                    )
 
             if channel_types is not None and channel_type is not None:
                 raise InvalidArgument()
@@ -141,16 +137,24 @@ class CommandOption:
             elif channel_types is not None:
                 self._channel_type = []
                 for x in channel_types:
-                    if hasattr(x, 'value'):
+                    if hasattr(x, "value"):
                         self._channel_type.append(x.value)
                     else:
                         self._channel_type.append(x)
 
         if option_type is not None:
-            if min_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
-                raise TypeError('min_value can only be called when the parameter types are int and float.')
-            if max_value is not None and (int not in option_type.__mro__ and float not in option_type.__mro__):
-                raise TypeError('max_value can only be called when the parameter types are int and float.')
+            if min_value is not None and (
+                int not in option_type.__mro__ and float not in option_type.__mro__
+            ):
+                raise TypeError(
+                    "min_value can only be called when the parameter types are int and float."
+                )
+            if max_value is not None and (
+                int not in option_type.__mro__ and float not in option_type.__mro__
+            ):
+                raise TypeError(
+                    "max_value can only be called when the parameter types are int and float."
+                )
         self.min_value: Optional[int] = min_value
         self.max_value: Optional[int] = max_value
 
@@ -160,9 +164,7 @@ class CommandOption:
             return
         channel_type = []
         for x in self._channel_type:
-            channel_type.append(
-                get_enum(discord.ChannelType, x)
-            )
+            channel_type.append(get_enum(discord.ChannelType, x))
         return channel_type
 
     @property
@@ -189,7 +191,9 @@ class CommandOption:
             return 10
         elif discord.Attachment == self.type:
             return 11
-        raise TypeError("option type invalid (Subcommand and Subcommand Group, please use decorator)")
+        raise TypeError(
+            "option type invalid (Subcommand and Subcommand Group, please use decorator)"
+        )
 
     def to_dict(self) -> dict:
         data = {
@@ -197,30 +201,32 @@ class CommandOption:
             "description": self.description,
             "type": self._get_type_id,
             "required": self.required,
-            "choices": [
-                choice.to_dict() for choice in self.choices
-            ],
-            "autocomplete": self.autocomplete
+            "choices": [choice.to_dict() for choice in self.choices],
+            "autocomplete": self.autocomplete,
         }
         if self._channel_type is not None:
-            data['channel_types'] = self._channel_type
+            data["channel_types"] = self._channel_type
         if self.min_value is not None:
-            data['min_value'] = self.min_value
+            data["min_value"] = self.min_value
         if self.max_value is not None:
-            data['max_value'] = self.max_value
+            data["max_value"] = self.max_value
         return data
 
     def __eq__(self, other):
         default_check = (
-                self.name == other.name and
-                other.type in self.type.__mro__ and
-                self.description == other.description and
-                self.choices == other.choices and
-                self.required == other.required and
-                self.autocomplete == other.autocomplete
+            self.name == other.name
+            and other.type in self.type.__mro__
+            and self.description == other.description
+            and self.choices == other.choices
+            and self.required == other.required
+            and self.autocomplete == other.autocomplete
         )
         if int in self.type.__mro__ or float in self.type.__mro__:
-            default_check = default_check and self.min_value == other.min_value and self.max_value == other.max_value
+            default_check = (
+                default_check
+                and self.min_value == other.min_value
+                and self.max_value == other.max_value
+            )
         elif discord.abc.GuildChannel in self.type.__mro__:
             default_check = default_check and self._channel_type == other._channel_type
         return default_check
@@ -231,16 +237,14 @@ class CommandOption:
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = cls()
-        tp_v = data['type']
+        tp_v = data["type"]
         if tp_v == 1:
             return ApplicationSubcommand.from_payload(data)
         if tp_v == 2:
             return ApplicationSubcommandGroup.from_payload(data)
 
-        for x in ('name', 'description', 'required', 'autocomplete'):
-            setattr(
-                new_cls, x, data.get(x)
-            )
+        for x in ("name", "description", "required", "autocomplete"):
+            setattr(new_cls, x, data.get(x))
         # optional--default false
         if new_cls.required is None:
             new_cls.required = False
@@ -248,31 +252,40 @@ class CommandOption:
             new_cls.autocomplete = False
 
         new_cls.type = (
-            str, int, bool, discord.User, discord.abc.GuildChannel, discord.Role, Mentionable, float
+            str,
+            int,
+            bool,
+            discord.User,
+            discord.abc.GuildChannel,
+            discord.Role,
+            Mentionable,
+            float,
         )[(tp_v - 3)]
-        if new_cls.type == discord.abc.GuildChannel and 'channel_types' in data.keys():
-            new_cls._channel_type = data.get('channel_types', [])
-        if (new_cls.type == int or new_cls.type == float) and 'min_value' in data.keys():
-            new_cls.min_value = data.get('min_value')
-        if (new_cls.type == int or new_cls.type == float) and 'max_value' in data.keys():
-            new_cls.max_value = data.get('max_value')
+        if new_cls.type == discord.abc.GuildChannel and "channel_types" in data.keys():
+            new_cls._channel_type = data.get("channel_types", [])
+        if (
+            new_cls.type == int or new_cls.type == float
+        ) and "min_value" in data.keys():
+            new_cls.min_value = data.get("min_value")
+        if (
+            new_cls.type == int or new_cls.type == float
+        ) and "max_value" in data.keys():
+            new_cls.max_value = data.get("max_value")
 
         new_cls.choices = []
-        choices = data.get('choices', [])
+        choices = data.get("choices", [])
         if len(choices) > 0:
             for ch in choices:
-                new_cls.choices.append(
-                    CommandOptionChoice.from_payload(ch)
-                )
+                new_cls.choices.append(CommandOptionChoice.from_payload(ch))
         return new_cls
 
 
 class ApplicationSubcommand:
     def __init__(
-            self,
-            name: str,
-            description: str = "No description.",
-            options: Optional[List[Union[CommandOption]]] = None
+        self,
+        name: str,
+        description: str = "No description.",
+        options: Optional[List[Union[CommandOption]]] = None,
     ):
         self.name = name
         self.description = description
@@ -286,12 +299,9 @@ class ApplicationSubcommand:
 
     @classmethod
     def from_payload(cls, data: dict):
-        new_cls = cls(
-            name=data['name'],
-            description=data['description']
-        )
-        if 'options' in data:
-            new_cls.options = [CommandOption.from_payload(x) for x in data['options']]
+        new_cls = cls(name=data["name"], description=data["description"])
+        if "options" in data:
+            new_cls.options = [CommandOption.from_payload(x) for x in data["options"]]
         return new_cls
 
     def to_dict(self) -> dict:
@@ -299,14 +309,14 @@ class ApplicationSubcommand:
             "name": self.name,
             "description": self.description,
             "type": self._get_type_id,
-            "options": [opt.to_dict() for opt in self.options]
+            "options": [opt.to_dict() for opt in self.options],
         }
 
     def __eq__(self, other):
         default_check = (
-            self.name == other.name and
-            self.description == other.description and
-            self.options == other.options
+            self.name == other.name
+            and self.description == other.description
+            and self.options == other.options
         )
         return default_check
 
@@ -316,10 +326,10 @@ class ApplicationSubcommand:
 
 class ApplicationSubcommandGroup:
     def __init__(
-            self,
-            name: str,
-            options: List[ApplicationSubcommand],
-            description: str = "No description."
+        self,
+        name: str,
+        options: List[ApplicationSubcommand],
+        description: str = "No description.",
     ):
         self.name = name
         self.description = description
@@ -332,9 +342,9 @@ class ApplicationSubcommandGroup:
     @classmethod
     def from_payload(cls, data: dict):
         return cls(
-            name=data['name'],
-            description=data['description'],
-            options=[ApplicationSubcommand.from_payload(x) for x in data['options']]
+            name=data["name"],
+            description=data["description"],
+            options=[ApplicationSubcommand.from_payload(x) for x in data["options"]],
         )
 
     def to_dict(self) -> dict:
@@ -342,14 +352,14 @@ class ApplicationSubcommandGroup:
             "name": self.name,
             "description": self.description,
             "type": self._get_type_id,
-            "options": [opt.to_dict() for opt in self.options]
+            "options": [opt.to_dict() for opt in self.options],
         }
 
     def __eq__(self, other):
         default_check = (
-            self.name == other.name and
-            self.description == other.description and
-            self.options == other.options
+            self.name == other.name
+            and self.description == other.description
+            and self.options == other.options
         )
         return default_check
 
@@ -359,12 +369,12 @@ class ApplicationSubcommandGroup:
 
 class ApplicationCommand:
     def __init__(
-            self,
-            name: str,
-            description: str = None,
-            guild_id: Optional[int] = None,
-            command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
-            default_member_permissions: str = None
+        self,
+        name: str,
+        description: str = None,
+        guild_id: Optional[int] = None,
+        command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
+        default_member_permissions: str = None,
     ):
         self.id: int = 0  # default: None
         self.name: str = name
@@ -378,20 +388,16 @@ class ApplicationCommand:
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = cls(
-            name=data['name'],
-            description=data['description'],
-            default_member_permissions=data.get('default_member_permissions'),
-            guild_id=data.get('guild_id')
+            name=data["name"],
+            description=data["description"],
+            default_member_permissions=data.get("default_member_permissions"),
+            guild_id=data.get("guild_id"),
         )
 
-        for key in (
-                'id',
-                'application_id',
-                'version'
-        ):
+        for key in ("id", "application_id", "version"):
             value = data.get(key)
             setattr(new_cls, key, value)
-        command_type = data['type']
+        command_type = data["type"]
         new_cls.type = get_enum(ApplicationCommandType, command_type)
         return new_cls
 
@@ -399,7 +405,7 @@ class ApplicationCommand:
         data = {
             "name": self.name,
             "type": self.type.value,
-            "description": self.description
+            "description": self.description,
         }
         return data
 
@@ -408,12 +414,12 @@ class ApplicationCommand:
         return self.guild_id is not None
 
     def __eq__(self, other):
-        description = self.description or ''
+        description = self.description or ""
         return (
-                self.name == other.name and
-                self.type == other.type and
-                description == other.description and
-                self.default_member_permissions == other.default_member_permissions
+            self.name == other.name
+            and self.type == other.type
+            and description == other.description
+            and self.default_member_permissions == other.default_member_permissions
         )
 
     def __ne__(self, other):
@@ -422,9 +428,11 @@ class ApplicationCommand:
 
 class SlashCommand(ApplicationCommand):
     def __init__(
-            self,
-            options: List[Union[CommandOption, ApplicationSubcommandGroup, ApplicationSubcommand]] = None,
-            **kwargs
+        self,
+        options: List[
+            Union[CommandOption, ApplicationSubcommandGroup, ApplicationSubcommand]
+        ] = None,
+        **kwargs
     ):
         if options is None:
             options = []
@@ -433,10 +441,7 @@ class SlashCommand(ApplicationCommand):
         self.options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = options
 
     def __eq__(self, other):
-        return (
-                super().__eq__(other) and
-                self.options == other.options
-        )
+        return super().__eq__(other) and self.options == other.options
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -444,12 +449,14 @@ class SlashCommand(ApplicationCommand):
     @classmethod
     def from_payload(cls, data: dict):
         new_cls = super().from_payload(data)
-        new_cls.options = [CommandOption.from_payload(opt) for opt in data.get('options', [])]
+        new_cls.options = [
+            CommandOption.from_payload(opt) for opt in data.get("options", [])
+        ]
         return new_cls
 
     def to_register_dict(self) -> dict:
         data = super().to_register_dict()
-        data['options'] = [opt.to_dict() for opt in self.options]
+        data["options"] = [opt.to_dict() for opt in self.options]
         return data
 
 
@@ -469,11 +476,11 @@ command_types = Union[SlashCommand, UserCommand, ContextMenu]
 
 
 def from_payload(data: dict) -> command_types:
-    if data['type'] == ApplicationCommandType.CHAT_INPUT:
+    if data["type"] == ApplicationCommandType.CHAT_INPUT:
         _result = SlashCommand.from_payload(data)
-    elif data['type'] == ApplicationCommandType.USER:
+    elif data["type"] == ApplicationCommandType.USER:
         _result = UserCommand.from_payload(data)
-    elif data['type'] == ApplicationCommandType.MESSAGE:
+    elif data["type"] == ApplicationCommandType.MESSAGE:
         _result = ContextMenu.from_payload(data)
     else:
         _result = ApplicationCommand.from_payload(data)
@@ -489,8 +496,8 @@ class BaseCore:
 
         if checks is None:
             checks = []
-        if hasattr(func, '__commands_checks__'):
-            decorator_checks = getattr(func, '__commands_checks__')
+        if hasattr(func, "__commands_checks__"):
+            decorator_checks = getattr(func, "__commands_checks__")
             decorator_checks.reverse()
             checks += decorator_checks
         self.checks: list = checks
@@ -516,16 +523,16 @@ class BaseCore:
 # Subcommand
 class SubCommand(BaseCore, ApplicationSubcommand):
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
-        if kwargs.get('name') is None:
-            kwargs['name'] = func.__name__
+        if kwargs.get("name") is None:
+            kwargs["name"] = func.__name__
         self.parents: Union[Command, SubCommandGroup] = parents
-        self.top_parents: Command = kwargs.pop('top_parents', self.parents)
+        self.top_parents: Command = kwargs.pop("top_parents", self.parents)
         self.parents.options.append(self)
 
-        options = kwargs.get('options')
+        options = kwargs.get("options")
         if options is None:
             options = []
-        if hasattr(func, '__command_options__'):
+        if hasattr(func, "__command_options__"):
             func.__command_options__.reverse()
             options += func.__command_options__
         self.base_options = options
@@ -534,32 +541,36 @@ class SubCommand(BaseCore, ApplicationSubcommand):
         super().__init__(func=func, checks=checks, *args, **kwargs)
 
     def set_signature_option(self) -> None:
-        """ Since add_interaction is called and cog information is entered in parents,
-            parents value is reflected and skipping_argument value is determined.
+        """Since add_interaction is called and cog information is entered in parents,
+        parents value is reflected and skipping_argument value is determined.
         """
         if self.top_parents.cog is not None:
-            self.options = get_signature_option(self.func, self.base_options, skipping_argument=2)
+            self.options = get_signature_option(
+                self.func, self.base_options, skipping_argument=2
+            )
         else:
-            self.options = get_signature_option(self.func, self.base_options, skipping_argument=1)
+            self.options = get_signature_option(
+                self.func, self.base_options, skipping_argument=1
+            )
 
 
 class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
     options: List[SubCommand]
 
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
-        if kwargs.get('name') is None:
-            kwargs['name'] = func.__name__
+        if kwargs.get("name") is None:
+            kwargs["name"] = func.__name__
         self.parents: Union[Command] = parents
         super().__init__(func=func, checks=checks, *args, **kwargs)
         self.parents.options.append(self)
 
     def subcommand(
-            self,
-            name: str = None,
-            description: str = "No description.",
-            cls: classmethod = None,
-            checks=None,
-            options: Optional[List[CommandOption]] = None
+        self,
+        name: str = None,
+        description: str = "No description.",
+        cls: classmethod = None,
+        checks=None,
+        options: Optional[List[CommandOption]] = None,
     ):
         if options is None:
             options = []
@@ -575,66 +586,79 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
                 checks=checks,
                 options=options,
                 top_parents=self.parents,
-                parents=self
+                parents=self,
             )
+
         return decorator
 
     def set_signature_option(self) -> None:
-        """ Since add_interaction is called and cog information is entered in parents,
-            parents value is reflected and skipping_argument value is determined.
+        """Since add_interaction is called and cog information is entered in parents,
+        parents value is reflected and skipping_argument value is determined.
         """
         for opt in self.options:
             opt.set_signature_option()
 
 
 class BaseCommand(BaseCore):
-    def __init__(self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs):
-        if kwargs.get('name') is None:
-            kwargs['name'] = func.__name__
+    def __init__(
+        self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs
+    ):
+        if kwargs.get("name") is None:
+            kwargs["name"] = func.__name__
         super().__init__(func=func, checks=checks, *args, **kwargs)
         self.sync_command: bool = sync_command
 
 
 class Command(BaseCommand, SlashCommand):
     def __init__(
-            self,
-            func: Callable,
-            checks=None,
-            options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
-            sync_command: bool = None,
-            **kwargs
+        self,
+        func: Callable,
+        checks=None,
+        options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
+        sync_command: bool = None,
+        **kwargs
     ):
         if options is None:
             options = []
-        if hasattr(func, '__command_options__'):
+        if hasattr(func, "__command_options__"):
             func.__command_options__.reverse()
             options += func.__command_options__
         self.base_options = options
 
         # options = get_signature_option(func, options)
-        super().__init__(func=func, checks=checks, sync_command=sync_command, options=options, **kwargs)
+        super().__init__(
+            func=func,
+            checks=checks,
+            sync_command=sync_command,
+            options=options,
+            **kwargs
+        )
 
     def set_signature_option(self) -> None:
-        """ Since add_interaction is called and cog information is entered in parents,
-            parents value is reflected and skipping_argument value is determined.
+        """Since add_interaction is called and cog information is entered in parents,
+        parents value is reflected and skipping_argument value is determined.
         """
         if self.is_subcommand:
             for opt in self.options:
                 opt.set_signature_option()
         else:
             if self.cog is not None:
-                self.options = get_signature_option(self.func, self.base_options, skipping_argument=2)
+                self.options = get_signature_option(
+                    self.func, self.base_options, skipping_argument=2
+                )
             else:
-                self.options = get_signature_option(self.func, self.base_options, skipping_argument=1)
+                self.options = get_signature_option(
+                    self.func, self.base_options, skipping_argument=1
+                )
         return
 
     def subcommand(
-            self,
-            name: str = None,
-            description: str = "No description.",
-            cls: classmethod = None,
-            checks=None,
-            options: List[CommandOption] = None
+        self,
+        name: str = None,
+        description: str = "No description.",
+        cls: classmethod = None,
+        checks=None,
+        options: List[CommandOption] = None,
     ):
         if options is None:
             options = []
@@ -650,18 +674,19 @@ class Command(BaseCommand, SlashCommand):
                 checks=checks,
                 options=options,
                 top_parents=self,
-                parents=self
+                parents=self,
             )
 
             return new_cls
+
         return decorator
 
     def subcommand_group(
-            self,
-            name: str = None,
-            description: str = "No description.",
-            cls: classmethod = None,
-            options: list = None
+        self,
+        name: str = None,
+        description: str = "No description.",
+        cls: classmethod = None,
+        options: list = None,
     ):
         if options is None:
             options = []
@@ -671,13 +696,10 @@ class Command(BaseCommand, SlashCommand):
 
         def decorator(func):
             new_cls = cls(
-                func,
-                name=name,
-                description=description,
-                options=options,
-                parents=self
+                func, name=name, description=description, options=options, parents=self
             )
             return new_cls
+
         return decorator
 
     @property
@@ -701,12 +723,12 @@ decorator_command_types = Union[Command, MemberCommand, ContextMenuCommand]
 
 
 def command(
-        name: str = None,
-        description: str = "No description.",
-        cls: classmethod = None,
-        checks=None,
-        options: List[CommandOption] = None,
-        sync_command: bool = None,
+    name: str = None,
+    description: str = "No description.",
+    cls: classmethod = None,
+    checks=None,
+    options: List[CommandOption] = None,
+    sync_command: bool = None,
 ):
     if options is None:
         options = []
@@ -721,63 +743,53 @@ def command(
             description=description,
             checks=checks,
             options=options,
-            sync_command=sync_command
+            sync_command=sync_command,
         )
 
     return decorator
 
 
 def user(
-        name: str = None,
-        cls: classmethod = None,
-        checks=None,
-        sync_command: bool = None,
+    name: str = None,
+    cls: classmethod = None,
+    checks=None,
+    sync_command: bool = None,
 ):
     if cls is None:
         cls = MemberCommand
 
     def decorator(func):
-        return cls(
-            func,
-            name=name,
-            checks=checks,
-            sync_command=sync_command
-        )
+        return cls(func, name=name, checks=checks, sync_command=sync_command)
 
     return decorator
 
 
 def context(
-        name: str = None,
-        cls: classmethod = None,
-        checks=None,
-        sync_command: bool = None,
+    name: str = None,
+    cls: classmethod = None,
+    checks=None,
+    sync_command: bool = None,
 ):
     if cls is None:
         cls = ContextMenuCommand
 
     def decorator(func):
-        return cls(
-            func,
-            name=name,
-            checks=checks,
-            sync_command=sync_command
-        )
+        return cls(func, name=name, checks=checks, sync_command=sync_command)
 
     return decorator
 
 
 def option(
-        name: str = None,
-        option_type: type = None,
-        description: str = "No description.",
-        choices: List[CommandOptionChoice] = None,
-        channel_type: Union[discord.ChannelType, int] = None,
-        channel_types: List[Union[discord.ChannelType, int]] = None,
-        min_value: Union[float, int] = None,
-        max_value: Union[float, int] = None,
-        required: bool = False,
-        autocomplete: bool = False
+    name: str = None,
+    option_type: type = None,
+    description: str = "No description.",
+    choices: List[CommandOptionChoice] = None,
+    channel_type: Union[discord.ChannelType, int] = None,
+    channel_types: List[Union[discord.ChannelType, int]] = None,
+    min_value: Union[float, int] = None,
+    max_value: Union[float, int] = None,
+    required: bool = False,
+    autocomplete: bool = False,
 ):
     options = CommandOption(
         name=name,
@@ -789,14 +801,14 @@ def option(
         min_value=min_value,
         max_value=max_value,
         required=required,
-        autocomplete=autocomplete
+        autocomplete=autocomplete,
     )
 
     def decorator(func):
-        if hasattr(func, 'options') or isinstance(func, SlashCommand):
+        if hasattr(func, "options") or isinstance(func, SlashCommand):
             func.options.append(options)
         else:
-            if not hasattr(func, '__command_options__'):
+            if not hasattr(func, "__command_options__"):
                 func.__command_options__ = []
             func.__command_options__.append(options)
         return func
@@ -804,24 +816,16 @@ def option(
     return decorator
 
 
-def get_signature_option(
-        func,
-        options,
-        skipping_argument: int = 1
-):
+def get_signature_option(func, options, skipping_argument: int = 1):
     signature_arguments = inspect.signature(func).parameters
     arguments = []
     signature_arguments_count = len(signature_arguments) - skipping_argument
 
     if len(options) == 0 and len(signature_arguments) > skipping_argument - 1:
         for _ in range(signature_arguments_count):
-            options.append(
-                CommandOption()
-            )
+            options.append(CommandOption())
     elif signature_arguments_count > len(options):
-        for _ in range(
-                signature_arguments_count - len(options)
-        ):
+        for _ in range(signature_arguments_count - len(options)):
             options.append(CommandOption())
     elif signature_arguments_count < len(options):
         raise TypeError("number of options and the number of arguments are different.")

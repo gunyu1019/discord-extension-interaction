@@ -40,13 +40,24 @@ from discord.state import ConnectionState
 
 from ._types import CoroutineFunction, UserCheck
 from .commands import (
-    ApplicationCommand, BaseCommand, SubCommand, SubCommandGroup, ApplicationCommandType,
-    from_payload, command_types, decorator_command_types
+    ApplicationCommand,
+    BaseCommand,
+    SubCommand,
+    SubCommandGroup,
+    ApplicationCommandType,
+    from_payload,
+    command_types,
+    decorator_command_types,
 )
 from .components import DetectComponent
 from .errors import *
 from .http import InteractionHTTPClient
-from .interaction import ApplicationContext, ComponentsContext, AutocompleteContext, ModalContext
+from .interaction import (
+    ApplicationContext,
+    ComponentsContext,
+    AutocompleteContext,
+    ModalContext,
+)
 from .message import Message
 from .utils import _from_json, async_all
 
@@ -59,13 +70,13 @@ class ClientBase:
     http: discord.http.HTTPClient
 
     def __init__(
-            self,
-            global_sync_command: bool = False,
-            intents: discord.Intents = discord.Intents.default(),
-            **options
+        self,
+        global_sync_command: bool = False,
+        intents: discord.Intents = discord.Intents.default(),
+        **options,
     ):
         if discord.version_info.major >= 2:
-            options['enable_debug_events'] = True
+            options["enable_debug_events"] = True
         super().__init__(intents=intents, **options)
         self.global_sync_command = global_sync_command
 
@@ -74,19 +85,14 @@ class ClientBase:
 
         self._application_id_value = None
         self._interactions_of_group = []
-        self._interactions: List[Dict[str, decorator_command_types]] = [dict(), dict(), dict()]
-        self._fetch_interactions: Optional[
-            List[
-                Dict[
-                    str, ApplicationCommand
-                ]
-            ]
-        ] = None
+        self._interactions: List[Dict[str, decorator_command_types]] = [
+            dict(),
+            dict(),
+            dict(),
+        ]
+        self._fetch_interactions: Optional[List[Dict[str, ApplicationCommand]]] = None
 
-        self._detect_components: Dict[
-            str,
-            List[DetectComponent]
-        ] = dict()
+        self._detect_components: Dict[str, List[DetectComponent]] = dict()
 
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
@@ -106,7 +112,7 @@ class ClientBase:
     def dispatch(self, event_name: str, /, *args: Any, **kwargs: Any) -> None:
         # super() will resolve to Client
         super().dispatch(event_name, *args, **kwargs)  # type: ignore
-        ev = 'on_' + event_name
+        ev = "on_" + event_name
         for event in self.extra_events.get(ev, []):
             self._schedule_event(event, ev, *args, **kwargs)  # type: ignore
 
@@ -134,11 +140,12 @@ class ClientBase:
             raise CommandRegistrationError(command.name)
 
         return await self.http.upsert_global_command(
-            await self._application_id(),
-            payload=command.to_register_dict()
+            await self._application_id(), payload=command.to_register_dict()
         )
 
-    async def _find_command(self, command: ApplicationCommand, command_id: int) -> Optional[int]:
+    async def _find_command(
+        self, command: ApplicationCommand, command_id: int
+    ) -> Optional[int]:
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids[command.type.value - 1]:
@@ -147,7 +154,9 @@ class ClientBase:
             command_id = command_ids[command.type.value - 1][command.name].id
         return command_id
 
-    async def edit_command(self, command: ApplicationCommand, command_id: Optional[int] = None):
+    async def edit_command(
+        self, command: ApplicationCommand, command_id: Optional[int] = None
+    ):
         """Edit application commands with Discord Bot.
 
         Parameters
@@ -161,7 +170,7 @@ class ClientBase:
         return await self.http.edit_global_command(
             await self._application_id(),
             command_id=command_id or command.id,
-            payload=command.to_register_dict()
+            payload=command.to_register_dict(),
         )
 
     async def delete_command(self, command: ApplicationCommand, command_id: int = None):
@@ -176,8 +185,7 @@ class ClientBase:
         """
         command_id = await self._find_command(command, command_id)
         return await self.http.delete_global_command(
-            await self._application_id(),
-            command_id=command_id or command.id
+            await self._application_id(), command_id=command_id or command.id
         )
 
     # Listener
@@ -193,7 +201,7 @@ class ClientBase:
         name = name or func.__name__
 
         if not asyncio.iscoroutinefunction(func):
-            raise TypeError('Listeners must be coroutines')
+            raise TypeError("Listeners must be coroutines")
 
         if name in self.extra_events:
             self.extra_events[name].append(func)
@@ -224,6 +232,7 @@ class ClientBase:
         name : Optional[str]
             Name of the listener for the invoked event.
         """
+
         def decorator(func: CoroutineFunction) -> CoroutineFunction:
             self.add_listener(func, name)
             return func
@@ -261,9 +270,11 @@ class ClientBase:
 
     def multiple_setup_hook(self):
         """A decorator that add a setup_hook to discord bot."""
+
         def decorator(func: CoroutineFunction) -> CoroutineFunction:
             self.add_setup_hook(func)
             return func
+
         return decorator
 
     # Application ID (from store data)
@@ -275,9 +286,7 @@ class ClientBase:
 
     async def fetch_commands(self) -> List[Dict[str, command_types]]:
         """Fetch and update all application commands registered in discord to discord bot."""
-        data = await self.http.get_global_commands(
-            await self._application_id()
-        )
+        data = await self.http.get_global_commands(await self._application_id())
         result = [{}, {}, {}]  # list order: [
         #     ApplicationCommandType.CHAT_INPUT,
         #     ApplicationCommandType.USER,
@@ -290,10 +299,10 @@ class ClientBase:
         return result
 
     async def fetch_command(
-            self,
-            command_id: int,
-            use_cached: bool = False,
-            command_type: ApplicationCommandType = None
+        self,
+        command_id: int,
+        use_cached: bool = False,
+        command_type: ApplicationCommandType = None,
     ) -> command_types:
         """Fetches and updates the application commands specified in the discord to the client.
 
@@ -319,17 +328,18 @@ class ClientBase:
             if command_id in cached_command_list[command_type.value - 1].keys():
                 return cached_command_list[command_type.value - 1][command_id]
         data = await self.http.get_global_command(
-            application_id=await self._application_id(),
-            command_id=command_id
+            application_id=await self._application_id(), command_id=command_id
         )
         _result = from_payload(data)
-        if use_cached and command_id not in self._fetch_interactions[command_type.value - 1].keys():
+        if (
+            use_cached
+            and command_id
+            not in self._fetch_interactions[command_type.value - 1].keys()
+        ):
             self._fetch_interactions[command_type.value - 1][_result.name] = _result
         return _result
 
-    async def _fetch_command_cached(self) -> List[
-        Dict[str, ApplicationCommand]
-    ]:
+    async def _fetch_command_cached(self) -> List[Dict[str, ApplicationCommand]]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions
@@ -337,11 +347,11 @@ class ClientBase:
     async def _sync_command(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data[command.type.value-1].keys():
-            command_id = fetch_data[command.type.value-1][command.name].id
+        if command.name in fetch_data[command.type.value - 1].keys():
+            command_id = fetch_data[command.type.value - 1][command.name].id
             if command.name in self._interactions[command.type.value - 1]:
                 self._interactions[command.type.value - 1][command.name].id = command_id
-            if fetch_data[command.type.value-1][command.name] != command:
+            if fetch_data[command.type.value - 1][command.name] != command:
                 await self.edit_command(command=command)
         else:
             await self.register_command(command)
@@ -350,12 +360,14 @@ class ClientBase:
     async def _sync_command_popping(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data[command.type.value-1].keys():
-            command_id = fetch_data[command.type.value-1][command.name].id
+        if command.name in fetch_data[command.type.value - 1].keys():
+            command_id = fetch_data[command.type.value - 1][command.name].id
             await self.delete_command(command, command_id=command_id)
         return
 
-    def _load_from_module_spec(self, spec: importlib.machinery.ModuleSpec, key: str, **kwargs) -> None:
+    def _load_from_module_spec(
+        self, spec: importlib.machinery.ModuleSpec, key: str, **kwargs
+    ) -> None:
         # precondition: key not in self.__extensions
         lib = importlib.util.module_from_spec(spec)
         sys.modules[key] = lib
@@ -366,7 +378,7 @@ class ClientBase:
             raise ExtensionFailed(key, e)
 
         try:
-            setup = getattr(lib, 'setup')
+            setup = getattr(lib, "setup")
         except AttributeError:
             del sys.modules[key]
             raise NoEntryPointError(key)
@@ -386,7 +398,9 @@ class ClientBase:
         except ImportError:
             raise ExtensionNotFound(name)
 
-    def load_extension(self, name: str, *, package: Optional[str] = None, **kwargs) -> None:
+    def load_extension(
+        self, name: str, *, package: Optional[str] = None, **kwargs
+    ) -> None:
         """Loads an extension.
 
         An extension is a python module that contains commands, cogs, or listeners.
@@ -418,7 +432,9 @@ class ClientBase:
         self._load_from_module_spec(spec, name, **kwargs)
         return
 
-    def load_extensions(self, package: str, directory: str = None, **kwargs) -> Optional[Coroutine]:
+    def load_extensions(
+        self, package: str, directory: str = None, **kwargs
+    ) -> Optional[Coroutine]:
         """Fetches all extensions in the specified folder.
         They must have the setup function configured.
 
@@ -460,7 +476,9 @@ class ClientBase:
             await self._sync_command_popping(command=command)
 
         if self.global_sync_command:
-            log.info("global_sync_command is activated. Delete unregistered commands on client.")
+            log.info(
+                "global_sync_command is activated. Delete unregistered commands on client."
+            )
             popping_data = await self._fetch_command_cached()
             for index in range(3):
                 for already_cmd in self._interactions[index]:
@@ -470,11 +488,7 @@ class ClientBase:
                 for cmd in popping_data[index].values():
                     await self.delete_command(cmd)
 
-    def add_detect_component(
-            self,
-            detect_component: DetectComponent,
-            _parent=None
-    ):
+    def add_detect_component(self, detect_component: DetectComponent, _parent=None):
         """Register for the detect_component event.
 
         When the user presses a specific button or makes a selection,
@@ -502,9 +516,7 @@ class ClientBase:
         return self._detect_components
 
     def remove_detect_component(
-            self,
-            custom_id: str,
-            detect_component: DetectComponent = None
+        self, custom_id: str, detect_component: DetectComponent = None
     ):
         """Remove detect_component function.
 
@@ -528,10 +540,7 @@ class ClientBase:
         return
 
     def add_interaction(
-            self,
-            command: decorator_command_types,
-            sync_command: bool = None,
-            _parent=None
+        self, command: decorator_command_types, sync_command: bool = None, _parent=None
     ):
         """Add interaction command to discord bot
 
@@ -569,7 +578,7 @@ class ClientBase:
             command.cog = _parent
 
             # Add cog to subcommand in command's option.
-            if getattr(command, 'is_subcommand', False):
+            if getattr(command, "is_subcommand", False):
                 for index, sub_command in enumerate(command.options):
                     if not isinstance(sub_command, (SubCommand, SubCommandGroup)):
                         continue
@@ -581,7 +590,9 @@ class ClientBase:
 
         if sync_command:
             if self.is_ready():
-                self._schedule_event(self._sync_command, "sync_command", command=command)
+                self._schedule_event(
+                    self._sync_command, "sync_command", command=command
+                )
             else:
                 self.__sync_command_before_ready_register.append(command)
         return
@@ -593,11 +604,7 @@ class ClientBase:
             result += x.values()
         return result
 
-    def delete_interaction(
-            self,
-            command: command_types,
-            sync_command: bool = None
-    ):
+    def delete_interaction(self, command: command_types, sync_command: bool = None):
         """Remove interaction command from discord bot
 
         If sync_command is True
@@ -632,14 +639,13 @@ class ClientBase:
 
         if sync_command:
             if self.is_ready():
-                self._schedule_event(self._sync_command_popping, "sync_command", command=command)
+                self._schedule_event(
+                    self._sync_command_popping, "sync_command", command=command
+                )
             else:
                 self.__sync_command_before_ready_popping.append(command)
 
-    def add_interaction_cog(
-            self,
-            interaction_cog
-    ):
+    def add_interaction_cog(self, interaction_cog):
         """Add a "cog" to the bot.
 
         A cog is a class that has its own event listeners, detect_components and commands.
@@ -657,7 +663,9 @@ class ClientBase:
             elif isinstance(attr, DetectComponent):
                 self.add_detect_component(attr, interaction_cog)
             elif inspect.iscoroutinefunction(attr):
-                if hasattr(attr, '__cog_listener__') and hasattr(attr, '__cog_listener_names__'):
+                if hasattr(attr, "__cog_listener__") and hasattr(
+                    attr, "__cog_listener_names__"
+                ):
                     if not attr.__cog_listener__:
                         continue
                     for name in attr.__cog_listener_names__:
@@ -668,17 +676,21 @@ class ClientBase:
     async def on_socket_raw_receive(self, msg):
         if type(msg) is bytes:
             self.__buffer.extend(msg)
-            if len(msg) < 4 or msg[-4:] != b'\x00\x00\xff\xff':
+            if len(msg) < 4 or msg[-4:] != b"\x00\x00\xff\xff":
                 return
             try:
                 msg = self.__zlib.decompress(self.__buffer)
             except zlib.error as error:
                 # zlib.error: Error -3 while decompressing data: invalid stored block lengths
-                log.debug("zlib.error: {0}\npayload data: {1}".format([str(arg) for arg in error.args], msg))
-                log.warning('zlib.error: Client will reset zlib decompress object')
+                log.debug(
+                    "zlib.error: {0}\npayload data: {1}".format(
+                        [str(arg) for arg in error.args], msg
+                    )
+                )
+                log.warning("zlib.error: Client will reset zlib decompress object")
                 self.__zlib = zlib.decompressobj()
                 msg = self.__zlib.decompress(self.__buffer)
-            msg = msg.decode('utf-8')
+            msg = msg.decode("utf-8")
             self.__buffer = bytearray()
         payload = _from_json(msg)
 
@@ -692,26 +704,26 @@ class ClientBase:
 
         state: ConnectionState = self._connection
         if t == "INTERACTION_CREATE":
-            state.dispatch('interaction_create', payload)
+            state.dispatch("interaction_create", payload)
             if data.get("type") == 2:
                 result = ApplicationContext(data, self)
                 if len(self._interactions[result.application_type - 1]) != 0:
-                    state.dispatch('interaction_command', result)
+                    state.dispatch("interaction_command", result)
             elif data.get("type") == 3:
                 result = ComponentsContext(data, self)
                 await self.process_components(result)
-                state.dispatch('components', result)
+                state.dispatch("components", result)
             elif data.get("type") == 4:
                 result = AutocompleteContext(data, self)
-                state.dispatch('autocomplete', result)
+                state.dispatch("autocomplete", result)
             elif data.get("type") == 5:
                 result = ModalContext(data, self)
-                state.dispatch('modal', result)
+                state.dispatch("modal", result)
             return
         elif t == "MESSAGE_CREATE":
             channel, _ = getattr(state, "_get_guild_channel")(data)
             message = Message(state=state, data=data, channel=channel)
-            state.dispatch('interaction_message', message)
+            state.dispatch("interaction_message", message)
             return
 
     # Application Context
@@ -732,18 +744,23 @@ class ClientBase:
                 _option = {}
                 if ctx.application_type == ApplicationCommandType.CHAT_INPUT.value:
                     _option = ctx.options
-                    is_subcommand = getattr(command, 'is_subcommand', False)
+                    is_subcommand = getattr(command, "is_subcommand", False)
                     if is_subcommand:
                         options = command.options
-                        if 'subcommand_group' in ctx.options:
-                            sub_command_group = ctx.options['subcommand_group']
+                        if "subcommand_group" in ctx.options:
+                            sub_command_group = ctx.options["subcommand_group"]
                             for opt in command.options:
-                                if isinstance(opt, SubCommandGroup) and sub_command_group.name == opt.name:
+                                if (
+                                    isinstance(opt, SubCommandGroup)
+                                    and sub_command_group.name == opt.name
+                                ):
                                     options = opt.options
                                     break
-                        sub_command = ctx.options['subcommand']
+                        sub_command = ctx.options["subcommand"]
                         for opt in options:
-                            if opt.name == sub_command.name and isinstance(opt, SubCommand):
+                            if opt.name == sub_command.name and isinstance(
+                                opt, SubCommand
+                            ):
                                 ctx.function = func = opt
                                 ctx.parents = None
                                 if opt.cog is not None:
@@ -762,9 +779,9 @@ class ClientBase:
                     else:
                         await func.callback(ctx)
                 else:
-                    raise CheckFailure('The check functions for command failed.')
+                    raise CheckFailure("The check functions for command failed.")
             else:
-                raise CheckFailure('The global check once functions failed.')
+                raise CheckFailure("The global check once functions failed.")
         except Exception as error:
             if isinstance(error, CheckFailure):
                 _state.dispatch("command_permission_error", ctx, error)
@@ -779,7 +796,9 @@ class ClientBase:
         return
 
     # Components
-    def wait_for_component(self, custom_id: str, check=None, timeout=None) -> ComponentsContext:
+    def wait_for_component(
+        self, custom_id: str, check=None, timeout=None
+    ) -> ComponentsContext:
         """Wait for the component with the specified custom_id to be sent.
 
         The ``timeout`` parameter is passed to :func:`asyncio.wait_for()`.
@@ -802,8 +821,10 @@ class ClientBase:
         """
         future = self.loop.create_future()
         if check is None:
+
             def _check(_: ComponentsContext):
                 return True
+
             check = _check
 
         ev = custom_id.lower()
@@ -837,8 +858,10 @@ class ClientBase:
         """
         future = self.loop.create_future()
         if check is None:
+
             def _check(_: ComponentsContext):
                 return True
+
             check = _check
 
         self._deferred_global_components.append((future, check, True))
@@ -859,13 +882,16 @@ class ClientBase:
             detect_component = []
         active_component = []
         for _component in detect_component:
-            if _component.type_id == component.component_type or _component.type is None:
+            if (
+                _component.type_id == component.component_type
+                or _component.type is None
+            ):
                 try:
                     if await self.can_run(component):
                         if await _component.can_run(component):
                             await _component.callback(component)
                     else:
-                        raise CheckFailure('The global check once functions failed.')
+                        raise CheckFailure("The global check once functions failed.")
                 except Exception as error:
                     if isinstance(error, CheckFailure):
                         _state.dispatch("component_permission_error", component, error)
