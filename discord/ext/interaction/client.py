@@ -540,7 +540,10 @@ class ClientBase:
         return
 
     def add_interaction(
-        self, command: decorator_command_types, sync_command: bool = None, _parent=None
+            self,
+            command: decorator_command_types,
+            sync_command: bool = None,
+            _parent=None
     ):
         """Add interaction command to discord bot
 

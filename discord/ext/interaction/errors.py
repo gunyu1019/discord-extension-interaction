@@ -24,6 +24,13 @@ import discord
 from discord.ext import commands
 
 
+def load_extension_consider_inheritance(name: str):
+    try:
+        return getattr(commands, name)
+    except (ModuleNotFoundError, AttributeError):
+        return getattr(discord, name)
+
+
 class InvalidArgument(discord.DiscordException):
     """
     Occurs when the Argument value is incorrect.
@@ -36,19 +43,19 @@ class InvalidArgument(discord.DiscordException):
         )
 
 
-class ExtensionFailed(commands.ExtensionFailed):
+class ExtensionFailed(load_extension_consider_inheritance("ExtensionFailed")):
     pass
 
 
-class NoEntryPointError(commands.NoEntryPointError):
+class NoEntryPointError(load_extension_consider_inheritance("NoEntryPointError")):
     pass
 
 
-class ExtensionNotFound(commands.ExtensionNotFound):
+class ExtensionNotFound(load_extension_consider_inheritance("ExtensionNotFound")):
     pass
 
 
-class ExtensionAlreadyLoaded(commands.ExtensionAlreadyLoaded):
+class ExtensionAlreadyLoaded(load_extension_consider_inheritance("ExtensionAlreadyLoaded")):
     pass
 
 
