@@ -22,12 +22,26 @@ SOFTWARE.
 """
 
 import discord
-from discord.http import Route, MultipartParameters
+from discord.http import Route
 from discord.utils import MISSING
-from typing import Any, Dict, NamedTuple, Sequence, List, Union, Optional
+from typing import Any, Dict, NamedTuple, Sequence, List, Union, Optional, Type
 
 from .components import ActionRow, Button, Selection
 from .utils import to_json
+
+
+class MultipartParameters(NamedTuple):
+    payload: Optional[Dict[str, Any]]
+    multipart: Optional[List[Dict[str, Any]]]
+    files: Optional[Sequence[discord.File]]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        if self.files:
+            for file in self.files:
+                file.close()
 
 
 def handler_message_parameter(

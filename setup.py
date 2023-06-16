@@ -9,6 +9,15 @@ if not version:
     raise RuntimeError('version is not set')
 
 
+extras_require = {
+    'discordpy': [
+        'discord.py',
+    ],
+    'pycord': [
+        'py-cord'
+    ],
+}
+
 setup(
     name='Discord-Extension-Interaction',
     version=version,
