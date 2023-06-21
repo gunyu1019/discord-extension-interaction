@@ -45,8 +45,30 @@ class Components(metaclass=ABCMeta):
     def from_dict(cls, payload: dict) -> dict:
         pass
 
+    def __eq__(self, other):
+        return self.type == other.type
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Options:
+    """Represents a select menu’s option.
+
+    Attributes
+    ----------
+    label : str
+        The label of option. This is visible to the user; max 100 characters.
+    value : str
+        The value of option. This is not visible to the user; max 100 characters.
+    description : Optional[str]
+        Additional description of the option; max 100 characters
+    emoji : Optional[discord.PartialEmoji]
+        The emoji of the option, if available.
+        If ``emoji`` attributes is used as a dict, key requires an id, name, and animation.
+    default : Optional[bool]
+        Will show this option as selected by default
+    """
     def __init__(
         self,
         label: str,
@@ -60,6 +82,22 @@ class Options:
         self.description = description
         self.emoji = emoji
         self.default = default
+
+    def __str__(self) -> str:
+        if self.emoji:
+            base = f'{self.emoji} {self.label}'
+        else:
+            base = self.label
+
+        if self.description:
+            return f'{base}\n{self.description}'
+        return base
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def to_dict(self) -> dict:
         data = {"label": self.label, "value": self.value}
@@ -94,9 +132,20 @@ class Options:
 
 
 class ActionRow(Components):
+    """Represents an Action Row.
+
+    An Action Row is a non-interactive container component for other types of components.
+    This can contain up to five other Components.
+    And, It cannot contain an Action Row.
+
+    Attributes
+    ----------
+    components : list[Components]
+        Contains up to five Components.
+    """
     TYPE = 1
 
-    def __init__(self, components: list = None):
+    def __init__(self, components: list[Components] = None):
         super().__init__(components_type=1)
 
         self.components: list = components
@@ -117,8 +166,32 @@ class ActionRow(Components):
         components = from_payload(payload.get("components"))
         return cls(components=components)
 
+    def __eq__(self, other):
+        return self.components == other.components and super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Button(Components):
+    """Represents a Button.
+
+    Attributes
+    ----------
+    style : Union[:class:`discord.ButtonStyle`, int]
+        The style of the button.
+    label : Optional[str]
+        The label of the button.
+    emoji : Optional[Union[:class:`discord.PartialEmoji`, str, dict]]
+        The emoji of the button, if available.
+        If ``emoji`` attributes is used as a dict, key requires an id, name, and animation.
+    custom_id: Optional[str]
+        The custom_id of button. This is not visible to the user; max 100 characters.
+    url: Optional[str]
+        The URl of button for link-style(5).
+    disabled: Optional[bool]
+        Whether the button is disabled. This default is ``false``
+    """
     TYPE = 2
 
     def __init__(
@@ -177,8 +250,31 @@ class Button(Components):
             disabled=disabled,
         )
 
+    def __eq__(self, other):
+        return self.custom_id == other.custom_id and super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Selection(Components):
+    """Represents a Select Menu.
+
+    Attributes
+    ----------
+    custom_id: str
+        The custom_id of select menu. This is not visible to the user; max 100 characters.
+    options : list[:class:`.Option`]
+        The options of the select menu.
+    disabled: Optional[bool]
+        Whether the select menu is disabled. This default is ``false``
+    placeholder : Optional[str]
+        The placeholder of the select menu.
+    min_values : Optional[int]
+        Minimum number of items that can be chosen (defaults to 1); min 0, max 25
+    max_values: Optional[int]
+        Maximum number of items that can be chosen (defaults to 1); max 25
+    """
     TYPE = 3
 
     def __init__(
@@ -218,6 +314,16 @@ class Selection(Components):
 
         return base
 
+    def __eq__(self, other):
+        return (
+                self.custom_id == other.custom_id and
+                super().__eq__(other) and
+                self.options == other.options
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @classmethod
     def from_dict(cls, payload: dict):
         custom_id = payload["custom_id"]
@@ -235,6 +341,31 @@ class Selection(Components):
 
 
 class TextInput(Components):
+    """Represents a TextInput.
+
+    Notes
+    -----
+    Text inputs are an interactive component that render on modals.
+
+    Attributes
+    ----------
+    custom_id: str
+        The custom_id of text input. This is not visible to the user; max 100 characters.
+    style : Union[:class:`discord.TextStyle`, int]
+        The style of the text input.
+    label: str
+        The label of text input. This is visible to the user; max 45 characters
+    placeholder : Optional[str]
+        The placeholder of the text input.
+    min_length : Optional[int]
+        Minimum input length for a text input; min 0, max 4000
+    max_length: Optional[int]
+        Maximum input length for a text input; min 1, max 4000
+    required: Optional[bool]
+        Whether this input text is required to be filled (defaults to ``true``)
+    value: Optional[str]
+        Pre-filled value for this component; max 4000 characters
+    """
     TYPE = 4
 
     def __init__(
@@ -258,6 +389,12 @@ class TextInput(Components):
         self.max_length = max_length
         self.required = required
         self.value = value
+
+    def __eq__(self, other):
+        return self.custom_id == other.custom_id and super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def to_dict(self) -> dict:
         base = {
@@ -340,6 +477,19 @@ def detect_component(
     component_type: Type[Components] = None,
     checks=None,
 ):
+    """A decorator that transforms a function into a :class:`.DetectComponent`
+
+    Parameters
+    ----------
+    cls
+        The class to construct with.
+        You usually don't change ``cls``.
+    custom_id: Optional[str]
+        The custom id for detect component.
+    component_type: Type[Components]
+        The component_type for detect component.
+    checks
+    """
     if cls is None:
         cls = DetectComponent
 

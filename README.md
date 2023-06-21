@@ -26,10 +26,12 @@ Based on discord.ext.commands, compatible with existing frames.
         <tr>
             <td><a href="https://github.com/Pycord-Development/pycord">Pycord</a></td>
             <td>v2.4.1</td>
-            <td>✔️</td>
+            <td>❌</td>
         </tr>
     </tbody>
 </table>
+
+* Plans to support py-cord, but `discord-extension-interaction` is not supported now.
 
 # Installing
 **Python 3.8 or higher is required.**<br/>
@@ -50,15 +52,6 @@ python3 -m pip install -U discord-extension-interaction[discordpy]
 
 # Windows
 py -3 -m pip install -U discord-extension-interaction[discordpy]
-```
-
-To install the library with pycord
-```commandline
-# Linux/macOS
-python3 -m pip install -U discord-extension-interaction[pycord]
-
-# Windows
-py -3 -m pip install -U discord-extension-interaction[pycord]
 ```
 
 To install the development version, do the following:
