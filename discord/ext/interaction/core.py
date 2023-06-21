@@ -1,8 +1,5 @@
 import inspect
-import logging
 from typing import List, Optional, Union, Callable, Coroutine, Any
-
-import discord
 
 from .commands import (
     ApplicationSubcommand,
@@ -12,9 +9,7 @@ from .commands import (
     UserCommand,
     ContextMenu
 )
-from .enums import ApplicationCommandType
-from .errors import InvalidArgument
-from .utils import get_enum, async_all
+from .utils import async_all
 
 
 class BaseCore:
@@ -94,12 +89,12 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
         self.parents.options.append(self)
 
     def subcommand(
-        self,
-        name: str = None,
-        description: str = "No description.",
-        cls: classmethod = None,
-        checks=None,
-        options: Optional[List[CommandOption]] = None,
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            checks=None,
+            options: Optional[List[CommandOption]] = None,
     ):
         if options is None:
             options = []
@@ -130,7 +125,7 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
 
 class BaseCommand(BaseCore):
     def __init__(
-        self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs
+            self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs
     ):
         if kwargs.get("name") is None:
             kwargs["name"] = func.__name__
@@ -140,12 +135,12 @@ class BaseCommand(BaseCore):
 
 class Command(BaseCommand, SlashCommand):
     def __init__(
-        self,
-        func: Callable,
-        checks=None,
-        options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
-        sync_command: bool = None,
-        **kwargs
+            self,
+            func: Callable,
+            checks=None,
+            options: List[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
+            sync_command: bool = None,
+            **kwargs
     ):
         if options is None:
             options = []
@@ -182,12 +177,12 @@ class Command(BaseCommand, SlashCommand):
         return
 
     def subcommand(
-        self,
-        name: str = None,
-        description: str = "No description.",
-        cls: classmethod = None,
-        checks=None,
-        options: List[CommandOption] = None,
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            checks=None,
+            options: List[CommandOption] = None,
     ):
         if options is None:
             options = []
@@ -211,11 +206,11 @@ class Command(BaseCommand, SlashCommand):
         return decorator
 
     def subcommand_group(
-        self,
-        name: str = None,
-        description: str = "No description.",
-        cls: classmethod = None,
-        options: list = None,
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            options: list = None,
     ):
         if options is None:
             options = []
@@ -252,12 +247,12 @@ decorator_command_types = Union[Command, MemberCommand, ContextMenuCommand]
 
 
 def command(
-    name: str = None,
-    description: str = "No description.",
-    cls: classmethod = None,
-    checks=None,
-    options: List[CommandOption] = None,
-    sync_command: bool = None,
+        name: str = None,
+        description: str = "No description.",
+        cls: classmethod = None,
+        checks=None,
+        options: List[CommandOption] = None,
+        sync_command: bool = None,
 ):
     if options is None:
         options = []
@@ -279,10 +274,10 @@ def command(
 
 
 def user(
-    name: str = None,
-    cls: classmethod = None,
-    checks=None,
-    sync_command: bool = None,
+        name: str = None,
+        cls: classmethod = None,
+        checks=None,
+        sync_command: bool = None,
 ):
     if cls is None:
         cls = MemberCommand
@@ -294,10 +289,10 @@ def user(
 
 
 def context(
-    name: str = None,
-    cls: classmethod = None,
-    checks=None,
-    sync_command: bool = None,
+        name: str = None,
+        cls: classmethod = None,
+        checks=None,
+        sync_command: bool = None,
 ):
     if cls is None:
         cls = ContextMenuCommand

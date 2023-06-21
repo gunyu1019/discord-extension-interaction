@@ -111,6 +111,8 @@ class ClientBase:
 
         self.interaction_http = InteractionHTTPClient(self.http)
 
+        self.extra_events['on_ready'] = [self.on_ready]
+
     def dispatch(self, event_name: str, /, *args: Any, **kwargs: Any) -> None:
         # super() will resolve to Client
         super().dispatch(event_name, *args, **kwargs)  # type: ignore

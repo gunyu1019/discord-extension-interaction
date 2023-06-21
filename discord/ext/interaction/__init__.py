@@ -32,24 +32,26 @@ from .client import Client, AutoShardedClient
 from .checks import *
 from .commands import (
     CommandOption,
-    Command,
     CommandOptionChoice,
-    ContextMenuCommand,
     ContextMenu,
     UserCommand,
     SlashCommand,
-    SubCommandGroup,
-    SubCommand,
     ApplicationSubcommandGroup,
     ApplicationSubcommand,
-    MemberCommand,
     ApplicationCommand,
     ApplicationCommandType,
     Mentionable,
+    option,
+)
+from .core import (
+    Command,
+    ContextMenuCommand,
+    SubCommandGroup,
+    SubCommand,
+    MemberCommand,
     command,
     user,
     context,
-    option,
 )
 from .components import (
     Components,
