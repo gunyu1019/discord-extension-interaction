@@ -44,13 +44,13 @@ from .commands import (
     BaseCommand,
     SubCommand,
     SubCommandGroup,
-    ApplicationCommandType,
     from_payload,
     command_types,
     decorator_command_types,
 )
 from .components import DetectComponent
 from .errors import *
+from .enums import ApplicationCommandType
 from .http import InteractionHTTPClient
 from .interaction import (
     ApplicationContext,
