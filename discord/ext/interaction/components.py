@@ -25,7 +25,7 @@ SOFTWARE.
 import discord
 import inspect
 
-from .commands import BaseCore
+from .core import BaseCore
 from abc import *
 from typing import Union, Optional, List, Type, Dict, Any
 

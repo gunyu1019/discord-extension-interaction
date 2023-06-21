@@ -28,7 +28,7 @@ from typing import Union, Callable
 import discord.utils
 from discord.ext.commands.errors import *
 
-from .commands import BaseCommand
+from .core import BaseCommand
 from .interaction import InteractionContext
 
 
