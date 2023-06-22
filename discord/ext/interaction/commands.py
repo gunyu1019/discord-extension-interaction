@@ -21,15 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import inspect
 import logging
-from typing import List, Optional, Union, Callable, Coroutine, Any
+from typing import List, Optional, Union
 
 import discord
 
 from .enums import ApplicationCommandType
 from .errors import InvalidArgument
-from .utils import get_enum, async_all
+from .utils import get_enum
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +40,15 @@ class Mentionable:
 
 # Option
 class CommandOptionChoice:
+    """Represents an application command option choice.
+
+    Attributes
+    ----------
+    name: str
+        The name of the choice. This is visible to the user; max 100 characters.
+    value: str
+        The name of the choice. This is not visible to the user; max 100 characters.
+    """
     def __init__(
         self,
         name: str,
@@ -64,10 +72,27 @@ class CommandOptionChoice:
 
 
 class CommandOption:
+    """Represents an application command option.
+
+    Attributes
+    ----------
+    description: str
+        The description of the option; max 100 characters.
+    choices: list[CommandOptionChoice]
+        A list of choices for the command to choose from for this option.
+    min_value: Union[float, int]
+        For option type ``string``, the minimum allowed length; min 0, max 6000
+    max_value: Optional[int]
+        For option type ``string``, the maximum allowed length; min 1, max 6000
+    required: bool
+        Whether the option is required. (defaults to ``false``)
+    autocomplete: bool
+        Whether the option has autocomplete. (defaults to ``false``)
+    """
     def __init__(
         self,
-        name: str = None,
-        option_type: type = None,
+        name: Optional[str],
+        option_type: Optional[type],
         description: str = "No description.",
         choices: List[CommandOptionChoice] = None,
         channel_type: Union[discord.ChannelType, int] = None,
@@ -79,8 +104,8 @@ class CommandOption:
     ):
         if choices is None:
             choices = []
-        self.name = name
-        self.type = option_type
+        self._name = name
+        self._type = option_type
         self.description = description
         self.choices = choices
         self.required = required
@@ -140,8 +165,27 @@ class CommandOption:
         self.min_value: Optional[int] = min_value
         self.max_value: Optional[int] = max_value
 
+    @classmethod
+    def empty_option(cls):
+        return cls(None, None)
+
+    @property
+    def name(self) -> str:
+        """The name of the option"""
+        if self._name is None:
+            raise ValueError("The name of the option must be defined.")
+        return self._name
+
+    @property
+    def type(self) -> type:
+        """The type of the option"""
+        if self._type is None:
+            raise ValueError("The type of the option must be defined.")
+        return self._type
+
     @property
     def channel_type(self) -> Optional[List[discord.ChannelType]]:
+        """A list of channel types that are allowed for this option."""
         if discord.abc.GuildChannel not in self.type.__mro__:
             return
         channel_type = []
@@ -197,19 +241,19 @@ class CommandOption:
     def __eq__(self, other):
         default_check = (
             self.name == other.name
-            and other.type in self.type.__mro__
+            and other._type in self._type.__mro__
             and self.description == other.description
             and self.choices == other.choices
             and self.required == other.required
             and self.autocomplete == other.autocomplete
         )
-        if int in self.type.__mro__ or float in self.type.__mro__:
+        if int in self._type.__mro__ or float in self._type.__mro__:
             default_check = (
                 default_check
                 and self.min_value == other.min_value
                 and self.max_value == other.max_value
             )
-        elif discord.abc.GuildChannel in self.type.__mro__:
+        elif discord.abc.GuildChannel in self._type.__mro__:
             default_check = default_check and self._channel_type == other._channel_type
         return default_check
 
@@ -218,7 +262,7 @@ class CommandOption:
 
     @classmethod
     def from_payload(cls, data: dict):
-        new_cls = cls()
+        new_cls = cls.empty_option()
         tp_v = data["type"]
         if tp_v == 1:
             return ApplicationSubcommand.from_payload(data)
@@ -233,7 +277,7 @@ class CommandOption:
         if new_cls.autocomplete is None:
             new_cls.autocomplete = False
 
-        new_cls.type = (
+        new_cls._type = (
             str,
             int,
             bool,
@@ -242,6 +286,7 @@ class CommandOption:
             discord.Role,
             Mentionable,
             float,
+            discord.Attachment
         )[(tp_v - 3)]
         if new_cls.type == discord.abc.GuildChannel and "channel_types" in data.keys():
             new_cls._channel_type = data.get("channel_types", [])
@@ -350,6 +395,27 @@ class ApplicationSubcommandGroup:
 
 
 class ApplicationCommand:
+    """Represents an application command.
+
+    Attributes
+    ----------
+    id: int
+        The id of application command
+    name: str
+        The name of application command
+    description: str
+        The description of application command
+    version: int
+        The version of application command
+    type: ApplicationCommandType
+        The type of application command
+    application_id: ApplicationCommandType
+        The application id of application command
+    guild_id: Optional[int]
+        The guild id of application command for private command
+    default_member_permissions: Optional[str]
+        The default member permissions that can run this command
+    """
     def __init__(
         self,
         name: str,
@@ -393,6 +459,7 @@ class ApplicationCommand:
 
     @property
     def is_guild(self) -> bool:
+        """Whether a private command(guild command)"""
         return self.guild_id is not None
 
     def __eq__(self, other):
@@ -409,6 +476,13 @@ class ApplicationCommand:
 
 
 class SlashCommand(ApplicationCommand):
+    """Represents an application command for ``CHAT_INPUT`` type.
+
+    Attributes
+    ----------
+    options: list[Union[CommandOption, ApplicationSubcommand, ApplicationSubcommandGroup]]
+        A list of options for application command.
+    """
     def __init__(
         self,
         options: List[
@@ -443,12 +517,14 @@ class SlashCommand(ApplicationCommand):
 
 
 class UserCommand(ApplicationCommand):
+    """Represents an application command for ``User`` type."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.USER
 
 
 class ContextMenu(ApplicationCommand):
+    """Represents an application command for ``Context Menu`` type."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.MESSAGE

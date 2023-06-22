@@ -59,7 +59,7 @@ from .components import (
     Button,
     Selection,
     TextInput,
-    Options,
+    SelectOption,
     DetectComponent,
     detect_component,
 )
@@ -72,7 +72,7 @@ from .interaction import (
     AutocompleteContext,
     ModalContext,
 )
-from .message import Message, MessageSendable, MessageEditable
+from .message import Message, MessageTransferable, MessageEditable
 from .listener import listener
 
 

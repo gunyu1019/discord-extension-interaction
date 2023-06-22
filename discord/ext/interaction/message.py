@@ -34,6 +34,14 @@ from .http import handler_message_parameter
 
 
 class Message(discord.Message):
+    """Represents a message from Discord for ``discord-extension-interaction``
+    This depends on :class:`discord.Message`.
+
+    Attributes
+    ----------
+    components: list[Component]
+        A list of components in the message.
+    """
     def __init__(
         self,
         *,
@@ -66,7 +74,7 @@ class Message(discord.Message):
         stickers: List[Union[discord.Sticker, int]] = MISSING,
         suppress_embeds: bool = False
     ):
-        channel = MessageSendable(state=self._state, channel=self.channel)
+        channel = MessageTransferable(state=self._state, channel=self.channel)
         return await channel.send(
             content=content,
             tts=tts,
@@ -108,6 +116,14 @@ class Message(discord.Message):
 
 
 class MessageCommand(Message):
+    """The message command represents the context.
+
+    Notes
+    -----
+    MessageCommand was officially disabled in v0.1.
+    There are cases where this is used via an override.
+    However, it is usually not available.
+    """
     def __init__(
         self,
         *,
@@ -192,7 +208,19 @@ class MessageCommand(Message):
         )
 
 
-class MessageSendable:
+class MessageTransferable:
+    """Use :class:`discord.Message` in ``discord-extension-interaction`` to send a message.
+    Usage is the same as ``send()`` in :class:`discord.Message`.
+    It can use the :class:`Components` in ``discord-extension-interaction``.
+
+    Examples
+    ---------
+    @client.event
+    async def on_message(message):
+        state = getattr(client, "_connection")  # For private attributes
+        message_send = interaction.MessageSendable(state, message.channel)
+        await message_send.send("Hello World")
+    """
     def __init__(self, state: ConnectionState, channel):
         self._state = state
         self.channel = channel
@@ -253,7 +281,24 @@ class MessageSendable:
         return ret
 
 
+class MessageSendable(MessageTransferable):
+    """It will be deprecated."""
+    pass
+
+
 class MessageEditable:
+    """Use :class:`discord.Message` in ``discord-extension-interaction`` to edit a message.
+    Usage is the same as ``edit()`` in :class:`discord.Message`.
+    It can use the :class:`Components` in ``discord-extension-interaction``.
+
+    Examples
+    ---------
+    @client.event
+    async def on_message(message):
+        state = getattr(client, "_connection")  # For private attributes
+        message_send = interaction.MessageEditable(message.channel, message.id)
+        await message_send.edit("Hello World")
+    """
     def __init__(self, channel, message_id: int):
         self.id = message_id
         self.channel = channel

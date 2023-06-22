@@ -52,7 +52,7 @@ class Components(metaclass=ABCMeta):
         return not self.__eq__(other)
 
 
-class Options:
+class SelectOption:
     """Represents a select menu’s option.
 
     Attributes
@@ -280,7 +280,7 @@ class Selection(Components):
     def __init__(
         self,
         custom_id: str,
-        options: List[Union[dict, Options]],
+        options: List[Union[dict, SelectOption]],
         disabled: bool = False,
         placeholder: str = None,
         min_values: int = None,
@@ -301,7 +301,7 @@ class Selection(Components):
             "custom_id": self.custom_id,
             "disabled": self.disabled,
             "options": [
-                option.to_dict() if isinstance(option, Options) else option
+                option.to_dict() if isinstance(option, SelectOption) else option
                 for option in self.options
             ],
         }
@@ -327,7 +327,7 @@ class Selection(Components):
     @classmethod
     def from_dict(cls, payload: dict):
         custom_id = payload["custom_id"]
-        options = [Options.from_dict(x) for x in payload.get("options", [])]
+        options = [SelectOption.from_dict(x) for x in payload.get("options", [])]
         placeholder = payload.get("placeholder")
         min_values = payload.get("min_values")
         max_values = payload.get("max_values")

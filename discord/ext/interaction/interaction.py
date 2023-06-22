@@ -38,20 +38,50 @@ from .components import (
     from_payload,
     TextInput,
 )
+from .enums import Locale
 from .errors import AlreadyDeferred
 from .http import InteractionHTTPClient, InteractionData, handler_message_parameter
 from .message import Message
-from .utils import get_as_snowflake, channel_types
+from .utils import get_as_snowflake, channel_types, get_enum
 
 log = logging.getLogger()
 
 
 class InteractionContext:
+    """Represents a interaction context from Discord
+
+    Attributes
+    ----------
+    client: discord.Client
+        The client that is handling this interaction.
+    id: int
+        The interaction's ID.
+    version: int
+        The interaction's version.
+    type: discord.InteractionType
+        The interaction's type
+    token: str
+        The interaction's token for response.
+    application: int
+        The interaction's application id
+    author: Union[discord.Member, discord.User]
+        The user or member that sent the interaction.
+    created_at: datetime.datetime
+        When the interaction was created.
+    locale: Locale
+        Selected language of the invoking user
+    guild_locale: Locale
+        Selected language of the invoking guild
+    deferred: bool
+        When ``defer`` called, deferred becomes ``True``
+    responded: bool
+        Whether the Interaction responded through send, defer, update and defer_update
+    """
     def __init__(self, payload: dict, client):
         self.client = client
         self.id: int = get_as_snowflake(payload, "id")
-        self.version = payload.get("version")
-        self.type = payload.get("type")
+        self.version: int = payload.get("version")
+        self.type: discord.InteractionType = get_enum(discord.InteractionType, payload.get("type"))
         self.token = payload.get("token")
         self.application = get_as_snowflake(payload, "application_id")
 
@@ -69,8 +99,8 @@ class InteractionContext:
             user = payload.get("user")
             self.author = discord.User(data=user, state=self._state)
         self.created_at = discord.utils.snowflake_time(self.id)
-        self.locale = payload.get("locale")
-        self.guild_locale = payload.get("guild_locale")
+        self.locale = get_enum(Locale, payload.get("locale"))
+        self.guild_locale = get_enum(Locale, payload.get("guild_locale"))
 
         self.deferred = False
         self.responded = False
@@ -85,12 +115,14 @@ class InteractionContext:
 
     @property
     def guild(self) -> Optional[discord.Guild]:
+        """The guild the interaction was sent from."""
         if self.guild_id is not None:
             return self.client.get_guild(int(self.guild_id))
         return
 
     @property
     def channel(self) -> Optional:
+        """The channel the interaction was sent from."""
         if self.channel_id is not None:
             if self.guild is not None:
                 channel = self.guild.get_channel(int(self.channel_id))
@@ -137,6 +169,14 @@ class InteractionContext:
         return self.guild.voice_client
 
     async def defer(self, hidden: bool = False):
+        """Defers the interaction response.
+        If it takes a long time to respond, use defer to let the user wait.
+
+        Parameters
+        ----------
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        """
         if self.deferred:
             raise AlreadyDeferred
 
@@ -162,6 +202,31 @@ class InteractionContext:
         suppress_embeds: bool = False,
         components: List[Union[ActionRow, Button, Selection]] = None,
     ):
+        """Responds to this interaction by sending a message.
+
+        Parameters
+        ----------
+        content: Optional[str]
+            The content of the message to send
+        tts: bool
+            Indicates if the message should be sent using text-to-speech.
+        embed: Optional[discord.Embed]
+            The rich embed for the content to send. This cannot be mixed with ``embeds`` parameter.
+        embeds: Optional[list[discord.Embed]]
+            A list of embeds to send with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+        file: Optional[discord.File]
+            The file to upload.
+        files: Optional[list[discord.File]]
+            A list of files to upload. Must be a maximum of 10.
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        allowed_mentions: discord.AllowedMentions
+            Controls the mentions being processed in this message.
+        suppress_embeds: bool
+            Whether to suppress embeds for the message. This sends the message without any embeds if set to True.
+        components: list[Components]
+            The component to send with the message
+        """
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
                 ephemeral=hidden,
@@ -223,6 +288,28 @@ class InteractionContext:
         allowed_mentions: discord.AllowedMentions = MISSING,
         components: List[Union[ActionRow, Button, Selection]] = MISSING,
     ):
+        """Responds to this interaction by editing the original message or followed message.
+
+        Parameters
+        ----------
+        message_id: str
+            The id of message to edit.
+            It can replace followed message and respond message.
+            Default message id is ``@original``
+        content: Optional[str]
+            The content of the message to edit
+        embed: Optional[discord.Embed]
+            The rich embed for the content to edit. This cannot be mixed with ``embeds`` parameter.
+        embeds: Optional[list[discord.Embed]]
+            A list of embeds to edit with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+        attachments: Optional[list[discord.File]]
+            A list of attachments to keep in the message as well as new files to upload.
+            If ``[]`` is passed then all attachments are removed.
+        allowed_mentions: discord.AllowedMentions
+            Controls the mentions being processed in this message.
+        components: list[Components]
+            The component to edit with the message
+        """
         params = handler_message_parameter(
             content=content,
             embed=embed,
@@ -263,6 +350,18 @@ class InteractionContext:
 
 class ModalPossible(InteractionContext):
     async def modal(self, custom_id: str, title: str, components: List[Components]):
+        """Respond to this interaction by sending a modal.
+
+        Parameters
+        ----------
+        custom_id: str
+            The ID of modal that gets received during an interaction.
+        title: str
+            The title of the modal.
+        components: list[Components]
+            A list of component included in the modal.
+            Only input-text and action row are used.
+        """
         self.responded = True
         payload = {
             "type": 9,
@@ -359,6 +458,15 @@ class BaseApplicationContext(ModalPossible):
 
 
 class SubcommandContext(BaseApplicationContext):
+    """Represents a Discord interaction subcommand response.
+
+    Attributes
+    ----------
+    name: str
+        The name of the interaction.
+    options: dict[str, Any]
+        All response options
+    """
     def __init__(self, original_payload: dict, payload: dict, client):
         super().__init__(original_payload, client)
         self.name = payload.get("name")
@@ -408,9 +516,18 @@ class SubcommandContext(BaseApplicationContext):
 
 
 class ApplicationContext(BaseApplicationContext):
+    """Represents a Discord interaction response.
+
+    Attributes
+    ----------
+    name: str
+        The name of the interaction.
+    options: dict[str, Any]
+        All response options
+    """
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 2)
+        self.type = discord.InteractionType.application_command
         data = payload.get("data", {})
 
         self.function = None
@@ -488,9 +605,22 @@ class ApplicationContext(BaseApplicationContext):
 
 
 class ComponentsContext(ModalPossible):
+    """A responded context consisting of a modal.
+
+    Attributes
+    ----------
+    custom_id: str
+        The ID of component.
+    component_type: int
+        The component type of component.
+    values: list[str]
+        If the component type is select menu, it will contain the items selected by the user.
+    message: Message
+        The original message of component.
+    """
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 3)
+        self.type = discord.InteractionType.component
         data = payload.get("data", {})
 
         self.custom_id = data.get("custom_id")
@@ -505,6 +635,14 @@ class ComponentsContext(ModalPossible):
         )
 
     async def defer_update(self, hidden: bool = False):
+        """Defers the interaction response to updates.
+        If it takes a long time to update, use defer_update to let the user wait.
+
+        Parameters
+        ----------
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        """
         base = {"type": 6}
         if hidden:
             base["data"] = {"flags": 64}
@@ -527,6 +665,31 @@ class ComponentsContext(ModalPossible):
         suppress_embeds: bool = False,
         components: List[Union[ActionRow, Button, Selection]] = None,
     ):
+        """Responds to this interaction by update a message.
+
+        Parameters
+        ----------
+        content: Optional[str]
+            The content of the message to update
+        tts: bool
+            Indicates if the message should be sent using text-to-speech.
+        embed: Optional[discord.Embed]
+            The rich embed for the content to update. This cannot be mixed with ``embeds`` parameter.
+        embeds: Optional[list[discord.Embed]]
+            A list of embeds to update with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+        file: Optional[discord.File]
+            The file to upload.
+        files: Optional[list[discord.File]]
+            A list of files to upload. Must be a maximum of 10.
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        allowed_mentions: discord.AllowedMentions
+            Controls the mentions being processed in this message.
+        suppress_embeds: bool
+            Whether to suppress embeds for the message. This updates the message without any embeds if set to True.
+        components: list[Components]
+            The component to update with the message
+        """
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
                 ephemeral=hidden,
@@ -575,11 +738,19 @@ class ComponentsContext(ModalPossible):
 
 
 class AutocompleteContext(ApplicationContext):
+    """A responded context consisting of a auto complete."""
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 4)
+        self.type = discord.InteractionType.autocomplete
 
     async def autocomplete(self, choices: List[CommandOptionChoice]):
+        """Respond to this interaction by sending an option.
+
+        Parameters
+        ----------
+        choices: list[CommandOptionChoice]
+            choice items that users can choose from in application command option
+        """
         self.responded = True
         payload = {
             "type": 8,
@@ -589,9 +760,18 @@ class AutocompleteContext(ApplicationContext):
 
 
 class ModalContext(InteractionContext):
+    """A responded context consisting of a modal.
+
+    Attributes
+    ----------
+    custom_id: str
+        The ID of modal.
+    components: list[TextInput]
+        All components that were in the modal
+    """
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 5)
+        self.type = discord.InteractionType.modal_submit
         data = payload.get("data", {})
         components = from_payload(data.get("components", []))
         if isinstance(components, List):

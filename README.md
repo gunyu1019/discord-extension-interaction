@@ -34,7 +34,7 @@ Based on discord.ext.commands, compatible with existing frames.
 * Plans to support py-cord, but `discord-extension-interaction` is not supported now.
 
 # Installing
-**Python 3.8 or higher is required.**<br/>
+**Python 3.9 or higher is required.**<br/>
 
 To install the library without full voice support, you can just run the following command:
 ```commandline
