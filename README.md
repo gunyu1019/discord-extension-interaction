@@ -1,6 +1,6 @@
 <h1 align="center">Discord Extension Interaction</h1>
 <p align="center">
-    <img src="https://img.shields.io/badge/release_version-0.5.5%20beta-0080aa?style=flat" alt="Release" >
+    <img src="https://img.shields.io/badge/release_version-0.6.0%20beta-0080aa?style=flat" alt="Release" >
 </p>
 
 # Introduce
@@ -78,3 +78,5 @@ async def ping(ctx: interaction.ApplicationContext):
 bot.add_interaction(ping)
 bot.run("TOKEN")
 ```
+
+You can find more examples in the examples directory.

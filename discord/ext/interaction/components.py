@@ -29,6 +29,7 @@ from typing import Union, Optional, Type, Any
 import discord
 
 from .core import BaseCore
+from .utils import get_enum
 
 
 class Components(metaclass=ABCMeta):
@@ -200,7 +201,7 @@ class Button(Components):
 
     def __init__(
         self,
-        style: int,
+        style: Union[discord.ButtonStyle, int],
         label: str = None,
         emoji: Union[discord.PartialEmoji, str, dict] = None,
         custom_id: str = None,
@@ -209,6 +210,9 @@ class Button(Components):
     ):
         super().__init__(components_type=discord.ComponentType.button)
 
+        # Accepting a button's style as an int will be disabled.
+        if isinstance(style, int):
+            style = get_enum(discord.ButtonStyle, style)
         self.style = style
         self.label = label
         self.emoji = emoji
@@ -217,7 +221,7 @@ class Button(Components):
         self.disabled = disabled
 
     def to_dict(self) -> dict:
-        base = {"type": 2, "style": self.style}
+        base = {"type": 2, "style": int(self.style)}
 
         if self.label is not None:
             base["label"] = self.label
@@ -228,10 +232,11 @@ class Button(Components):
         elif self.emoji is not None:
             base["emoji"] = self.emoji
 
-        if 0 < self.style < 5 and self.custom_id is not None:
+        if 0 < int(self.style) < 5 and self.custom_id is not None:
             base["custom_id"] = self.custom_id
-        if self.style == 5 and self.url is not None:
+        if int(self.style) == 5 and self.url is not None:
             base["url"] = self.url
+
         if self.disabled is not None:
             base["disabled"] = self.disabled
 
@@ -239,7 +244,7 @@ class Button(Components):
 
     @classmethod
     def from_dict(cls, payload: dict):
-        style = payload["style"]
+        style = get_enum(discord.ButtonStyle, payload["style"])
         label = payload.get("label")
         emoji = payload.get("emoji")
         custom_id = payload.get("custom_id")

@@ -178,6 +178,10 @@ class CommandOption:
             raise ValueError("The name of the option must be defined.")
         return self._name
 
+    @name.setter
+    def name(self, value):
+        self._name = value
+
     @property
     def type(self) -> type:
         """The type of the option"""
