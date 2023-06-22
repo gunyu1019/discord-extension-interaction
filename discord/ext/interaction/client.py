@@ -144,7 +144,7 @@ class ClientBase:
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids[command.type.value - 1]:
-                raise CommandNotFound(f'Command "{command.name}" is not found')
+                raise commands.CommandNotFound(f'Command "{command.name}" is not found')
 
             command_id = command_ids[command.type.value - 1][command.name].id
         return command_id

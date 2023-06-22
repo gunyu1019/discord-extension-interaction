@@ -81,7 +81,7 @@ class VersionInfo(NamedTuple):
     major: int
     minor: int
     micro: int
-    release_level: Optional[Literal["alpha", "beta", "candidate", "final"]]
+    release_level: Literal["alpha", "beta", "candidate", "final"]
     serial: int
 
     def to_string(self) -> str:
