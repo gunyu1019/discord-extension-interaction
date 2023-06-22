@@ -34,7 +34,7 @@ from .core import BaseCore
 class Components(metaclass=ABCMeta):
     TYPE: Optional[int] = None
 
-    def __init__(self, components_type: int):
+    def __init__(self, components_type: discord.ComponentType):
         self.type = components_type
 
     @abstractmethod
@@ -149,7 +149,7 @@ class ActionRow(Components):
     TYPE = 1
 
     def __init__(self, components: list[Components] = None):
-        super().__init__(components_type=1)
+        super().__init__(components_type=discord.ComponentType.action_row)
 
         self.components: list = components
 
@@ -207,7 +207,7 @@ class Button(Components):
         url: str = None,
         disabled: bool = None,
     ):
-        super().__init__(components_type=2)
+        super().__init__(components_type=discord.ComponentType.button)
 
         self.style = style
         self.label = label
@@ -291,7 +291,7 @@ class Selection(Components):
         min_values: int = None,
         max_values: int = None,
     ):
-        super().__init__(components_type=3)
+        super().__init__(components_type=discord.ComponentType.select)
 
         self.disabled = disabled
         self.custom_id = custom_id
@@ -385,7 +385,7 @@ class TextInput(Components):
         value: Optional[str] = None,
         placeholder: Optional[str] = None,
     ):
-        super().__init__(components_type=4)
+        super().__init__(components_type=discord.ComponentType.text_input)
 
         self.custom_id = custom_id
         self.style = style
