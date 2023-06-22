@@ -22,18 +22,20 @@ SOFTWARE.
 """
 
 
-import discord
 import inspect
-
-from .commands import BaseCore
 from abc import *
-from typing import Union, Optional, List, Type, Dict, Any
+from typing import Union, Optional, Type, Any
+
+import discord
+
+from .core import BaseCore
+from .utils import get_enum
 
 
 class Components(metaclass=ABCMeta):
     TYPE: Optional[int] = None
 
-    def __init__(self, components_type: int):
+    def __init__(self, components_type: discord.ComponentType):
         self.type = components_type
 
     @abstractmethod
@@ -45,15 +47,38 @@ class Components(metaclass=ABCMeta):
     def from_dict(cls, payload: dict) -> dict:
         pass
 
+    def __eq__(self, other):
+        return self.type == other.type
 
-class Options:
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class SelectOption:
+    """Represents a select menu’s option.
+
+    Attributes
+    ----------
+    label : str
+        The label of option. This is visible to the user; max 100 characters.
+    value : str
+        The value of option. This is not visible to the user; max 100 characters.
+    description : Optional[str]
+        Additional description of the option; max 100 characters
+    emoji : Optional[discord.PartialEmoji]
+        The emoji of the option, if available.
+        If ``emoji`` attributes is used as a dict, key requires an id, name, and animation.
+    default : Optional[bool]
+        Will show this option as selected by default
+    """
+
     def __init__(
-            self,
-            label: str,
-            value: str,
-            description: Optional[str] = None,
-            emoji: Union[discord.PartialEmoji, dict] = None,
-            default: bool = False
+        self,
+        label: str,
+        value: str,
+        description: Optional[str] = None,
+        emoji: Union[discord.PartialEmoji, dict] = None,
+        default: bool = False,
     ):
         self.label = label
         self.value = value
@@ -61,16 +86,33 @@ class Options:
         self.emoji = emoji
         self.default = default
 
+    def __str__(self) -> str:
+        if self.emoji:
+            base = f"{self.emoji} {self.label}"
+        else:
+            base = self.label
+
+        if self.description:
+            return f"{base}\n{self.description}"
+        return base
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def to_dict(self) -> dict:
-        data = {
-            "label": self.label,
-            "value": self.value
-        }
+        data = {"label": self.label, "value": self.value}
 
         if self.description is not None:
             data["description"] = self.description
         if self.emoji is not None:
-            data["emoji"] = self.emoji.to_dict() if isinstance(self.emoji, discord.PartialEmoji) else self.emoji
+            data["emoji"] = (
+                self.emoji.to_dict()
+                if isinstance(self.emoji, discord.PartialEmoji)
+                else self.emoji
+            )
         if self.default is not None:
             data["default"] = self.default
 
@@ -88,29 +130,35 @@ class Options:
             value=value,
             description=description,
             emoji=emoji,
-            default=default
+            default=default,
         )
 
 
 class ActionRow(Components):
+    """Represents an Action Row.
+
+    An Action Row is a non-interactive container component for other types of components.
+    This can contain up to five other Components.
+    And, It cannot contain an Action Row.
+
+    Attributes
+    ----------
+    components : list[Components]
+        Contains up to five Components.
+    """
+
     TYPE = 1
 
-    def __init__(self, components: list = None):
-        super().__init__(components_type=1)
+    def __init__(self, components: list[Components] = None):
+        super().__init__(components_type=discord.ComponentType.action_row)
 
         self.components: list = components
 
     def to_dict(self) -> dict:
-        return {
-            "type": 1,
-            "components": self.components
-        }
+        return {"type": 1, "components": self.components}
 
     def to_all_dict(self) -> dict:
-        return {
-            "type": 1,
-            "components": [i.to_dict() for i in self.components]
-        }
+        return {"type": 1, "components": [i.to_dict() for i in self.components]}
 
     @classmethod
     def from_dict(cls, payload: dict):
@@ -119,24 +167,52 @@ class ActionRow(Components):
 
     @classmethod
     def from_payload(cls, payload: dict):
-        components = from_payload(
-            payload.get("components")
-        )
+        components = from_payload(payload.get("components"))
         return cls(components=components)
+
+    def __eq__(self, other):
+        return self.components == other.components and super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class Button(Components):
+    """Represents a Button.
+
+    Attributes
+    ----------
+    style : Union[:class:`discord.ButtonStyle`, int]
+        The style of the button.
+    label : Optional[str]
+        The label of the button.
+    emoji : Optional[Union[:class:`discord.PartialEmoji`, str, dict]]
+        The emoji of the button, if available.
+        If ``emoji`` attributes is used as a dict, key requires an id, name, and animation.
+    custom_id: Optional[str]
+        The custom_id of button. This is not visible to the user; max 100 characters.
+    url: Optional[str]
+        The URl of button for link-style(5).
+    disabled: Optional[bool]
+        Whether the button is disabled. This default is ``false``
+    """
+
     TYPE = 2
 
-    def __init__(self,
-                 style: int,
-                 label: str = None,
-                 emoji: Union[discord.PartialEmoji, str, dict] = None,
-                 custom_id: str = None,
-                 url: str = None,
-                 disabled: bool = None):
-        super().__init__(components_type=2)
+    def __init__(
+        self,
+        style: Union[discord.ButtonStyle, int],
+        label: str = None,
+        emoji: Union[discord.PartialEmoji, str, dict] = None,
+        custom_id: str = None,
+        url: str = None,
+        disabled: bool = None,
+    ):
+        super().__init__(components_type=discord.ComponentType.button)
 
+        # Accepting a button's style as an int will be disabled.
+        if isinstance(style, int):
+            style = get_enum(discord.ButtonStyle, style)
         self.style = style
         self.label = label
         self.emoji = emoji
@@ -145,26 +221,22 @@ class Button(Components):
         self.disabled = disabled
 
     def to_dict(self) -> dict:
-        base = {
-            "type": 2,
-            "style": self.style
-        }
+        base = {"type": 2, "style": int(self.style)}
 
         if self.label is not None:
             base["label"] = self.label
         if self.emoji is not None and isinstance(self.emoji, discord.PartialEmoji):
             base["emoji"] = self.emoji.to_dict()
         elif self.emoji is not None and isinstance(self.emoji, str):
-            base["emoji"] = {
-                "name": self.emoji
-            }
+            base["emoji"] = {"name": self.emoji}
         elif self.emoji is not None:
             base["emoji"] = self.emoji
 
-        if 0 < self.style < 5 and self.custom_id is not None:
+        if 0 < int(self.style) < 5 and self.custom_id is not None:
             base["custom_id"] = self.custom_id
-        if self.style == 5 and self.url is not None:
+        if int(self.style) == 5 and self.url is not None:
             base["url"] = self.url
+
         if self.disabled is not None:
             base["disabled"] = self.disabled
 
@@ -172,7 +244,7 @@ class Button(Components):
 
     @classmethod
     def from_dict(cls, payload: dict):
-        style = payload["style"]
+        style = get_enum(discord.ButtonStyle, payload["style"])
         label = payload.get("label")
         emoji = payload.get("emoji")
         custom_id = payload.get("custom_id")
@@ -184,21 +256,47 @@ class Button(Components):
             emoji=emoji,
             custom_id=custom_id,
             url=url,
-            disabled=disabled
+            disabled=disabled,
         )
+
+    def __eq__(self, other):
+        return self.custom_id == other.custom_id and super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class Selection(Components):
+    """Represents a Select Menu.
+
+    Attributes
+    ----------
+    custom_id: str
+        The custom_id of select menu. This is not visible to the user; max 100 characters.
+    options : list[:class:`.Option`]
+        The options of the select menu.
+    disabled: Optional[bool]
+        Whether the select menu is disabled. This default is ``false``
+    placeholder : Optional[str]
+        The placeholder of the select menu.
+    min_values : Optional[int]
+        Minimum number of items that can be chosen (defaults to 1); min 0, max 25
+    max_values: Optional[int]
+        Maximum number of items that can be chosen (defaults to 1); max 25
+    """
+
     TYPE = 3
 
-    def __init__(self,
-                 custom_id: str,
-                 options: List[Union[dict, Options]],
-                 disabled: bool = False,
-                 placeholder: str = None,
-                 min_values: int = None,
-                 max_values: int = None):
-        super().__init__(components_type=3)
+    def __init__(
+        self,
+        custom_id: str,
+        options: list[Union[dict, SelectOption]],
+        disabled: bool = False,
+        placeholder: str = None,
+        min_values: int = None,
+        max_values: int = None,
+    ):
+        super().__init__(components_type=discord.ComponentType.select)
 
         self.disabled = disabled
         self.custom_id = custom_id
@@ -213,11 +311,9 @@ class Selection(Components):
             "custom_id": self.custom_id,
             "disabled": self.disabled,
             "options": [
-                option.to_dict()
-                if isinstance(option, Options)
-                else option
+                option.to_dict() if isinstance(option, SelectOption) else option
                 for option in self.options
-            ]
+            ],
         }
         if self.placeholder is not None:
             base["placeholder"] = self.placeholder
@@ -228,12 +324,20 @@ class Selection(Components):
 
         return base
 
+    def __eq__(self, other):
+        return (
+            self.custom_id == other.custom_id
+            and super().__eq__(other)
+            and self.options == other.options
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @classmethod
     def from_dict(cls, payload: dict):
         custom_id = payload["custom_id"]
-        options = [
-            Options.from_dict(x) for x in payload.get("options", [])
-        ]
+        options = [SelectOption.from_dict(x) for x in payload.get("options", [])]
         placeholder = payload.get("placeholder")
         min_values = payload.get("min_values")
         max_values = payload.get("max_values")
@@ -242,25 +346,51 @@ class Selection(Components):
             options=options,
             placeholder=placeholder,
             min_values=min_values,
-            max_values=max_values
+            max_values=max_values,
         )
 
 
 class TextInput(Components):
+    """Represents a TextInput.
+
+    Notes
+    -----
+    Text inputs are an interactive component that render on modals.
+
+    Attributes
+    ----------
+    custom_id: str
+        The custom_id of text input. This is not visible to the user; max 100 characters.
+    style : Union[:class:`discord.TextStyle`, int]
+        The style of the text input.
+    label: str
+        The label of text input. This is visible to the user; max 45 characters
+    placeholder : Optional[str]
+        The placeholder of the text input.
+    min_length : Optional[int]
+        Minimum input length for a text input; min 0, max 4000
+    max_length: Optional[int]
+        Maximum input length for a text input; min 1, max 4000
+    required: Optional[bool]
+        Whether this input text is required to be filled (defaults to ``true``)
+    value: Optional[str]
+        Pre-filled value for this component; max 4000 characters
+    """
+
     TYPE = 4
 
     def __init__(
-            self,
-            custom_id: str,
-            style: int,
-            label: str,
-            min_length: Optional[int] = None,
-            max_length: Optional[int] = None,
-            required: bool = False,
-            value: Optional[str] = None,
-            placeholder: Optional[str] = None
+        self,
+        custom_id: str,
+        style: int,
+        label: str,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        required: bool = False,
+        value: Optional[str] = None,
+        placeholder: Optional[str] = None,
     ):
-        super().__init__(components_type=4)
+        super().__init__(components_type=discord.ComponentType.text_input)
 
         self.custom_id = custom_id
         self.style = style
@@ -271,13 +401,19 @@ class TextInput(Components):
         self.required = required
         self.value = value
 
+    def __eq__(self, other):
+        return self.custom_id == other.custom_id and super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def to_dict(self) -> dict:
         base = {
             "type": 4,
             "custom_id": self.custom_id,
             "style": self.style,
             "label": self.label,
-            "required": self.required
+            "required": self.required,
         }
         if self.placeholder is not None:
             base["placeholder"] = self.placeholder
@@ -308,11 +444,13 @@ class TextInput(Components):
             min_length=min_length,
             max_length=max_length,
             required=required,
-            value=value
+            value=value,
         )
 
 
-def from_payload(payload: List[Dict[str, Any]]) -> List[Union[ActionRow, Button, Selection, TextInput]]:
+def from_payload(
+    payload: list[dict[str, Any]]
+) -> list[Union[ActionRow, Button, Selection, TextInput]]:
     components = []
 
     for i in payload:
@@ -329,7 +467,9 @@ def from_payload(payload: List[Dict[str, Any]]) -> List[Union[ActionRow, Button,
 
 # For Decorator
 class DetectComponent(BaseCore):
-    def __init__(self, func, custom_id, component_type: Type[Components] = None, checks=None):
+    def __init__(
+        self, func, custom_id, component_type: Type[Components] = None, checks=None
+    ):
         self.custom_id = custom_id
         self.type = component_type
         self.func = func
@@ -343,11 +483,24 @@ class DetectComponent(BaseCore):
 
 
 def detect_component(
-        cls: classmethod = None,
-        custom_id: str = None,
-        component_type: Type[Components] = None,
-        checks=None
+    cls: classmethod = None,
+    custom_id: str = None,
+    component_type: Type[Components] = None,
+    checks=None,
 ):
+    """A decorator that transforms a function into a :class:`.DetectComponent`
+
+    Parameters
+    ----------
+    cls
+        The class to construct with.
+        You usually don't change ``cls``.
+    custom_id: Optional[str]
+        The custom id for detect component.
+    component_type: Type[Components]
+        The component_type for detect component.
+    checks
+    """
     if cls is None:
         cls = DetectComponent
 
@@ -357,13 +510,14 @@ def detect_component(
             _function = func.__func__
 
         if not inspect.iscoroutinefunction(_function):
-            raise TypeError('Detect Component function must be a coroutine function.')
+            raise TypeError("Detect Component function must be a coroutine function.")
 
         new_cls = cls(
             func=_function,
             custom_id=custom_id or _function.__name__,
             component_type=component_type,
-            checks=checks
+            checks=checks,
         )
         return new_cls
+
     return decorator

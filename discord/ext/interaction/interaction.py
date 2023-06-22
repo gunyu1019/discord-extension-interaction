@@ -22,38 +22,69 @@ SOFTWARE.
 """
 
 import logging
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Sequence
 
 import discord
+from discord.channel import _channel_factory
 from discord.state import ConnectionState
+from discord.utils import MISSING
 
 from .commands import CommandOptionChoice
-from .components import ActionRow, Button, Selection, Components, from_payload, TextInput
-from .errors import InvalidArgument, AlreadyDeferred
-from .http import HttpClient, InteractionData
+from .components import (
+    ActionRow,
+    Button,
+    Selection,
+    Components,
+    from_payload,
+    TextInput,
+)
+from .enums import Locale
+from .errors import AlreadyDeferred
+from .http import InteractionHTTPClient, InteractionData, handler_message_parameter
 from .message import Message
-from .utils import get_as_snowflake, _files_to_form, _allowed_mentions, channel_types
+from .utils import get_as_snowflake, channel_types, get_enum
 
 log = logging.getLogger()
 
 
-class PartialMessageable:
-    def __init__(self, state: ConnectionState, id: int, type: Optional[discord.ChannelType] = None):
-        self._state: ConnectionState = state
-        self._channel: discord.Object = discord.Object(id=id)
-        self.id: int = id
-        self.type: Optional[discord.ChannelType] = type
-
-    async def _get_channel(self) -> discord.Object:
-        return self._channel
-
-
 class InteractionContext:
+    """Represents a interaction context from Discord
+
+    Attributes
+    ----------
+    client: discord.Client
+        The client that is handling this interaction.
+    id: int
+        The interaction's ID.
+    version: int
+        The interaction's version.
+    type: discord.InteractionType
+        The interaction's type
+    token: str
+        The interaction's token for response.
+    application: int
+        The interaction's application id
+    author: Union[discord.Member, discord.User]
+        The user or member that sent the interaction.
+    created_at: datetime.datetime
+        When the interaction was created.
+    locale: Locale
+        Selected language of the invoking user
+    guild_locale: Locale
+        Selected language of the invoking guild
+    deferred: bool
+        When ``defer`` called, deferred becomes ``True``
+    responded: bool
+        Whether the Interaction responded through send, defer, update and defer_update
+    """
+
     def __init__(self, payload: dict, client):
         self.client = client
         self.id: int = get_as_snowflake(payload, "id")
-        self.version = payload.get("version")
-        self.type = payload.get("type")
+        self.version: int = payload.get("version")
+        self.type: discord.InteractionType = get_enum(
+            discord.InteractionType, payload.get("type")
+        )
         self.token = payload.get("token")
         self.application = get_as_snowflake(payload, "application_id")
 
@@ -64,94 +95,74 @@ class InteractionContext:
 
         if self.guild is not None:
             member = payload.get("member")
-            self.author = discord.Member(data=member, state=self._state, guild=self.guild)
+            self.author = discord.Member(
+                data=member, state=self._state, guild=self.guild
+            )
         else:
             user = payload.get("user")
             self.author = discord.User(data=user, state=self._state)
         self.created_at = discord.utils.snowflake_time(self.id)
-        self.locale = payload.get('locale')
-        self.guild_locale = payload.get('guild_locale')
+        self.locale = get_enum(Locale, payload.get("locale"))
+        self.guild_locale = get_enum(Locale, payload.get("guild_locale"))
 
         self.deferred = False
         self.responded = False
 
         self.data = InteractionData(
-            interaction_token=self.token,
-            interaction_id=self.id,
-            application_id=self.application
+            token=self.token, id=self.id, application_id=self.application
         )
         if hasattr(self.client, "interaction_http"):
             self.http = self.client.interaction_http
         else:
-            self.http = HttpClient(http=self.client.http)
-
-    @classmethod
-    def from_original_data(cls, response, client, _cls=None):
-        if _cls is not None:
-            new_cls = _cls({}, client)
-        else:
-            new_cls = cls({}, client)
-        new_cls.application = response.application_id
-        new_cls.id = response.id
-        new_cls.created_at = discord.utils.snowflake_time(new_cls.id)
-        new_cls.type = response.type
-        new_cls.token = response.token
-        new_cls.version = response.version
-
-        new_cls.guild_id = response.guild_id
-        new_cls.channel_id = response.channel_id
-        new_cls.locale = getattr(response, 'locale', None)
-        new_cls.guild_locale = getattr(response, 'guild_locale', None)
-        new_cls.author = response.user
-
-        new_cls.data = InteractionData(
-            interaction_token=new_cls.token,
-            interaction_id=new_cls.id,
-            application_id=new_cls.application
-        )
-
-        return new_cls
+            self.http = InteractionHTTPClient(http=self.client.http)
 
     @property
     def guild(self) -> Optional[discord.Guild]:
+        """The guild the interaction was sent from."""
         if self.guild_id is not None:
             return self.client.get_guild(int(self.guild_id))
         return
 
     @property
     def channel(self) -> Optional:
+        """The channel the interaction was sent from."""
         if self.channel_id is not None:
             if self.guild is not None:
                 channel = self.guild.get_channel(int(self.channel_id))
             else:
-                tp = discord.ChannelType.text if self.guild_id is not None else discord.ChannelType.private
-                channel = PartialMessageable(state=self._state, id=self.channel_id, type=tp)
+                tp = (
+                    discord.ChannelType.text
+                    if self.guild_id is not None
+                    else discord.ChannelType.private
+                )
+                channel = discord.PartialMessageable(
+                    state=self._state, id=self.channel_id, type=tp
+                )
             return channel
         return
 
     @staticmethod
     def _get_payload(
-            content=None,
-            tts: bool = False,
-            embed=None,
-            hidden: bool = False,
-            allowed_mentions=None,
-            components=None
+        content=None,
+        tts: bool = False,
+        embed=None,
+        hidden: bool = False,
+        allowed_mentions=None,
+        components=None,
     ) -> dict:
-
         payload = {}
         if content:
-            payload['content'] = content
+            payload["content"] = content
         if tts:
-            payload['tts'] = tts
+            payload["tts"] = tts
         if embed:
-            payload['embeds'] = embed
+            payload["embeds"] = embed
         if allowed_mentions:
-            payload['allowed_mentions'] = allowed_mentions
+            payload["allowed_mentions"] = allowed_mentions
         if hidden:
-            payload['flags'] = 1 << 6
+            payload["flags"] = 1 << 6
         if components is not None:
-            payload['components'] = components
+            payload["components"] = components
         return payload
 
     @property
@@ -161,6 +172,14 @@ class InteractionContext:
         return self.guild.voice_client
 
     async def defer(self, hidden: bool = False):
+        """Defers the interaction response.
+        If it takes a long time to respond, use defer to let the user wait.
+
+        Parameters
+        ----------
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        """
         if self.deferred:
             raise AlreadyDeferred
 
@@ -173,132 +192,155 @@ class InteractionContext:
         return
 
     async def send(
-            self,
-            content=None,
-            *,
-            tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            hidden: bool = False,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+        self,
+        content: Optional[str] = MISSING,
+        *,
+        tts: bool = False,
+        embed: discord.Embed = MISSING,
+        embeds: list[discord.Embed] = MISSING,
+        file: discord.File = MISSING,
+        files: list[discord.File] = MISSING,
+        hidden: bool = False,
+        allowed_mentions: discord.AllowedMentions = None,
+        suppress_embeds: bool = False,
+        components: list[Union[ActionRow, Button, Selection]] = None,
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if file is not None and files is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
+        """Responds to this interaction by sending a message.
 
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
+        Parameters
+        ----------
+        content: Optional[str]
+            The content of the message to send
+        tts: bool
+            Indicates if the message should be sent using text-to-speech.
+        embed: Optional[discord.Embed]
+            The rich embed for the content to send. This cannot be mixed with ``embeds`` parameter.
+        embeds: Optional[list[discord.Embed]]
+            A list of embeds to send with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+        file: Optional[discord.File]
+            The file to upload.
+        files: Optional[list[discord.File]]
+            A list of files to upload. Must be a maximum of 10.
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        allowed_mentions: discord.AllowedMentions
+            Controls the mentions being processed in this message.
+        suppress_embeds: bool
+            Whether to suppress embeds for the message. This sends the message without any embeds if set to True.
+        components: list[Components]
+            The component to send with the message
+        """
+        if suppress_embeds or hidden:
+            flags = discord.MessageFlags(
+                ephemeral=hidden,
+                suppress_embeds=suppress_embeds
+                if suppress_embeds and not self.responded
+                else False,
+            )
+        else:
+            flags = MISSING
 
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-        payload = self._get_payload(
+        params = handler_message_parameter(
             content=content,
-            embed=embeds,
             tts=tts,
-            hidden=hidden,
+            embed=embed,
+            embeds=embeds,
+            file=file,
+            files=files,
             allowed_mentions=allowed_mentions,
             components=components,
+            flags=flags,
         )
 
-        if files:
-            form = _files_to_form(files=files, payload=payload)
-        else:
-            form = None
-
         if not self.responded:
-            if files and not self.deferred:
+            if (files is not MISSING or file is not MISSING) and not self.deferred:
                 await self.defer(hidden=hidden)
 
             if self.deferred:
-                resp = await self.http.edit_initial_response(payload=payload, form=form, files=files, data=self.data)
+                resp = await self.http.edit_initial_response(
+                    payload=params.payload,
+                    form=params.multipart,
+                    files=params.files,
+                    data=self.data,
+                )
                 self.deferred = False
             else:
                 await self.http.post_initial_response(
-                    payload={
-                        "type": 4,
-                        "data": payload
-                    },
-                    data=self.data
+                    payload={"type": 4, "data": params.payload}, data=self.data
                 )
                 resp = await self.http.get_initial_response(data=self.data)
             self.responded = True
         else:
-            resp = await self.http.post_followup(payload=payload, form=form, files=files, data=self.data)
+            resp = await self.http.post_followup(
+                payload=params.payload,
+                form=params.multipart,
+                files=params.files,
+                data=self.data,
+            )
         ret = Message(state=self._state, channel=self.channel, data=resp)
-
-        if files:
-            for i in files:
-                i.close()
         return ret
 
     async def edit(
-            self,
-            message_id="@original",
-            content=None,
-            *,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+        self,
+        message_id="@original",
+        content=None,
+        *,
+        embed: discord.Embed = MISSING,
+        embeds: list[discord.Embed] = MISSING,
+        attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+        allowed_mentions: discord.AllowedMentions = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if files is not None and file is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
+        """Responds to this interaction by editing the original message or followed message.
 
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-
-        payload = self._get_payload(
+        Parameters
+        ----------
+        message_id: str
+            The id of message to edit.
+            It can replace followed message and respond message.
+            Default message id is ``@original``
+        content: Optional[str]
+            The content of the message to edit
+        embed: Optional[discord.Embed]
+            The rich embed for the content to edit. This cannot be mixed with ``embeds`` parameter.
+        embeds: Optional[list[discord.Embed]]
+            A list of embeds to edit with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+        attachments: Optional[list[discord.File]]
+            A list of attachments to keep in the message as well as new files to upload.
+            If ``[]`` is passed then all attachments are removed.
+        allowed_mentions: discord.AllowedMentions
+            Controls the mentions being processed in this message.
+        components: list[Components]
+            The component to edit with the message
+        """
+        params = handler_message_parameter(
             content=content,
-            embed=embeds,
+            embed=embed,
+            embeds=embeds,
+            previous_allowed_mentions=self._state.allowed_mentions,
+            attachments=attachments,
             allowed_mentions=allowed_mentions,
             components=components,
         )
 
-        if files:
-            form = _files_to_form(files=files, payload=payload)
-        else:
-            form = None
-
         if message_id == "@original":
-            resp = await self.http.edit_initial_response(payload=payload, form=form, files=files, data=self.data)
+            resp = await self.http.edit_initial_response(
+                payload=params.payload,
+                form=params.multipart,
+                files=params.files,
+                data=self.data,
+            )
         else:
             resp = await self.http.edit_followup(
                 message_id=message_id,
-                payload=payload,
-                form=form,
-                files=files,
-                data=self.data
+                payload=params.payload,
+                form=params.multipart,
+                files=params.files,
+                data=self.data,
             )
         ret = Message(state=self._state, channel=self.channel, data=resp)
         if self.deferred:
             self.deferred = False
-
-        if files:
-            for file in files:
-                file.close()
         return ret
 
     async def delete(self, message_id="@original"):
@@ -310,42 +352,39 @@ class InteractionContext:
 
 
 class ModalPossible(InteractionContext):
-    async def modal(
-            self,
-            custom_id: str,
-            title: str,
-            components: List[Components]
-    ):
+    async def modal(self, custom_id: str, title: str, components: list[Components]):
+        """Respond to this interaction by sending a modal.
+
+        Parameters
+        ----------
+        custom_id: str
+            The ID of modal that gets received during an interaction.
+        title: str
+            The title of the modal.
+        components: list[Components]
+            A list of component included in the modal.
+            Only input-text and action row are used.
+        """
         self.responded = True
         payload = {
             "type": 9,
             "data": {
                 "custom_id": custom_id,
                 "title": title,
-                "components": [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-            }
+                "components": [
+                    i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict()
+                    for i in components
+                ],
+            },
         }
-        return await self.http.post_initial_response(
-            data=self.data,
-            payload=payload
-        )
+        return await self.http.post_initial_response(data=self.data, payload=payload)
 
 
 class BaseApplicationContext(ModalPossible):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self._state: ConnectionState = getattr(client, "_connection")
-        self._from_data(
-            payload.get("data", {})
-        )
-
-    @classmethod
-    def from_original_data(cls, response, client, _cls=None):
-        new_cls: BaseApplicationContext = super().from_original_data(response, client, _cls=cls)
-        new_cls._from_data(
-            response.data
-        )
-        return new_cls
+        self._from_data(payload.get("data", {}))
 
     def _from_data(self, data):
         self.target_id = data.get("target_id")
@@ -360,35 +399,41 @@ class BaseApplicationContext(ModalPossible):
             data = Message(
                 state=self._state,
                 channel=self.channel,
-                data=resolved.get(str(target_id))
+                data=resolved.get(str(target_id)),
             )
             return data
-        elif target_type == "members" and "members" in self._resolved and self.guild_id is not None:
+        elif (
+            target_type == "members"
+            and "members" in self._resolved
+            and self.guild_id is not None
+        ):
             resolved = self._resolved.get("members", {})
-            member_data = resolved.get(
-                str(target_id), {}
-            )
+            member_data = resolved.get(str(target_id), {})
 
             # USER DATA INJECT!
             user_resolved = self._resolved.get("users", {})
-            user_data = user_resolved.get(
-                str(target_id), {}
-            )
-            member_data['user'] = user_data
+            user_data = user_resolved.get(str(target_id), {})
+            member_data["user"] = user_data
 
             data = discord.Member(data=member_data, state=self._state, guild=self.guild)
             return data
         elif target_type == "users" and "users" in self._resolved:
             resolved = self._resolved.get("users", {})
-            data = discord.User(data=resolved.get(
-                str(target_id), {}
-            ), state=self._state)
+            data = discord.User(
+                data=resolved.get(str(target_id), {}), state=self._state
+            )
             return data
-        elif target_type == "roles" and "roles" in self._resolved and self.guild is not None:
+        elif (
+            target_type == "roles"
+            and "roles" in self._resolved
+            and self.guild is not None
+        ):
             resolved = self._resolved.get("roles", {})
-            data = discord.Role(data=resolved.get(
-                str(target_id), {}
-            ), state=self._state, guild=self.guild)
+            data = discord.Role(
+                data=resolved.get(str(target_id), {}),
+                state=self._state,
+                guild=self.guild,
+            )
             return data
         elif target_type == "channels" and "channels" in self._resolved:
             resolved = self._resolved.get("channels", {})
@@ -396,17 +441,19 @@ class BaseApplicationContext(ModalPossible):
             if data is None:
                 return
 
-            factory, ch_type = discord._channel_factory(data['type'])
+            factory, ch_type = _channel_factory(data["type"])
             if factory is None:
-                raise discord.InvalidData('Unknown channel type {type} for channel ID {id}.'.format_map(data))
+                raise discord.InvalidData(
+                    "Unknown channel type {type} for channel ID {id}.".format_map(data)
+                )
 
             if ch_type in (discord.ChannelType.group, discord.ChannelType.private):
                 channel = factory(me=self.client.user, data=data, state=self._state)
             else:
-                if 'position' not in data:
-                    data['position'] = None
+                if "position" not in data:
+                    data["position"] = None
 
-                guild_id = int(data.get('guild_id') or self.guild_id)
+                guild_id = int(data.get("guild_id") or self.guild_id)
                 guild = self.client.get_guild(guild_id) or discord.Object(id=guild_id)
                 channel = factory(guild=guild, state=self._state, data=data)
 
@@ -414,9 +461,19 @@ class BaseApplicationContext(ModalPossible):
 
 
 class SubcommandContext(BaseApplicationContext):
+    """Represents a Discord interaction subcommand response.
+
+    Attributes
+    ----------
+    name: str
+        The name of the interaction.
+    options: dict[str, Any]
+        All response options
+    """
+
     def __init__(self, original_payload: dict, payload: dict, client):
         super().__init__(original_payload, client)
-        self.name = payload.get('name')
+        self.name = payload.get("name")
         self.options = {}
 
         for option in payload.get("options", []):
@@ -425,7 +482,9 @@ class SubcommandContext(BaseApplicationContext):
             option_type = option.get("type")
 
             if option_type == 1:
-                self.options['subcommand'] = SubcommandContext(original_payload, option, client)
+                self.options["subcommand"] = SubcommandContext(
+                    original_payload, option, client
+                )
             elif option_type == 3:
                 self.options[key]: str = value
             elif option_type == 4:
@@ -434,30 +493,46 @@ class SubcommandContext(BaseApplicationContext):
                 self.options[key] = bool(value)
             elif option_type == 6:
                 if self.guild is not None:
-                    self.options[key] = self.guild.get_member(value) or self.target('members', target_id=value)
+                    self.options[key] = self.guild.get_member(value) or self.target(
+                        "members", target_id=value
+                    )
                 else:
-                    self.options[key] = client.get_user(value) or self.target('users', target_id=value)
+                    self.options[key] = client.get_user(value) or self.target(
+                        "users", target_id=value
+                    )
             elif option_type == 7:
-                self.options[key]: Optional[Union[channel_types]] = (
-                        client.get_channel(value) or self.target('channels', target_id=value)
-                )
+                self.options[key]: Optional[Union[channel_types]] = client.get_channel(
+                    value
+                ) or self.target("channels", target_id=value)
             elif option_type == 8:
-                self.options[key]: Optional[discord.Role] = (
-                        self.guild.get_role(value) or self.target('roles', target_id=value)
-                )
+                self.options[key]: Optional[discord.Role] = self.guild.get_role(
+                    value
+                ) or self.target("roles", target_id=value)
             elif option_type == 10:
                 self.options[key]: float = float(value)
             elif option_type == 11:
                 state: ConnectionState = getattr(client, "_connection")
-                self.options[key]: discord.Attachment = discord.Attachment(data=value, state=state)
+                self.options[key]: discord.Attachment = discord.Attachment(
+                    data=value, state=state
+                )
             else:
                 self.options[key] = value
 
 
 class ApplicationContext(BaseApplicationContext):
+    """Represents a Discord interaction response.
+
+    Attributes
+    ----------
+    name: str
+        The name of the interaction.
+    options: dict[str, Any]
+        All response options
+    """
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 2)
+        self.type = discord.InteractionType.application_command
         data = payload.get("data", {})
 
         self.function = None
@@ -477,9 +552,13 @@ class ApplicationContext(BaseApplicationContext):
                     self.option_focused.append(key)
 
                 if option_type == 1:
-                    self.options['subcommand'] = SubcommandContext(payload, option, client)
+                    self.options["subcommand"] = SubcommandContext(
+                        payload, option, client
+                    )
                 elif option_type == 2:
-                    self.options['subcommand_group'] = SubcommandContext(payload, option, client)
+                    self.options["subcommand_group"] = SubcommandContext(
+                        payload, option, client
+                    )
                 elif option_type == 3:
                     self.options[key]: str = value
                 elif option_type == 4:
@@ -488,22 +567,30 @@ class ApplicationContext(BaseApplicationContext):
                     self.options[key] = bool(value)
                 elif option_type == 6:
                     if self.guild is not None:
-                        self.options[key] = self.guild.get_member(value) or self.target('members', target_id=value)
+                        self.options[key] = self.guild.get_member(value) or self.target(
+                            "members", target_id=value
+                        )
                     else:
-                        self.options[key] = client.get_user(value) or self.target('users', target_id=value)
+                        self.options[key] = client.get_user(value) or self.target(
+                            "users", target_id=value
+                        )
                 elif option_type == 7:
-                    self.options[key]: Optional[Union[channel_types]] = (
-                            client.get_channel(value) or self.target('channels', target_id=value)
+                    self.options[key]: Optional[
+                        Union[channel_types]
+                    ] = client.get_channel(value) or self.target(
+                        "channels", target_id=value
                     )
                 elif option_type == 8:
-                    self.options[key]: Optional[discord.Role] = (
-                            self.guild.get_role(value) or self.target('roles', target_id=value)
-                    )
+                    self.options[key]: Optional[discord.Role] = self.guild.get_role(
+                        value
+                    ) or self.target("roles", target_id=value)
                 elif option_type == 10:
                     self.options[key]: float = float(value)
                 elif option_type == 11:
                     state: ConnectionState = getattr(client, "_connection")
-                    self.options[key]: discord.Attachment = discord.Attachment(data=value, state=state)
+                    self.options[key]: discord.Attachment = discord.Attachment(
+                        data=value, state=state
+                    )
                 else:
                     self.options[key] = value
 
@@ -523,21 +610,45 @@ class ApplicationContext(BaseApplicationContext):
 
 
 class ComponentsContext(ModalPossible):
+    """A responded context consisting of a modal.
+
+    Attributes
+    ----------
+    custom_id: str
+        The ID of component.
+    component_type: int
+        The component type of component.
+    values: list[str]
+        If the component type is select menu, it will contain the items selected by the user.
+    message: Message
+        The original message of component.
+    """
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 3)
+        self.type = discord.InteractionType.component
         data = payload.get("data", {})
 
         self.custom_id = data.get("custom_id")
         self.component_type = data.get("component_type")
         if self.component_type == 3:
-            self.values: List[str] = data.get("values")
+            self.values: list[str] = data.get("values")
         else:
-            self.values: List[str] = []
+            self.values: list[str] = []
 
-        self.message = Message(state=self._state, channel=self.channel, data=payload.get("message", {}))
+        self.message = Message(
+            state=self._state, channel=self.channel, data=payload.get("message", {})
+        )
 
     async def defer_update(self, hidden: bool = False):
+        """Defers the interaction response to updates.
+        If it takes a long time to update, use defer_update to let the user wait.
+
+        Parameters
+        ----------
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        """
         base = {"type": 6}
         if hidden:
             base["data"] = {"flags": 64}
@@ -547,96 +658,128 @@ class ComponentsContext(ModalPossible):
         return
 
     async def update(
-            self,
-            content=None,
-            *,
-            tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+        self,
+        content: Optional[str] = MISSING,
+        *,
+        tts: bool = False,
+        embed: discord.Embed = MISSING,
+        embeds: list[discord.Embed] = MISSING,
+        file: discord.File = MISSING,
+        files: list[discord.File] = MISSING,
+        hidden: bool = False,
+        allowed_mentions: discord.AllowedMentions = None,
+        suppress_embeds: bool = False,
+        components: list[Union[ActionRow, Button, Selection]] = None,
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if file is not None and files is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
+        """Responds to this interaction by update a message.
 
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
+        Parameters
+        ----------
+        content: Optional[str]
+            The content of the message to update
+        tts: bool
+            Indicates if the message should be sent using text-to-speech.
+        embed: Optional[discord.Embed]
+            The rich embed for the content to update. This cannot be mixed with ``embeds`` parameter.
+        embeds: Optional[list[discord.Embed]]
+            A list of embeds to update with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+        file: Optional[discord.File]
+            The file to upload.
+        files: Optional[list[discord.File]]
+            A list of files to upload. Must be a maximum of 10.
+        hidden: bool
+            Indicates whether to hide delayed messages.
+        allowed_mentions: discord.AllowedMentions
+            Controls the mentions being processed in this message.
+        suppress_embeds: bool
+            Whether to suppress embeds for the message. This updates the message without any embeds if set to True.
+        components: list[Components]
+            The component to update with the message
+        """
+        if suppress_embeds or hidden:
+            flags = discord.MessageFlags(
+                ephemeral=hidden,
+                suppress_embeds=suppress_embeds
+                if suppress_embeds and not self.responded
+                else False,
+            )
+        else:
+            flags = MISSING
 
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-        payload = self._get_payload(
+        params = handler_message_parameter(
             content=content,
-            embed=embeds,
             tts=tts,
+            embed=embed,
+            embeds=embeds,
+            file=file,
+            files=files,
             allowed_mentions=allowed_mentions,
             components=components,
+            flags=flags,
         )
 
-        if files:
-            form = _files_to_form(files=files, payload=payload)
-        else:
-            form = None
-
         if not self.responded:
-            if files:
+            if files is not MISSING or file is not MISSING:
                 await self.defer_update()
 
             if self.deferred:
-                await self.http.edit_message(
-                    channel_id=self.channel.id, message_id=self.message.id,
-                    payload=payload, form=form, files=files
+                await self.client.http.edit_message(
+                    channel_id=self.channel.id,
+                    message_id=self.message.id,
+                    params=params,
                 )
                 self.deferred = False
             else:
                 await self.http.post_initial_response(
-                    payload={
-                        "type": 7,
-                        "data": payload
-                    },
-                    data=self.data
+                    payload={"type": 7, "data": params.payload}, data=self.data
                 )
             self.responded = True
         else:
-            await self.http.post_followup(payload=payload, form=form, files=files, data=self.data)
-
-        if files:
-            for i in files:
-                i.close()
+            await self.http.post_followup(
+                payload=params.payload,
+                form=params.multipart,
+                files=params.files,
+                data=self.data,
+            )
 
 
 class AutocompleteContext(ApplicationContext):
+    """A responded context consisting of a auto complete."""
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 4)
+        self.type = discord.InteractionType.autocomplete
 
-    async def autocomplete(self, choices: List[CommandOptionChoice]):
+    async def autocomplete(self, choices: list[CommandOptionChoice]):
+        """Respond to this interaction by sending an option.
+
+        Parameters
+        ----------
+        choices: list[CommandOptionChoice]
+            choice items that users can choose from in application command option
+        """
         self.responded = True
         payload = {
             "type": 8,
-            "data": {
-                "choices": [choice.to_dict() for choice in choices]
-            }
+            "data": {"choices": [choice.to_dict() for choice in choices]},
         }
-        return await self.http.post_initial_response(
-            data=self.data,
-            payload=payload
-        )
+        return await self.http.post_initial_response(data=self.data, payload=payload)
 
 
 class ModalContext(InteractionContext):
+    """A responded context consisting of a modal.
+
+    Attributes
+    ----------
+    custom_id: str
+        The ID of modal.
+    components: list[TextInput]
+        All components that were in the modal
+    """
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self.type = payload.get("type", 5)
+        self.type = discord.InteractionType.modal_submit
         data = payload.get("data", {})
         components = from_payload(data.get("components", []))
         if isinstance(components, List):
@@ -646,4 +789,4 @@ class ModalContext(InteractionContext):
         else:
             _components = components
         self.custom_id = data.get("custom_id")
-        self.components: List[TextInput] = _components
+        self.components: list[TextInput] = _components

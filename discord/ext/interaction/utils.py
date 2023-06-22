@@ -46,19 +46,22 @@ channel_types = [
     discord.DMChannel,
     discord.StageChannel,
     discord.GroupChannel,
-    discord.CategoryChannel
+    discord.CategoryChannel,
+    discord.ForumChannel,
 ]
 
 
 try:
     from deprecated import deprecated
 except ModuleNotFoundError:
+
     def deprecated(version: str, reason: str):
         def decorator(func):
             logging.getLogger("discord.ext.interaction.deprecated").warning(
                 f"This has been disabled due to {reason} in version {version}."
             )
             return func
+
         return decorator
 
 
@@ -78,44 +81,8 @@ def get_enum(cls, val):
     return enum_val[0]
 
 
-def _files_to_form(files: list, payload: dict):
-    form = [{'name': 'payload_json', 'value': to_json(payload)}]
-    if len(files) == 1:
-        file = files[0]
-        form.append(
-            {
-                'name': 'file',
-                'value': file.fp,
-                'filename': file.filename,
-                'content_type': 'application/octet-stream',
-            }
-        )
-    else:
-        for index, file in enumerate(files):
-            form.append(
-                {
-                    'name': f'file{index}',
-                    'value': file.fp,
-                    'filename': file.filename,
-                    'content_type': 'application/octet-stream',
-                }
-            )
-    return form
-
-
-def _allowed_mentions(state, allowed_mentions):
-    if allowed_mentions is not None:
-        if state.allowed_mentions is not None:
-            allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
-        else:
-            allowed_mentions = allowed_mentions.to_dict()
-    else:
-        allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
-    return allowed_mentions
-
-
 def to_json(obj):
-    return json.dumps(obj, separators=(',', ':'), ensure_ascii=False)
+    return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
 
 
 async def async_all(gen, *, check=inspect.isawaitable):

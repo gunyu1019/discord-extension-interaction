@@ -9,15 +9,24 @@ if not version:
     raise RuntimeError('version is not set')
 
 
+extras_require = {
+    'discordpy': [
+        'discord.py',
+    ],
+    'pycord': [
+        'py-cord'
+    ],
+}
+
 setup(
     name='Discord-Extension-Interaction',
     version=version,
     packages=['discord.ext.interaction'],
-    url='https://github.com/gunyu1019/PUBGpy',
+    url='https://github.com/gunyu1019/discord-extension-interaction',
     license='MIT',
     author='gunyu1019',
     author_email='gunyu1019@yhs.kr',
-    description='A python wrapper for Battleground API',
+    description='Framework for Application Commands built on discord.py',
     python_requires='>=3.7',
     long_description=open('README.md', encoding='UTF-8').read(),
     long_description_content_type='text/markdown',
@@ -31,9 +40,10 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',

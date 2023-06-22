@@ -22,70 +22,60 @@ SOFTWARE.
 """
 
 import asyncio
+from typing import Any, Union, Sequence, Optional
 
 import discord
-
 from discord.state import ConnectionState
-from typing import List, Union, Optional
+from discord.utils import MISSING
 
 from .components import ActionRow, Button, Selection, from_payload
 from .errors import InvalidArgument, AlreadyDeferred
-from .http import HttpClient
-from .utils import _allowed_mentions, _files_to_form, deprecated
-
-
-def _get_payload(
-        content=None,
-        embed=None,
-        tts: bool = False,
-        allowed_mentions=None,
-        components=None,
-        message_reference=None,
-        stickers=None,
-) -> dict:
-    payload = {'tts': tts}
-    if content:
-        payload['content'] = content
-    if embed:
-        payload['embeds'] = embed
-    if allowed_mentions:
-        payload['allowed_mentions'] = allowed_mentions
-    if components is not None:
-        payload['components'] = components
-    if message_reference:
-        payload['message_reference'] = message_reference
-    if stickers:
-        payload['sticker_ids'] = stickers
-    return payload
+from .http import handler_message_parameter
 
 
 class Message(discord.Message):
+    """Represents a message from Discord for ``discord-extension-interaction``
+    This depends on :class:`discord.Message`.
+
+    Attributes
+    ----------
+    components: list[Component]
+        A list of components in the message.
+    """
+
     def __init__(
-            self,
-            *,
-            state: ConnectionState,
-            channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
-            data: dict
+        self,
+        *,
+        state: ConnectionState,
+        channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
+        data: dict[str, Any]
     ):
-        if "message_reference" in data and "channel_id" not in data.get("message_reference", {}):
+        if "message_reference" in data and "channel_id" not in data.get(
+            "message_reference", {}
+        ):
             data["message_reference"]["channel_id"] = channel.id
         super().__init__(state=state, channel=channel, data=data)
         self.components = from_payload(data.get("components", []))
-        self.http = HttpClient(http=self._state.http)
 
     async def send(
-            self,
-            content=None,
-            *,
-            tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+        self,
+        content: Optional[str] = MISSING,
+        *,
+        tts: bool = False,
+        embed: discord.Embed = MISSING,
+        embeds: list[discord.Embed] = MISSING,
+        file: Optional[discord.File] = MISSING,
+        files: Optional[list[discord.File]] = MISSING,
+        allowed_mentions: discord.AllowedMentions = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+        reference: Union[
+            discord.Message, discord.MessageReference, discord.PartialMessage
+        ] = None,
+        mention_author: bool = None,
+        stickers: list[Union[discord.Sticker, int]] = MISSING,
+        suppress_embeds: bool = False
     ):
-        channel = MessageSendable(state=self._state, channel=self.channel)
+        channel = MessageTransferable(state=self._state, channel=self.channel)
         return await channel.send(
             content=content,
             tts=tts,
@@ -94,70 +84,54 @@ class Message(discord.Message):
             file=file,
             files=files,
             allowed_mentions=allowed_mentions,
-            components=components
+            components=components,
+            reference=reference,
+            mention_author=mention_author,
+            stickers=stickers,
+            suppress_embeds=suppress_embeds,
         )
 
     async def edit(
-            self,
-            content: Optional[str] = None,
-            *,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            attachment: discord.File = None,
-            attachments: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None,
-            **kwargs
+        self,
+        content: Optional[str] = MISSING,
+        *,
+        embed: discord.Embed = MISSING,
+        embeds: list[discord.Embed] = MISSING,
+        attachment: Union[discord.Attachment, discord.File] = MISSING,
+        attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+        allowed_mentions: discord.AllowedMentions = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+        stickers: list[discord.Sticker] = MISSING
     ):
-        if embed is not None and embeds is not None:
-            raise InvalidArgument("Only one of embed and embeds must be entered.")
-        if attachment is not None and attachments is not None:
-            raise InvalidArgument("Only one of attachment and attachments must be entered.")
-
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if attachment:
-            attachments = [attachment]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-
-        payload = _get_payload(
+        message = MessageEditable(self.channel, self.id)
+        return await message.edit(
             content=content,
-            embed=embeds,
+            embed=embed,
+            embeds=embeds,
+            attachment=attachment,
+            attachments=attachments,
             allowed_mentions=allowed_mentions,
             components=components,
+            stickers=stickers,
         )
 
-        payload["attachments"] = []
-        if attachments:
-            form = _files_to_form(files=attachments, payload=payload)
-        else:
-            form = None
 
-        await self.http.edit_message(
-            channel_id=self.channel.id, message_id=self.id,
-            payload=payload, form=form, files=attachments
-        )
-
-        if attachments:
-            for attachment in attachments:
-                attachment.close()
-        return
-
-
-@deprecated(version='0.1.2', reason='According to the recommendation to stop message command')
 class MessageCommand(Message):
+    """The message command represents the context.
+
+    Notes
+    -----
+    MessageCommand was officially disabled in v0.1.
+    There are cases where this is used via an override.
+    However, it is usually not available.
+    """
+
     def __init__(
-            self,
-            *,
-            state: ConnectionState,
-            channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
-            data: dict
+        self,
+        *,
+        state: ConnectionState,
+        channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
+        data: dict[str, Any]
     ):
         super().__init__(state=state, channel=channel, data=data)
         options = self.content.split()
@@ -184,16 +158,13 @@ class MessageCommand(Message):
             pass
 
     async def _do_deferred(self) -> None:
-        for count in range(0, 300, 5):
-            await super().channel.trigger_typing()
+        for count in range(0, 300, 10):
+            await super().channel.typing()
             if not self.deferred:
                 break
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
 
-    async def defer(
-            self,
-            _: bool = None
-    ) -> None:
+    async def defer(self, _: bool = None) -> None:
         if self.deferred:
             raise AlreadyDeferred()
         self.deferred = True
@@ -202,16 +173,22 @@ class MessageCommand(Message):
         return
 
     async def send(
-            self,
-            content=None,
-            *,
-            tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None
+        self,
+        content=None,
+        *,
+        tts: bool = False,
+        embed: discord.Embed = None,
+        embeds: list[discord.Embed] = None,
+        file: discord.File = None,
+        files: list[discord.File] = None,
+        allowed_mentions: discord.AllowedMentions = None,
+        components: list[Union[ActionRow, Button, Selection]] = None,
+        reference: Union[
+            Message, discord.MessageReference, discord.PartialMessage
+        ] = None,
+        mention_author: bool = None,
+        stickers: list[Union[discord.Sticker, int]] = MISSING,
+        suppress_embeds: bool = False
     ) -> Optional[Message]:
         self.deferred = False
         if self.deferred_task is not None:
@@ -225,77 +202,141 @@ class MessageCommand(Message):
             file=file,
             files=files,
             allowed_mentions=allowed_mentions,
-            components=components
+            components=components,
+            reference=reference,
+            mention_author=mention_author,
+            stickers=stickers,
+            suppress_embeds=suppress_embeds,
         )
 
 
-class MessageSendable:
+class MessageTransferable:
+    """Use :class:`discord.Message` in ``discord-extension-interaction`` to send a message.
+    Usage is the same as ``send()`` in :class:`discord.Message`.
+    It can use the :class:`Components` in ``discord-extension-interaction``.
+
+    Examples
+    ---------
+    @client.event
+    async def on_message(message):
+        state = getattr(client, "_connection")  # For private attributes
+        message_send = interaction.MessageSendable(state, message.channel)
+        await message_send.send("Hello World")
+    """
+
     def __init__(self, state: ConnectionState, channel):
         self._state = state
-        self.http = HttpClient(http=self._state.http)
         self.channel = channel
 
     async def send(
-            self,
-            content=None,
-            *,
-            tts: bool = False,
-            embed: discord.Embed = None,
-            embeds: List[discord.Embed] = None,
-            file: discord.File = None,
-            files: List[discord.File] = None,
-            allowed_mentions: discord.AllowedMentions = None,
-            components: List[Union[ActionRow, Button, Selection]] = None,
-            reference: Union[Message, discord.MessageReference, discord.PartialMessage] = None,
-            mention_author: bool = False,
-            stickers: list = None
+        self,
+        content: Optional[str] = MISSING,
+        *,
+        tts: bool = False,
+        embed: discord.Embed = MISSING,
+        embeds: Sequence[discord.Embed] = MISSING,
+        file: discord.File = MISSING,
+        files: list[discord.File] = MISSING,
+        allowed_mentions: discord.AllowedMentions = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+        reference: Union[
+            Message, discord.MessageReference, discord.PartialMessage
+        ] = None,
+        mention_author: bool = None,
+        stickers: list[Union[discord.Sticker, int]] = MISSING,
+        suppress_embeds: bool = False
     ):
-        if file is not None and files is not None:
-            raise InvalidArgument()
-        if embed is not None and embeds is not None:
-            raise InvalidArgument()
-
-        content = str(content) if content is not None else None
-        if embed is not None:
-            embeds = [embed]
-        if embeds is not None:
-            embeds = [embed.to_dict() for embed in embeds]
-        if file:
-            files = [file]
-        if components is not None:
-            components = [i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict() for i in components]
-        if stickers is not None:
-            stickers = [
-                sticker.id if not isinstance(sticker, int) else sticker for sticker in stickers
-            ]
         if reference is not None:
             try:
-                reference = reference.to_message_reference_dict()
+                reference_dict = reference.to_message_reference_dict()
             except AttributeError:
-                raise InvalidArgument('reference parameter must be Message, MessageReference, or PartialMessage')
-        allowed_mentions = _allowed_mentions(self._state, allowed_mentions)
-        if mention_author is not None:
-            allowed_mentions = allowed_mentions or discord.AllowedMentions().to_dict()
-            allowed_mentions['replied_user'] = bool(mention_author)
+                raise TypeError(
+                    "reference parameter must be Message, MessageReference, or PartialMessage"
+                ) from None
+        else:
+            reference_dict = MISSING
 
-        payload = _get_payload(
+        if suppress_embeds:
+            flags = discord.MessageFlags(suppress_embeds=suppress_embeds)
+        else:
+            flags = MISSING
+
+        params = handler_message_parameter(
             content=content,
             tts=tts,
-            embed=embeds,
+            embed=embed,
+            embeds=embeds,
+            previous_allowed_mentions=self._state.allowed_mentions,
+            file=file,
+            files=files,
             allowed_mentions=allowed_mentions,
+            flags=flags,
             components=components,
-            message_reference=reference,
-            stickers=stickers
+            reference=reference_dict,
+            mention_author=mention_author,
+            stickers=stickers,
         )
 
-        if files:
-            form = _files_to_form(files=files, payload=payload)
-            resp = await self.http.create_message(form=form, files=files, channel_id=self.channel.id)
-        else:
-            resp = await self.http.create_message(payload=payload, channel_id=self.channel.id)
+        resp = await self._state.http.send_message(
+            params=params, channel_id=self.channel.id
+        )
         ret = Message(state=self._state, channel=self.channel, data=resp)
-
-        if files:
-            for i in files:
-                i.close()
         return ret
+
+
+class MessageSendable(MessageTransferable):
+    """It will be deprecated."""
+
+    pass
+
+
+class MessageEditable:
+    """Use :class:`discord.Message` in ``discord-extension-interaction`` to edit a message.
+    Usage is the same as ``edit()`` in :class:`discord.Message`.
+    It can use the :class:`Components` in ``discord-extension-interaction``.
+
+    Examples
+    ---------
+    @client.event
+    async def on_message(message):
+        state = getattr(client, "_connection")  # For private attributes
+        message_send = interaction.MessageEditable(message.channel, message.id)
+        await message_send.edit("Hello World")
+    """
+
+    def __init__(self, channel, message_id: int):
+        self.id = message_id
+        self.channel = channel
+        self._state = getattr(channel, "_state")
+
+    async def edit(
+        self,
+        content: Optional[str] = MISSING,
+        *,
+        embed: discord.Embed = MISSING,
+        embeds: list[discord.Embed] = MISSING,
+        attachment: Union[discord.Attachment, discord.File] = MISSING,
+        attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+        allowed_mentions: discord.AllowedMentions = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+        stickers: list[discord.Sticker] = MISSING
+    ):
+        if attachment is not MISSING:
+            if attachment is not MISSING and attachments is not MISSING:
+                raise InvalidArgument()
+            attachments = [attachment]
+        params = handler_message_parameter(
+            content=content,
+            embed=embed,
+            embeds=embeds,
+            previous_allowed_mentions=self._state.allowed_mentions,
+            attachments=attachments,
+            allowed_mentions=allowed_mentions,
+            components=components,
+            stickers=stickers,
+        )
+
+        await self._state.http.edit_message(
+            channel_id=self.channel.id, message_id=self.id, params=params
+        )
+        return

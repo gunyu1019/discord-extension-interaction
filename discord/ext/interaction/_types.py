@@ -21,23 +21,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import inspect
+from typing import Any, TypeVar, Callable, Coroutine, Union
 
 
-def listener(name: str = None):
-    def decorator(func):
-        actual = func
-        if isinstance(func, staticmethod):
-            actual = func.__func__
+T = TypeVar("T")
+_Coroutine = Coroutine[Any, Any, T]
+CoroutineFunction = Callable[..., _Coroutine[Any]]
 
-        if not inspect.iscoroutinefunction(actual):
-            raise TypeError(f"{func.__name__} function must be a coroutine function.")
-
-        actual.__cog_listener__ = True
-        listener_name = name or func.__name__
-        if not hasattr(actual, "__cog_listener_names__"):
-            actual.__cog_listener_names__ = []
-        actual.__cog_listener_names__.append(listener_name)
-        return func
-
-    return decorator
+UserCheck = Callable[["ContextT"], Union[_Coroutine[bool], bool]]

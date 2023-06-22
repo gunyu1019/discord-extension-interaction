@@ -28,7 +28,7 @@ from typing import Union, Callable
 import discord.utils
 from discord.ext.commands.errors import *
 
-from .commands import BaseCommand
+from .core import BaseCommand
 from .interaction import InteractionContext
 
 
@@ -37,7 +37,7 @@ def check(predicate):
         if isinstance(func, BaseCommand):
             func.checks.append(predicate)
         else:
-            if not hasattr(func, '__commands_checks__'):
+            if not hasattr(func, "__commands_checks__"):
                 func.__commands_checks__ = []
 
             func.__commands_checks__.append(predicate)
@@ -47,6 +47,7 @@ def check(predicate):
     if inspect.iscoroutinefunction(predicate):
         decorator.predicate = predicate
     else:
+
         @functools.wraps(predicate)
         async def wrapper(ctx):
             return predicate(ctx)  # type: ignore
@@ -69,7 +70,7 @@ def check_any(*checks) -> Callable:
 
     Parameters
     ------------
-    \*checks: Callable[[:class:`Context`], :class:`bool`]
+    checks: Callable[[:class:`Context`], :class:`bool`]
         An argument list of checks that have been decorated with
         the :func:`check` decorator.
 
@@ -103,7 +104,9 @@ def check_any(*checks) -> Callable:
         try:
             pred = wrapped.predicate
         except AttributeError:
-            raise TypeError(f'{wrapped!r} must be wrapped by commands.check decorator') from None
+            raise TypeError(
+                f"{wrapped!r} must be wrapped by commands.check decorator"
+            ) from None
         else:
             unwrapped.append(pred)
 
@@ -166,7 +169,7 @@ def has_any_role(*items: Union[int, str]) -> Callable:
     command has **any** of the roles specified. This means that if they have
     one out of the three roles specified, then this check will return `True`.
 
-    Similar to :func:`.has_role`\, the names or IDs passed in must be exact.
+    Similar to :func:`.has_role`, the names or IDs passed in must be exact.
 
     This check raises one of two special exceptions, :exc:`.MissingAnyRole` if the user
     is missing all roles, or :exc:`.NoPrivateMessage` if it is used in a private message.
@@ -174,7 +177,7 @@ def has_any_role(*items: Union[int, str]) -> Callable:
 
     Parameters
     -----------
-    items: List[Union[:class:`str`, :class:`int`]]
+    items: list[Union[:class:`str`, :class:`int`]]
         An argument list of names or IDs to check that the member has roles wise.
 
     Example
@@ -187,14 +190,19 @@ def has_any_role(*items: Union[int, str]) -> Callable:
         async def cool(ctx):
             await ctx.send('You are cool indeed')
     """
+
     def predicate(ctx):
         if ctx.guild is None:
             raise NoPrivateMessage()
 
         # ctx.guild is None doesn't narrow ctx.author to Member
         getter = functools.partial(discord.utils.get, ctx.author.roles)  # type: ignore
-        if any(getter(id=item) is not None if isinstance(item, int) else getter(name=item) is not None for item in
-               items):
+        if any(
+            getter(id=item) is not None
+            if isinstance(item, int)
+            else getter(name=item) is not None
+            for item in items
+        ):
             return True
         raise MissingAnyRole(list(items))
 
@@ -241,8 +249,12 @@ def bot_has_any_role(*items: int) -> Callable:
 
         me = ctx.me
         getter = functools.partial(discord.utils.get, me.roles)
-        if any(getter(id=item) is not None if isinstance(item, int) else getter(name=item) is not None for item in
-               items):
+        if any(
+            getter(id=item) is not None
+            if isinstance(item, int)
+            else getter(name=item) is not None
+            for item in items
+        ):
             return True
         raise BotMissingAnyRole(list(items))
 
@@ -287,7 +299,9 @@ def has_permissions(**perms: bool) -> Callable:
         ch = ctx.channel
         permissions = ch.permissions_for(ctx.author)  # type: ignore
 
-        missing = [perm for perm, value in perms.items() if getattr(permissions, perm) != value]
+        missing = [
+            perm for perm, value in perms.items() if getattr(permissions, perm) != value
+        ]
 
         if not missing:
             return True
@@ -311,10 +325,12 @@ def bot_has_permissions(**perms: bool) -> Callable:
 
     def predicate(ctx: InteractionContext) -> bool:
         guild = ctx.guild
-        me = guild.me if guild is not None else ctx.bot.user
+        me = guild.me if guild is not None else ctx.client.user
         permissions = ctx.channel.permissions_for(me)  # type: ignore
 
-        missing = [perm for perm, value in perms.items() if getattr(permissions, perm) != value]
+        missing = [
+            perm for perm, value in perms.items() if getattr(permissions, perm) != value
+        ]
 
         if not missing:
             return True
@@ -341,7 +357,9 @@ def has_guild_permissions(**perms: bool) -> Callable:
             raise NoPrivateMessage
 
         permissions = ctx.author.guild_permissions  # type: ignore
-        missing = [perm for perm, value in perms.items() if getattr(permissions, perm) != value]
+        missing = [
+            perm for perm, value in perms.items() if getattr(permissions, perm) != value
+        ]
 
         if not missing:
             return True
@@ -365,7 +383,9 @@ def bot_has_guild_permissions(**perms: bool) -> Callable:
             raise NoPrivateMessage
 
         permissions = ctx.me.guild_permissions  # type: ignore
-        missing = [perm for perm, value in perms.items() if getattr(permissions, perm) != value]
+        missing = [
+            perm for perm, value in perms.items() if getattr(permissions, perm) != value
+        ]
 
         if not missing:
             return True
@@ -420,8 +440,8 @@ def is_owner() -> Callable:
     """
 
     async def predicate(ctx: InteractionContext) -> bool:
-        if not await ctx.bot.is_owner(ctx.author):
-            raise NotOwner('You do not own this bot.')
+        if not await ctx.client.is_owner(ctx.author):
+            raise NotOwner("You do not own this bot.")
         return True
 
     return check(predicate)
@@ -436,7 +456,10 @@ def is_nsfw() -> Callable:
 
     def pred(ctx: InteractionContext) -> bool:
         ch = ctx.channel
-        if ctx.guild is None or (isinstance(ch, (discord.TextChannel, getattr(discord, "Thread", None))) and ch.is_nsfw()):
+        if ctx.guild is None or (
+            isinstance(ch, (discord.TextChannel, getattr(discord, "Thread", None)))
+            and ch.is_nsfw()
+        ):
             return True
         raise NSFWChannelRequired(ch)  # type: ignore
 

@@ -21,36 +21,76 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__title__ = 'Discord-Extension-Interaction'
-__author__ = 'gunyu1019'
-__license__ = 'MIT'
-__copyright__ = 'Copyright 2021-present gunyu1019'
-__version__ = '0.5.4-beta'
+__title__ = "Discord-Extension-Interaction"
+__author__ = "gunyu1019"
+__license__ = "MIT"
+__copyright__ = "Copyright 2021-present gunyu1019"
+__version__ = "0.6.0"  # version_info.to_string()
 
-from typing import NamedTuple, Literal
+from typing import NamedTuple, Literal, Optional
 
 from .client import Client, AutoShardedClient
 from .checks import *
 from .commands import (
-    CommandOption, Command, CommandOptionChoice, ContextMenuCommand, ContextMenu, UserCommand, SlashCommand,
-    SubCommandGroup, SubCommand, ApplicationSubcommandGroup, ApplicationSubcommand,
-    MemberCommand, ApplicationCommand, ApplicationCommandType, Mentionable, command, user, context, option
+    CommandOption,
+    CommandOptionChoice,
+    ContextMenu,
+    UserCommand,
+    SlashCommand,
+    ApplicationSubcommandGroup,
+    ApplicationSubcommand,
+    ApplicationCommand,
+    ApplicationCommandType,
+    Mentionable,
+    option,
 )
-from .components import Components, ActionRow, Button, Selection, TextInput, Options, DetectComponent, detect_component
+from .core import (
+    Command,
+    ContextMenuCommand,
+    SubCommandGroup,
+    SubCommand,
+    MemberCommand,
+    command,
+    user,
+    context,
+)
+from .components import (
+    Components,
+    ActionRow,
+    Button,
+    Selection,
+    TextInput,
+    SelectOption,
+    DetectComponent,
+    detect_component,
+)
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
-    InteractionContext, ApplicationContext, SubcommandContext, ComponentsContext, AutocompleteContext, ModalContext
+    InteractionContext,
+    ApplicationContext,
+    SubcommandContext,
+    ComponentsContext,
+    AutocompleteContext,
+    ModalContext,
 )
-from .message import Message, MessageSendable
-from .listener import Listener, listener
+from .message import Message, MessageTransferable, MessageEditable
+from .listener import listener
 
 
 class VersionInfo(NamedTuple):
     major: int
     minor: int
     micro: int
-    release_level: Literal["alpha", "beta", "candidate", "final"]
+    release_level: Optional[Literal["alpha", "beta", "candidate", "final"]]
     serial: int
 
+    def to_string(self) -> str:
+        _version_info = f"{self.major}.{self.minor}.{self.micro}"
+        if self.release_level is not None:
+            _version_info += "-{}".format(self.release_level) + str(self.serial)
+        return _version_info
 
-version_info: VersionInfo = VersionInfo(major=0, minor=5, micro=4, release_level='beta', serial=0)
+
+version_info: VersionInfo = VersionInfo(
+    major=0, minor=6, micro=0, release_level=None, serial=0
+)
