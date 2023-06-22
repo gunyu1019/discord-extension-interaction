@@ -32,27 +32,18 @@ import os
 import sys
 import types
 import zlib
-from typing import Optional, Dict, List, Coroutine, Any, Union
+from typing import Optional, List, Coroutine, Any, Union
 
 import discord.http
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
 from ._types import CoroutineFunction, UserCheck
-from .commands import (
-    ApplicationCommand,
-    from_payload,
-    command_types
-)
-from .core import (
-    SubCommand,
-    SubCommandGroup,
-    BaseCommand,
-    decorator_command_types
-)
+from .commands import ApplicationCommand, from_payload, command_types
 from .components import DetectComponent
-from .errors import *
+from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
 from .enums import ApplicationCommandType
+from .errors import *
 from .http import InteractionHTTPClient
 from .interaction import (
     ApplicationContext,
@@ -87,31 +78,31 @@ class ClientBase:
 
         self._application_id_value = None
         self._interactions_of_group = []
-        self._interactions: List[Dict[str, decorator_command_types]] = [
+        self._interactions: list[dict[str, decorator_command_types]] = [
             dict(),
             dict(),
             dict(),
         ]
-        self._fetch_interactions: Optional[List[Dict[str, ApplicationCommand]]] = None
+        self._fetch_interactions: Optional[list[dict[str, ApplicationCommand]]] = None
 
-        self._detect_components: Dict[str, List[DetectComponent]] = dict()
+        self._detect_components: dict[str, list[DetectComponent]] = dict()
 
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
 
-        self._checks: List[UserCheck] = []
+        self._checks: list[UserCheck] = []
 
-        self._deferred_components: Dict[str, list] = dict()
+        self._deferred_components: dict[str, list] = dict()
         self._deferred_global_components: List = list()
 
-        self._multiple_setup_hook: List[CoroutineFunction] = list()
+        self._multiple_setup_hook: list[CoroutineFunction] = list()
 
-        self.extra_events: Dict[str, List[CoroutineFunction]] = dict()
-        self.__extensions: Dict[str, types.ModuleType] = dict()
+        self.extra_events: dict[str, list[CoroutineFunction]] = dict()
+        self.__extensions: dict[str, types.ModuleType] = dict()
 
         self.interaction_http = InteractionHTTPClient(self.http)
 
-        self.extra_events['on_ready'] = [self.on_ready]
+        self.extra_events["on_ready"] = [self.on_ready]
 
     def dispatch(self, event_name: str, /, *args: Any, **kwargs: Any) -> None:
         # super() will resolve to Client
@@ -288,7 +279,7 @@ class ClientBase:
             self._application_id_value = application_info.id
         return self._application_id_value
 
-    async def fetch_commands(self) -> List[Dict[str, command_types]]:
+    async def fetch_commands(self) -> list[dict[str, command_types]]:
         """Fetch and update all application commands registered in discord to discord bot."""
         data = await self.http.get_global_commands(await self._application_id())
         result = [{}, {}, {}]  # list order: [
@@ -343,7 +334,7 @@ class ClientBase:
             self._fetch_interactions[command_type.value - 1][_result.name] = _result
         return _result
 
-    async def _fetch_command_cached(self) -> List[Dict[str, ApplicationCommand]]:
+    async def _fetch_command_cached(self) -> list[dict[str, ApplicationCommand]]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions
@@ -544,10 +535,7 @@ class ClientBase:
         return
 
     def add_interaction(
-            self,
-            command: decorator_command_types,
-            sync_command: bool = None,
-            _parent=None
+        self, command: decorator_command_types, sync_command: bool = None, _parent=None
     ):
         """Add interaction command to discord bot
 

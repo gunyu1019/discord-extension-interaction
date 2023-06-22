@@ -22,7 +22,7 @@ SOFTWARE.
 """
 
 import asyncio
-from typing import Any, Dict, List, Union, Sequence, Optional
+from typing import Any, Union, Sequence, Optional
 
 import discord
 from discord.state import ConnectionState
@@ -42,12 +42,13 @@ class Message(discord.Message):
     components: list[Component]
         A list of components in the message.
     """
+
     def __init__(
         self,
         *,
         state: ConnectionState,
         channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
-        data: Dict[str, Any]
+        data: dict[str, Any]
     ):
         if "message_reference" in data and "channel_id" not in data.get(
             "message_reference", {}
@@ -62,16 +63,16 @@ class Message(discord.Message):
         *,
         tts: bool = False,
         embed: discord.Embed = MISSING,
-        embeds: List[discord.Embed] = MISSING,
+        embeds: list[discord.Embed] = MISSING,
         file: Optional[discord.File] = MISSING,
-        files: Optional[List[discord.File]] = MISSING,
+        files: Optional[list[discord.File]] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
-        components: List[Union[ActionRow, Button, Selection]] = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
         reference: Union[
             discord.Message, discord.MessageReference, discord.PartialMessage
         ] = None,
         mention_author: bool = None,
-        stickers: List[Union[discord.Sticker, int]] = MISSING,
+        stickers: list[Union[discord.Sticker, int]] = MISSING,
         suppress_embeds: bool = False
     ):
         channel = MessageTransferable(state=self._state, channel=self.channel)
@@ -95,12 +96,12 @@ class Message(discord.Message):
         content: Optional[str] = MISSING,
         *,
         embed: discord.Embed = MISSING,
-        embeds: List[discord.Embed] = MISSING,
+        embeds: list[discord.Embed] = MISSING,
         attachment: Union[discord.Attachment, discord.File] = MISSING,
         attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
-        components: List[Union[ActionRow, Button, Selection]] = MISSING,
-        stickers: List[discord.Sticker] = MISSING
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+        stickers: list[discord.Sticker] = MISSING
     ):
         message = MessageEditable(self.channel, self.id)
         return await message.edit(
@@ -124,12 +125,13 @@ class MessageCommand(Message):
     There are cases where this is used via an override.
     However, it is usually not available.
     """
+
     def __init__(
         self,
         *,
         state: ConnectionState,
         channel: Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel],
-        data: Dict[str, Any]
+        data: dict[str, Any]
     ):
         super().__init__(state=state, channel=channel, data=data)
         options = self.content.split()
@@ -176,16 +178,16 @@ class MessageCommand(Message):
         *,
         tts: bool = False,
         embed: discord.Embed = None,
-        embeds: List[discord.Embed] = None,
+        embeds: list[discord.Embed] = None,
         file: discord.File = None,
-        files: List[discord.File] = None,
+        files: list[discord.File] = None,
         allowed_mentions: discord.AllowedMentions = None,
-        components: List[Union[ActionRow, Button, Selection]] = None,
+        components: list[Union[ActionRow, Button, Selection]] = None,
         reference: Union[
             Message, discord.MessageReference, discord.PartialMessage
         ] = None,
         mention_author: bool = None,
-        stickers: List[Union[discord.Sticker, int]] = MISSING,
+        stickers: list[Union[discord.Sticker, int]] = MISSING,
         suppress_embeds: bool = False
     ) -> Optional[Message]:
         self.deferred = False
@@ -221,6 +223,7 @@ class MessageTransferable:
         message_send = interaction.MessageSendable(state, message.channel)
         await message_send.send("Hello World")
     """
+
     def __init__(self, state: ConnectionState, channel):
         self._state = state
         self.channel = channel
@@ -233,14 +236,14 @@ class MessageTransferable:
         embed: discord.Embed = MISSING,
         embeds: Sequence[discord.Embed] = MISSING,
         file: discord.File = MISSING,
-        files: List[discord.File] = MISSING,
+        files: list[discord.File] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
-        components: List[Union[ActionRow, Button, Selection]] = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
         reference: Union[
             Message, discord.MessageReference, discord.PartialMessage
         ] = None,
         mention_author: bool = None,
-        stickers: List[Union[discord.Sticker, int]] = MISSING,
+        stickers: list[Union[discord.Sticker, int]] = MISSING,
         suppress_embeds: bool = False
     ):
         if reference is not None:
@@ -283,6 +286,7 @@ class MessageTransferable:
 
 class MessageSendable(MessageTransferable):
     """It will be deprecated."""
+
     pass
 
 
@@ -299,6 +303,7 @@ class MessageEditable:
         message_send = interaction.MessageEditable(message.channel, message.id)
         await message_send.edit("Hello World")
     """
+
     def __init__(self, channel, message_id: int):
         self.id = message_id
         self.channel = channel
@@ -309,12 +314,12 @@ class MessageEditable:
         content: Optional[str] = MISSING,
         *,
         embed: discord.Embed = MISSING,
-        embeds: List[discord.Embed] = MISSING,
+        embeds: list[discord.Embed] = MISSING,
         attachment: Union[discord.Attachment, discord.File] = MISSING,
         attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
-        components: List[Union[ActionRow, Button, Selection]] = MISSING,
-        stickers: List[discord.Sticker] = MISSING
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+        stickers: list[discord.Sticker] = MISSING
     ):
         if attachment is not MISSING:
             if attachment is not MISSING and attachments is not MISSING:

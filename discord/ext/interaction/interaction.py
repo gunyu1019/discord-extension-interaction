@@ -77,11 +77,14 @@ class InteractionContext:
     responded: bool
         Whether the Interaction responded through send, defer, update and defer_update
     """
+
     def __init__(self, payload: dict, client):
         self.client = client
         self.id: int = get_as_snowflake(payload, "id")
         self.version: int = payload.get("version")
-        self.type: discord.InteractionType = get_enum(discord.InteractionType, payload.get("type"))
+        self.type: discord.InteractionType = get_enum(
+            discord.InteractionType, payload.get("type")
+        )
         self.token = payload.get("token")
         self.application = get_as_snowflake(payload, "application_id")
 
@@ -194,13 +197,13 @@ class InteractionContext:
         *,
         tts: bool = False,
         embed: discord.Embed = MISSING,
-        embeds: List[discord.Embed] = MISSING,
+        embeds: list[discord.Embed] = MISSING,
         file: discord.File = MISSING,
-        files: List[discord.File] = MISSING,
+        files: list[discord.File] = MISSING,
         hidden: bool = False,
         allowed_mentions: discord.AllowedMentions = None,
         suppress_embeds: bool = False,
-        components: List[Union[ActionRow, Button, Selection]] = None,
+        components: list[Union[ActionRow, Button, Selection]] = None,
     ):
         """Responds to this interaction by sending a message.
 
@@ -283,10 +286,10 @@ class InteractionContext:
         content=None,
         *,
         embed: discord.Embed = MISSING,
-        embeds: List[discord.Embed] = MISSING,
+        embeds: list[discord.Embed] = MISSING,
         attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
-        components: List[Union[ActionRow, Button, Selection]] = MISSING,
+        components: list[Union[ActionRow, Button, Selection]] = MISSING,
     ):
         """Responds to this interaction by editing the original message or followed message.
 
@@ -349,7 +352,7 @@ class InteractionContext:
 
 
 class ModalPossible(InteractionContext):
-    async def modal(self, custom_id: str, title: str, components: List[Components]):
+    async def modal(self, custom_id: str, title: str, components: list[Components]):
         """Respond to this interaction by sending a modal.
 
         Parameters
@@ -467,6 +470,7 @@ class SubcommandContext(BaseApplicationContext):
     options: dict[str, Any]
         All response options
     """
+
     def __init__(self, original_payload: dict, payload: dict, client):
         super().__init__(original_payload, client)
         self.name = payload.get("name")
@@ -525,6 +529,7 @@ class ApplicationContext(BaseApplicationContext):
     options: dict[str, Any]
         All response options
     """
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = discord.InteractionType.application_command
@@ -618,6 +623,7 @@ class ComponentsContext(ModalPossible):
     message: Message
         The original message of component.
     """
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = discord.InteractionType.component
@@ -626,9 +632,9 @@ class ComponentsContext(ModalPossible):
         self.custom_id = data.get("custom_id")
         self.component_type = data.get("component_type")
         if self.component_type == 3:
-            self.values: List[str] = data.get("values")
+            self.values: list[str] = data.get("values")
         else:
-            self.values: List[str] = []
+            self.values: list[str] = []
 
         self.message = Message(
             state=self._state, channel=self.channel, data=payload.get("message", {})
@@ -657,13 +663,13 @@ class ComponentsContext(ModalPossible):
         *,
         tts: bool = False,
         embed: discord.Embed = MISSING,
-        embeds: List[discord.Embed] = MISSING,
+        embeds: list[discord.Embed] = MISSING,
         file: discord.File = MISSING,
-        files: List[discord.File] = MISSING,
+        files: list[discord.File] = MISSING,
         hidden: bool = False,
         allowed_mentions: discord.AllowedMentions = None,
         suppress_embeds: bool = False,
-        components: List[Union[ActionRow, Button, Selection]] = None,
+        components: list[Union[ActionRow, Button, Selection]] = None,
     ):
         """Responds to this interaction by update a message.
 
@@ -739,11 +745,12 @@ class ComponentsContext(ModalPossible):
 
 class AutocompleteContext(ApplicationContext):
     """A responded context consisting of a auto complete."""
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = discord.InteractionType.autocomplete
 
-    async def autocomplete(self, choices: List[CommandOptionChoice]):
+    async def autocomplete(self, choices: list[CommandOptionChoice]):
         """Respond to this interaction by sending an option.
 
         Parameters
@@ -769,6 +776,7 @@ class ModalContext(InteractionContext):
     components: list[TextInput]
         All components that were in the modal
     """
+
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self.type = discord.InteractionType.modal_submit
@@ -781,4 +789,4 @@ class ModalContext(InteractionContext):
         else:
             _components = components
         self.custom_id = data.get("custom_id")
-        self.components: List[TextInput] = _components
+        self.components: list[TextInput] = _components

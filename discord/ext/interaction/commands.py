@@ -22,7 +22,7 @@ SOFTWARE.
 """
 
 import logging
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import discord
 
@@ -49,6 +49,7 @@ class CommandOptionChoice:
     value: str
         The name of the choice. This is not visible to the user; max 100 characters.
     """
+
     def __init__(
         self,
         name: str,
@@ -89,14 +90,15 @@ class CommandOption:
     autocomplete: bool
         Whether the option has autocomplete. (defaults to ``false``)
     """
+
     def __init__(
         self,
         name: Optional[str],
         option_type: Optional[type],
         description: str = "No description.",
-        choices: List[CommandOptionChoice] = None,
+        choices: list[CommandOptionChoice] = None,
         channel_type: Union[discord.ChannelType, int] = None,
-        channel_types: List[Union[discord.ChannelType, int]] = None,
+        channel_types: list[Union[discord.ChannelType, int]] = None,
         min_value: Union[float, int] = None,
         max_value: Union[float, int] = None,
         required: bool = False,
@@ -126,7 +128,7 @@ class CommandOption:
         if len(self.choices) > 0 and self.autocomplete:
             log.warning("autocomplete may not be set to true if choices are present.")
 
-        self._channel_type: Optional[List[int]] = None
+        self._channel_type: Optional[list[int]] = None
         if channel_type is not None or channel_types is not None:
             if option_type is not None:
                 if discord.abc.GuildChannel not in option_type.__mro__:
@@ -184,7 +186,7 @@ class CommandOption:
         return self._type
 
     @property
-    def channel_type(self) -> Optional[List[discord.ChannelType]]:
+    def channel_type(self) -> Optional[list[discord.ChannelType]]:
         """A list of channel types that are allowed for this option."""
         if discord.abc.GuildChannel not in self.type.__mro__:
             return
@@ -286,7 +288,7 @@ class CommandOption:
             discord.Role,
             Mentionable,
             float,
-            discord.Attachment
+            discord.Attachment,
         )[(tp_v - 3)]
         if new_cls.type == discord.abc.GuildChannel and "channel_types" in data.keys():
             new_cls._channel_type = data.get("channel_types", [])
@@ -312,7 +314,7 @@ class ApplicationSubcommand:
         self,
         name: str,
         description: str = "No description.",
-        options: Optional[List[Union[CommandOption]]] = None,
+        options: Optional[list[Union[CommandOption]]] = None,
     ):
         self.name = name
         self.description = description
@@ -355,7 +357,7 @@ class ApplicationSubcommandGroup:
     def __init__(
         self,
         name: str,
-        options: List[ApplicationSubcommand],
+        options: list[ApplicationSubcommand],
         description: str = "No description.",
     ):
         self.name = name
@@ -416,6 +418,7 @@ class ApplicationCommand:
     default_member_permissions: Optional[str]
         The default member permissions that can run this command
     """
+
     def __init__(
         self,
         name: str,
@@ -483,9 +486,10 @@ class SlashCommand(ApplicationCommand):
     options: list[Union[CommandOption, ApplicationSubcommand, ApplicationSubcommandGroup]]
         A list of options for application command.
     """
+
     def __init__(
         self,
-        options: List[
+        options: list[
             Union[CommandOption, ApplicationSubcommandGroup, ApplicationSubcommand]
         ] = None,
         **kwargs
@@ -494,7 +498,9 @@ class SlashCommand(ApplicationCommand):
             options = []
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.CHAT_INPUT
-        self.options: List[Union[CommandOption, ApplicationSubcommand, ApplicationSubcommandGroup]] = options
+        self.options: list[
+            Union[CommandOption, ApplicationSubcommand, ApplicationSubcommandGroup]
+        ] = options
 
     def __eq__(self, other):
         return super().__eq__(other) and self.options == other.options
@@ -518,6 +524,7 @@ class SlashCommand(ApplicationCommand):
 
 class UserCommand(ApplicationCommand):
     """Represents an application command for ``User`` type."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.USER
@@ -525,6 +532,7 @@ class UserCommand(ApplicationCommand):
 
 class ContextMenu(ApplicationCommand):
     """Represents an application command for ``Context Menu`` type."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.MESSAGE
@@ -550,9 +558,9 @@ def option(
     name: str = None,
     option_type: type = None,
     description: str = "No description.",
-    choices: List[CommandOptionChoice] = None,
+    choices: list[CommandOptionChoice] = None,
     channel_type: Union[discord.ChannelType, int] = None,
-    channel_types: List[Union[discord.ChannelType, int]] = None,
+    channel_types: list[Union[discord.ChannelType, int]] = None,
     min_value: Union[float, int] = None,
     max_value: Union[float, int] = None,
     required: bool = False,

@@ -22,12 +22,13 @@ SOFTWARE.
 """
 
 
-import discord
 import inspect
+from abc import *
+from typing import Union, Optional, Type, Any
+
+import discord
 
 from .core import BaseCore
-from abc import *
-from typing import Union, Optional, List, Type, Dict, Any
 
 
 class Components(metaclass=ABCMeta):
@@ -69,6 +70,7 @@ class SelectOption:
     default : Optional[bool]
         Will show this option as selected by default
     """
+
     def __init__(
         self,
         label: str,
@@ -85,12 +87,12 @@ class SelectOption:
 
     def __str__(self) -> str:
         if self.emoji:
-            base = f'{self.emoji} {self.label}'
+            base = f"{self.emoji} {self.label}"
         else:
             base = self.label
 
         if self.description:
-            return f'{base}\n{self.description}'
+            return f"{base}\n{self.description}"
         return base
 
     def __eq__(self, other):
@@ -143,6 +145,7 @@ class ActionRow(Components):
     components : list[Components]
         Contains up to five Components.
     """
+
     TYPE = 1
 
     def __init__(self, components: list[Components] = None):
@@ -192,6 +195,7 @@ class Button(Components):
     disabled: Optional[bool]
         Whether the button is disabled. This default is ``false``
     """
+
     TYPE = 2
 
     def __init__(
@@ -275,12 +279,13 @@ class Selection(Components):
     max_values: Optional[int]
         Maximum number of items that can be chosen (defaults to 1); max 25
     """
+
     TYPE = 3
 
     def __init__(
         self,
         custom_id: str,
-        options: List[Union[dict, SelectOption]],
+        options: list[Union[dict, SelectOption]],
         disabled: bool = False,
         placeholder: str = None,
         min_values: int = None,
@@ -316,9 +321,9 @@ class Selection(Components):
 
     def __eq__(self, other):
         return (
-                self.custom_id == other.custom_id and
-                super().__eq__(other) and
-                self.options == other.options
+            self.custom_id == other.custom_id
+            and super().__eq__(other)
+            and self.options == other.options
         )
 
     def __ne__(self, other):
@@ -366,6 +371,7 @@ class TextInput(Components):
     value: Optional[str]
         Pre-filled value for this component; max 4000 characters
     """
+
     TYPE = 4
 
     def __init__(
@@ -438,8 +444,8 @@ class TextInput(Components):
 
 
 def from_payload(
-    payload: List[Dict[str, Any]]
-) -> List[Union[ActionRow, Button, Selection, TextInput]]:
+    payload: list[dict[str, Any]]
+) -> list[Union[ActionRow, Button, Selection, TextInput]]:
     components = []
 
     for i in payload:

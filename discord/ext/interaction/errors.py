@@ -55,7 +55,9 @@ class ExtensionNotFound(load_extension_consider_inheritance("ExtensionNotFound")
     pass
 
 
-class ExtensionAlreadyLoaded(load_extension_consider_inheritance("ExtensionAlreadyLoaded")):
+class ExtensionAlreadyLoaded(
+    load_extension_consider_inheritance("ExtensionAlreadyLoaded")
+):
     pass
 
 

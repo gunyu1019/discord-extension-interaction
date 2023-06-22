@@ -21,18 +21,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from typing import Any, NamedTuple, Sequence, Union, Optional
+
 import discord
 from discord.http import Route
 from discord.utils import MISSING
-from typing import Any, Dict, NamedTuple, Sequence, List, Union, Optional, Type
 
 from .components import ActionRow, Button, Selection
 from .utils import to_json
 
 
 class MultipartParameters(NamedTuple):
-    payload: Optional[Dict[str, Any]]
-    multipart: Optional[List[Dict[str, Any]]]
+    payload: Optional[dict[str, Any]]
+    multipart: Optional[list[dict[str, Any]]]
     files: Optional[Sequence[discord.File]]
 
     def __enter__(self):
@@ -56,11 +57,11 @@ def handler_message_parameter(
     files: Sequence[discord.File] = MISSING,
     allowed_mentions: discord.AllowedMentions = MISSING,
     attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
-    components: List[Union[ActionRow, Button, Selection]] = MISSING,
+    components: list[Union[ActionRow, Button, Selection]] = MISSING,
     reference: Union[discord.MessageReference, discord.PartialMessage] = MISSING,
     previous_allowed_mentions: Optional[discord.AllowedMentions] = None,
     mention_author: bool = None,
-    stickers: List[Union[discord.Sticker, int]] = MISSING,
+    stickers: list[Union[discord.Sticker, int]] = MISSING,
 ):
     if files is not MISSING and file is not MISSING:
         raise TypeError("Cannot mix file and files keyword arguments.")
@@ -176,7 +177,7 @@ class InteractionHTTPClient:
 
     # Interaction Response
     async def post_initial_response(
-        self, data: InteractionData, payload: Dict[str, Any]
+        self, data: InteractionData, payload: dict[str, Any]
     ):
         r = Route(
             "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
@@ -195,8 +196,8 @@ class InteractionHTTPClient:
     async def edit_initial_response(
         self,
         data: InteractionData,
-        payload: Dict[str, Any] = None,
-        form: List[Dict[str, Any]] = None,
+        payload: dict[str, Any] = None,
+        form: list[dict[str, Any]] = None,
         files: Optional[Sequence[discord.File]] = MISSING,
     ):
         if form is None:
@@ -217,8 +218,8 @@ class InteractionHTTPClient:
     async def post_followup(
         self,
         data: InteractionData,
-        payload: Dict[str, Any] = None,
-        form: List[Dict[str, Any]] = None,
+        payload: dict[str, Any] = None,
+        form: list[dict[str, Any]] = None,
         files: Optional[Sequence[discord.File]] = MISSING,
     ):
         if form is None:
@@ -234,8 +235,8 @@ class InteractionHTTPClient:
         self,
         data: InteractionData,
         message_id,
-        payload: Dict[str, Any] = None,
-        form: List[Dict[str, Any]] = None,
+        payload: dict[str, Any] = None,
+        form: list[dict[str, Any]] = None,
         files: Optional[Sequence[discord.File]] = MISSING,
     ):
         if form is None:
