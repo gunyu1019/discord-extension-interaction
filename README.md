@@ -79,4 +79,4 @@ bot.add_interaction(ping)
 bot.run("TOKEN")
 ```
 
-You can find more examples in the examples directory.
+You can find more examples in the [examples](https://github.com/gunyu1019/discord-extension-interaction/tree/main/examples) directory.
