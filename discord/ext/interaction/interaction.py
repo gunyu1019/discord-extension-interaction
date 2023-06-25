@@ -38,7 +38,7 @@ from .components import (
     from_payload,
     TextInput,
 )
-from .enums import Locale
+from .enums import Locale, ApplicationCommandType
 from .errors import AlreadyDeferred
 from .http import InteractionHTTPClient, InteractionData, handler_message_parameter
 from .message import Message
@@ -538,9 +538,9 @@ class ApplicationContext(BaseApplicationContext):
         self.function = None
         self.parents = None
 
-        self.application_type = data.get("type")
+        self.application_type = get_enum(ApplicationCommandType, data.get("type", 1))
         self.name = data.get("name")
-        if self.application_type == 1:
+        if self.application_type == ApplicationCommandType.CHAT_INPUT:
             self.options = {}
             self.option_focused = []
             for option in data.get("options", []):
@@ -598,7 +598,7 @@ class ApplicationContext(BaseApplicationContext):
 
     @property
     def content(self):
-        if self.application_type == 1:
+        if self.application_type == ApplicationCommandType.CHAT_INPUT:
             options = [str(self.options[i]) for i in self.options.keys()]
             return f"/{self.name} {' '.join(options)}"
         else:

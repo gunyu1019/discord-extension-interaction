@@ -7,16 +7,16 @@ class ApplicationCommandType(Enum):
     USER = 2
     MESSAGE = 3
 
-    def __eq__(self, other):
-        if isinstance(other, ApplicationCommandType):
-            return self._value_ == other.value
-        return self._value_ == other
+    # def __eq__(self, other):
+    #     if isinstance(other, ApplicationCommandType):
+    #         return self._value_ == other.value
+    #     return self._value_ == other
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    # def __ne__(self, other):
+    #     return not self.__eq__(other)
 
     @property
-    def value(self) -> Any:
+    def value(self) -> int:
         return super(ApplicationCommandType, self).value
 
 

@@ -78,12 +78,15 @@ class ClientBase:
 
         self._application_id_value = None
         self._interactions_of_group = []
-        self._interactions: list[dict[str, decorator_command_types]] = [
-            dict(),
-            dict(),
-            dict(),
-        ]
-        self._fetch_interactions: Optional[list[dict[str, ApplicationCommand]]] = None
+        self._interactions: dict[
+            ApplicationCommandType,
+            dict[str, decorator_command_types]
+        ] = {
+            ApplicationCommandType.CHAT_INPUT: dict(),
+            ApplicationCommandType.USER: dict(),
+            ApplicationCommandType.MESSAGE: dict(),
+        }
+        self._fetch_interactions: Optional[dict[ApplicationCommandType, dict[str, ApplicationCommand]]] = None
 
         self._detect_components: dict[str, list[DetectComponent]] = dict()
 
@@ -131,7 +134,7 @@ class ClientBase:
             Application Command to register with discord bot.
         """
         command_ids = await self._fetch_command_cached()
-        if command.name in command_ids[command.type.value - 1]:
+        if command.name in command_ids[command.type]:
             raise CommandRegistrationError(command.name)
 
         return await self.http.upsert_global_command(
@@ -143,10 +146,10 @@ class ClientBase:
     ) -> Optional[int]:
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
-            if command.name not in command_ids[command.type.value - 1]:
+            if command.name not in command_ids[command.type]:
                 raise CommandNotFound(f'Command "{command.name}" is not found')
 
-            command_id = command_ids[command.type.value - 1][command.name].id
+            command_id = command_ids[command.type][command.name].id
         return command_id
 
     async def edit_command(
@@ -239,7 +242,7 @@ class ClientBase:
         """Add a setup_hook
 
         Unlike the setup_hook in class:discord.Client,
-        when discord bot ready to setup, it calls all the registered corutine functions at the same time.
+        when discord bot ready to set up, it calls all the registered corutine functions at the same time.
 
         Parameters
         ----------
@@ -279,17 +282,17 @@ class ClientBase:
             self._application_id_value = application_info.id
         return self._application_id_value
 
-    async def fetch_commands(self) -> list[dict[str, command_types]]:
+    async def fetch_commands(self) -> dict[ApplicationCommandType, dict[str, command_types]]:
         """Fetch and update all application commands registered in discord to discord bot."""
         data = await self.http.get_global_commands(await self._application_id())
-        result = [{}, {}, {}]  # list order: [
-        #     ApplicationCommandType.CHAT_INPUT,
-        #     ApplicationCommandType.USER,
-        #     ApplicationCommandType.MESSAGE
-        # ]
+        result = {
+            ApplicationCommandType.CHAT_INPUT: {},
+            ApplicationCommandType.USER: {},
+            ApplicationCommandType.MESSAGE: {}
+        }
         for x in data:
             _x = from_payload(x)
-            result[_x.type.value - 1][_x.name] = _x
+            result[_x.type][_x.name] = _x
         self._fetch_interactions = result
         return result
 
@@ -319,9 +322,10 @@ class ClientBase:
             command_type = ApplicationCommandType.CHAT_INPUT
 
         if use_cached:
-            cached_command_list = await self._fetch_command_cached()
-            if command_id in cached_command_list[command_type.value - 1].keys():
-                return cached_command_list[command_type.value - 1][command_id]
+            cached_command_list = await self._fetch_command_cached()[command_type]
+            cached_command_list_converted_id = {x.id: x for x in cached_command_list.values()}
+            if command_id in cached_command_list_converted_id[command_type].keys():
+                return cached_command_list_converted_id[command_type][command_id]
         data = await self.http.get_global_command(
             application_id=await self._application_id(), command_id=command_id
         )
@@ -329,12 +333,12 @@ class ClientBase:
         if (
             use_cached
             and command_id
-            not in self._fetch_interactions[command_type.value - 1].keys()
+            not in self._fetch_interactions[command_type].keys()
         ):
-            self._fetch_interactions[command_type.value - 1][_result.name] = _result
+            self._fetch_interactions[command_type][_result.name] = _result
         return _result
 
-    async def _fetch_command_cached(self) -> list[dict[str, ApplicationCommand]]:
+    async def _fetch_command_cached(self) -> dict[ApplicationCommandType, dict[str, ApplicationCommand]]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions
@@ -342,11 +346,12 @@ class ClientBase:
     async def _sync_command(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data[command.type.value - 1].keys():
-            command_id = fetch_data[command.type.value - 1][command.name].id
-            if command.name in self._interactions[command.type.value - 1]:
-                self._interactions[command.type.value - 1][command.name].id = command_id
-            if fetch_data[command.type.value - 1][command.name] != command:
+        if command.name in fetch_data[command.type].keys():
+            command_id = fetch_data[command.type][command.name].id
+            if command.name in self._interactions[command.type]:
+                self._interactions[command.type][command.name].id = command_id
+
+            if fetch_data[command.type][command.name] != command:
                 await self.edit_command(command=command)
         else:
             await self.register_command(command)
@@ -355,8 +360,8 @@ class ClientBase:
     async def _sync_command_popping(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data[command.type.value - 1].keys():
-            command_id = fetch_data[command.type.value - 1][command.name].id
+        if command.name in fetch_data[command.type].keys():
+            command_id = fetch_data[command.type][command.name].id
             await self.delete_command(command, command_id=command_id)
         return
 
@@ -407,7 +412,7 @@ class ClientBase:
         Parameters
         ----------
         name : str
-            The extension name to load. It must be dot separated like regular Python imports if accessing a sub-module.
+            The extension name to load. It must be dot separated like regular Python imports if accessing a submodule.
             e.g. `foo.test` if you want to import `foo/test.py`.
         package : Optional[str]
             The package name to resolve relative imports with.
@@ -475,7 +480,7 @@ class ClientBase:
                 "global_sync_command is activated. Delete unregistered commands on client."
             )
             popping_data = await self._fetch_command_cached()
-            for index in range(3):
+            for index in list(ApplicationCommandType):
                 for already_cmd in self._interactions[index]:
                     if already_cmd in popping_data[index]:
                         del popping_data[index][already_cmd]
@@ -494,7 +499,7 @@ class ClientBase:
         detect_component: DetectComponent
             Coroutine functions that are called when a button is pressed or a selection is made.
         _parent
-            This parameters is used for cog.
+            These parameters is used for cog.
         """
         name = detect_component.custom_id
         if _parent is not None:
@@ -556,7 +561,7 @@ class ClientBase:
             which means that if it is None,
             it will follow the synchronization status ``global_sync_command`` attribute set by discord bot client.
         _parent
-            This parameters is used for cog.
+            These parameters is used for cog.
 
         Warnings
         --------
@@ -566,7 +571,7 @@ class ClientBase:
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name in self._interactions[command.type.value - 1]:
+        if command.name in self._interactions[command.type]:
             raise CommandRegistrationError(command.name)
 
         if _parent is not None:
@@ -581,7 +586,7 @@ class ClientBase:
 
         if command.type == ApplicationCommandType.CHAT_INPUT:
             command.set_signature_option()
-        self._interactions[command.type.value - 1][command.name] = command
+        self._interactions[command.type][command.name] = command
 
         if sync_command:
             if self.is_ready():
@@ -595,7 +600,7 @@ class ClientBase:
     def get_interaction(self):
         """Get all interaction command included Application Command, User Command and Context Menu Command"""
         result = []
-        for x in self._interactions:
+        for x in self._interactions.values():
             result += x.values()
         return result
 
@@ -627,10 +632,10 @@ class ClientBase:
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name not in self._interactions[command.type.value - 1]:
+        if command.name not in self._interactions[command.type]:
             raise CommandNotFound(f'Command "{command.name}" is not found')
 
-        self._interactions[command.type.value - 1].pop(command.name)
+        self._interactions[command.type].pop(command.name)
 
         if sync_command:
             if self.is_ready():
@@ -702,7 +707,7 @@ class ClientBase:
             state.dispatch("interaction_create", payload)
             if data.get("type") == 2:
                 result = ApplicationContext(data, self)
-                if len(self._interactions[result.application_type - 1]) != 0:
+                if len(self._interactions[result.application_type]) != 0:
                     state.dispatch("interaction_command", result)
             elif data.get("type") == 3:
                 result = ComponentsContext(data, self)
@@ -724,7 +729,7 @@ class ClientBase:
     # Application Context
     async def process_interaction(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
-        command = self._interactions[ctx.application_type - 1].get(ctx.name)
+        command = self._interactions[ctx.application_type].get(ctx.name)
         if command is None:
             return
 

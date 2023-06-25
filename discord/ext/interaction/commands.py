@@ -546,11 +546,11 @@ command_types = Union[SlashCommand, UserCommand, ContextMenu]
 
 
 def from_payload(data: dict) -> command_types:
-    if data["type"] == ApplicationCommandType.CHAT_INPUT:
+    if data["type"] == ApplicationCommandType.CHAT_INPUT.value:
         _result = SlashCommand.from_payload(data)
-    elif data["type"] == ApplicationCommandType.USER:
+    elif data["type"] == ApplicationCommandType.USER.value:
         _result = UserCommand.from_payload(data)
-    elif data["type"] == ApplicationCommandType.MESSAGE:
+    elif data["type"] == ApplicationCommandType.MESSAGE.value:
         _result = ContextMenu.from_payload(data)
     else:
         _result = ApplicationCommand.from_payload(data)
