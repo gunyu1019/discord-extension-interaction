@@ -79,14 +79,15 @@ class ClientBase:
         self._application_id_value = None
         self._interactions_of_group = []
         self._interactions: dict[
-            ApplicationCommandType,
-            dict[str, decorator_command_types]
+            ApplicationCommandType, dict[str, decorator_command_types]
         ] = {
             ApplicationCommandType.CHAT_INPUT: dict(),
             ApplicationCommandType.USER: dict(),
             ApplicationCommandType.MESSAGE: dict(),
         }
-        self._fetch_interactions: Optional[dict[ApplicationCommandType, dict[str, ApplicationCommand]]] = None
+        self._fetch_interactions: Optional[
+            dict[ApplicationCommandType, dict[str, ApplicationCommand]]
+        ] = None
 
         self._detect_components: dict[str, list[DetectComponent]] = dict()
 
@@ -282,13 +283,15 @@ class ClientBase:
             self._application_id_value = application_info.id
         return self._application_id_value
 
-    async def fetch_commands(self) -> dict[ApplicationCommandType, dict[str, command_types]]:
+    async def fetch_commands(
+        self,
+    ) -> dict[ApplicationCommandType, dict[str, command_types]]:
         """Fetch and update all application commands registered in discord to discord bot."""
         data = await self.http.get_global_commands(await self._application_id())
         result = {
             ApplicationCommandType.CHAT_INPUT: {},
             ApplicationCommandType.USER: {},
-            ApplicationCommandType.MESSAGE: {}
+            ApplicationCommandType.MESSAGE: {},
         }
         for x in data:
             _x = from_payload(x)
@@ -323,7 +326,9 @@ class ClientBase:
 
         if use_cached:
             cached_command_list = await self._fetch_command_cached()[command_type]
-            cached_command_list_converted_id = {x.id: x for x in cached_command_list.values()}
+            cached_command_list_converted_id = {
+                x.id: x for x in cached_command_list.values()
+            }
             if command_id in cached_command_list_converted_id[command_type].keys():
                 return cached_command_list_converted_id[command_type][command_id]
         data = await self.http.get_global_command(
@@ -332,13 +337,14 @@ class ClientBase:
         _result = from_payload(data)
         if (
             use_cached
-            and command_id
-            not in self._fetch_interactions[command_type].keys()
+            and command_id not in self._fetch_interactions[command_type].keys()
         ):
             self._fetch_interactions[command_type][_result.name] = _result
         return _result
 
-    async def _fetch_command_cached(self) -> dict[ApplicationCommandType, dict[str, ApplicationCommand]]:
+    async def _fetch_command_cached(
+        self,
+    ) -> dict[ApplicationCommandType, dict[str, ApplicationCommand]]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions

@@ -52,3 +52,16 @@ class Locale(Enum):
     turkish = "tr"
     ukrainian = "uk"
     vietnamese = "vi"
+
+    @property
+    def value(self) -> str:
+        return super(Locale, self).value
+
+    @staticmethod
+    def from_payload(original_data: dict[str, str]) -> dict["Locale", str]:
+        result = dict()
+        for local in Locale:
+            if local.value not in original_data.keys():
+                continue
+            result[local] = original_data[local.value]
+        return result

@@ -26,7 +26,7 @@ from typing import Optional, Union
 
 import discord
 
-from .enums import ApplicationCommandType
+from .enums import ApplicationCommandType, Locale
 from .errors import InvalidArgument
 from .utils import get_enum
 
@@ -54,16 +54,34 @@ class CommandOptionChoice:
         self,
         name: str,
         value: Union[int, str, float],
+        localizations_names: dict[Locale, str] = None
     ):
         self.name = name
         self.value = value
 
+        if localizations_names is None:
+            localizations_names = dict()
+        self._localizations_names = localizations_names
+
     @classmethod
     def from_payload(cls, data):
-        return cls(name=data["name"], value=data["value"])
+        converted_localization_names = None
+        if data.get('names_localization') is not None:
+            converted_localization_names = Locale.from_payload(data['names_localizations'])
+        return cls(name=data["name"], value=data["value"], localizations_names=converted_localization_names)
 
     def to_dict(self) -> dict:
-        return {"name": self.name, "value": self.value}
+        data = {"name": self.name, "value": self.value}
+        if self._localizations_names is not None:
+            data['names_localizations'] = {key.value: value for key, value in self._localizations_names}
+        return data
+
+    def translation(self, locale: Locale) -> str:
+        return self._localizations_names[locale]
+
+    def set_translation(self, locale: Locale, name: str):
+        self._localizations_names[locale] = name
+        return
 
     def __eq__(self, other):
         return self.name == other.name and self.value == other.value
@@ -103,6 +121,8 @@ class CommandOption:
         max_value: Union[float, int] = None,
         required: bool = False,
         autocomplete: bool = False,
+        localizations_names: dict[Locale, str] = None,
+        localizations_description: dict[Locale, str] = None,
     ):
         if choices is None:
             choices = []
