@@ -28,7 +28,7 @@ import discord
 
 from .enums import ApplicationCommandType, Locale
 from .errors import InvalidArgument
-from .localization import LocalizedOption
+from .localization import LocalizedCommand, LocalizedOption
 from .utils import get_enum
 
 log = logging.getLogger(__name__)
@@ -243,7 +243,7 @@ class CommandOption:
         localized_description = self._localizations_descriptions.get(locale)
         return LocalizedOption.option_transition(self, locale, localized_name, localized_description)
 
-    def set_translation(self, locale: Locale, name: str, description: str = "No Description"):
+    def set_translation(self, locale: Locale, name: str, description: str = "No description."):
         self._localizations_names[locale] = name
         self._localizations_descriptions[locale] = description
         return
@@ -492,6 +492,8 @@ class ApplicationCommand:
         guild_id: Optional[int] = None,
         command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
         default_member_permissions: str = None,
+        localizations_names: dict[Locale, str] = None,
+        localizations_description: dict[Locale, str] = None,
     ):
         self.id: int = 0  # default: None
         self.name: str = name
@@ -501,6 +503,13 @@ class ApplicationCommand:
         self.description: Optional[str] = description
         self.default_member_permissions: Optional[str] = default_member_permissions
         self.version: int = 1  # default: None
+
+        if localizations_names is None:
+            localizations_names = dict()
+        self._localizations_names = localizations_names
+        if localizations_description is None:
+            localizations_description = dict()
+        self._localizations_descriptions = localizations_description
 
     @classmethod
     def from_payload(cls, data: dict):
@@ -542,6 +551,16 @@ class ApplicationCommand:
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def translation(self, locale: Locale) -> LocalizedCommand:
+        localized_name = self._localizations_names.get(locale)
+        localized_description = self._localizations_descriptions.get(locale)
+        return LocalizedCommand.command_transition(self, locale, localized_name, localized_description)
+
+    def set_translation(self, locale: Locale, name: str, description: str = "No description."):
+        self._localizations_names[locale] = name
+        self._localizations_descriptions[locale] = description
+        return
 
 
 class SlashCommand(ApplicationCommand):

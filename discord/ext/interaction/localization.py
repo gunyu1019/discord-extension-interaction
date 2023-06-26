@@ -9,10 +9,17 @@ if TYPE_CHECKING:
 class LocalizedCommand:
     def __init__(
             self,
-            name,
-            description,
-            option
+            locale: Locale,
+            name: str,
+            description: str = "No description.",
+            options: list["CommandOption"] = None
     ):
+        if options is None:
+            options = []
+        self.locale = locale
+        self.name = name
+        self.description = description
+        self.options = options
         pass
 
 
@@ -21,7 +28,7 @@ class LocalizedOption:
             self,
             locale: Locale,
             name: str,
-            description: str = "No Description",
+            description: str = "No description.",
             choices: list[CommandOptionChoice] = None
     ):
         if choices is None:
