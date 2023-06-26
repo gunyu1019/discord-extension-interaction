@@ -28,6 +28,7 @@ import discord
 
 from .enums import ApplicationCommandType, Locale
 from .errors import InvalidArgument
+from .localization import LocalizedOption
 from .utils import get_enum
 
 log = logging.getLogger(__name__)
@@ -63,6 +64,8 @@ class CommandOptionChoice:
             localizations_names = dict()
         self._localizations_names = localizations_names
 
+        self._is_localized = False
+
     @classmethod
     def from_payload(cls, data):
         converted_localization_names = None
@@ -78,6 +81,15 @@ class CommandOptionChoice:
 
     def translation(self, locale: Locale) -> str:
         return self._localizations_names[locale]
+
+    def translation_choose(self, locale: Locale) -> "CommandOptionChoice":
+        new_cls = CommandOptionChoice(
+            name=self.translation(locale),
+            value=self.value,
+            localizations_names=self._localizations_names
+        )
+        new_cls._is_localized = True
+        return new_cls
 
     def set_translation(self, locale: Locale, name: str):
         self._localizations_names[locale] = name
@@ -134,6 +146,13 @@ class CommandOption:
         self.autocomplete = autocomplete
 
         self.parameter_name: Optional[str] = None
+
+        if localizations_names is None:
+            localizations_names = dict()
+        self._localizations_names = localizations_names
+        if localizations_description is None:
+            localizations_description = dict()
+        self._localizations_descriptions = localizations_description
 
         if option_type is not None:
             if (len(choices) > 0 or autocomplete) and not (
@@ -219,6 +238,16 @@ class CommandOption:
             channel_type.append(get_enum(discord.ChannelType, x))
         return channel_type
 
+    def translation(self, locale: Locale) -> LocalizedOption:
+        localized_name = self._localizations_names.get(locale)
+        localized_description = self._localizations_descriptions.get(locale)
+        return LocalizedOption.option_transition(self, locale, localized_name, localized_description)
+
+    def set_translation(self, locale: Locale, name: str, description: str = "No Description"):
+        self._localizations_names[locale] = name
+        self._localizations_descriptions[locale] = description
+        return
+
     @property
     def _get_type_id(self) -> int:
         if ApplicationSubcommand in self.type.__mro__:
@@ -262,6 +291,11 @@ class CommandOption:
             data["min_value"] = self.min_value
         if self.max_value is not None:
             data["max_value"] = self.max_value
+
+        if self._localizations_names is not None:
+            data["localizations_names"] = self._localizations_names
+        if self._localizations_descriptions is not None:
+            data["localizations_descriptions"] = self._localizations_descriptions
         return data
 
     def __eq__(self, other):
@@ -272,6 +306,8 @@ class CommandOption:
             and self.choices == other.choices
             and self.required == other.required
             and self.autocomplete == other.autocomplete
+            and self._localizations_names == other._localizations_names
+            and self._localizations_descriptions == other._localizations_descriptions
         )
         if int in self._type.__mro__ or float in self._type.__mro__:
             default_check = (
@@ -330,6 +366,12 @@ class CommandOption:
         if len(choices) > 0:
             for ch in choices:
                 new_cls.choices.append(CommandOptionChoice.from_payload(ch))
+
+        if "localizations_names" in data.keys():
+            new_cls._localizations_names = Locale.from_payload(data['localizations_names'])
+
+        if "localizations_descriptions" in data.keys():
+            new_cls._localizations_descriptions = Locale.from_payload(data['localizations_descriptions'])
         return new_cls
 
 
