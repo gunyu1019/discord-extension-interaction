@@ -21,20 +21,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any, NamedTuple, Sequence, Union, Optional
-
 import discord
 from discord.http import Route
 from discord.utils import MISSING
+from typing import Any, NamedTuple
+from collections.abc import Sequence
+
 
 from .components import ActionRow, Button, Selection
 from .utils import to_json
 
 
 class MultipartParameters(NamedTuple):
-    payload: Optional[dict[str, Any]]
-    multipart: Optional[list[dict[str, Any]]]
-    files: Optional[Sequence[discord.File]]
+    payload: dict[str, Any] | None
+    multipart: list[dict[str, Any]] | None
+    files: Sequence[discord.File] | None
 
     def __enter__(self):
         return self
@@ -46,22 +47,22 @@ class MultipartParameters(NamedTuple):
 
 
 def handler_message_parameter(
-    content: Optional[str] = MISSING,
+    content: str | None = MISSING,
     *,
     tts: bool = False,
     embed: discord.Embed = MISSING,
     embeds: Sequence[discord.Embed] = MISSING,
-    nonce: Optional[Union[int, str]] = None,
+    nonce: int | str | None = None,
     flags: discord.MessageFlags = MISSING,
     file: discord.File = MISSING,
     files: Sequence[discord.File] = MISSING,
     allowed_mentions: discord.AllowedMentions = MISSING,
-    attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
-    components: list[Union[ActionRow, Button, Selection]] = MISSING,
-    reference: Union[discord.MessageReference, discord.PartialMessage] = MISSING,
-    previous_allowed_mentions: Optional[discord.AllowedMentions] = None,
+    attachments: Sequence[discord.Attachment | discord.File] = MISSING,
+    components: list[ActionRow | Button | Selection] = MISSING,
+    reference: discord.MessageReference | discord.PartialMessage = MISSING,
+    previous_allowed_mentions: discord.AllowedMentions | None = None,
     mention_author: bool = None,
-    stickers: list[Union[discord.Sticker, int]] = MISSING,
+    stickers: list[discord.Sticker | int] = MISSING,
 ):
     if files is not MISSING and file is not MISSING:
         raise TypeError("Cannot mix file and files keyword arguments.")
@@ -144,7 +145,7 @@ def handler_message_parameter(
                 attachments_payload.append(attachment.to_dict(file_index))
                 file_index += 1
             else:
-                attachments_payload.append(attachment.to_dict())
+                attachments_payload.append(attachment.to_dict(file_index))
 
         payload["attachments"] = attachments_payload
 
@@ -198,7 +199,7 @@ class InteractionHTTPClient:
         data: InteractionData,
         payload: dict[str, Any] = None,
         form: list[dict[str, Any]] = None,
-        files: Optional[Sequence[discord.File]] = MISSING,
+        files: Sequence[discord.File] | None = MISSING,
     ):
         if form is None:
             form = []
@@ -220,7 +221,7 @@ class InteractionHTTPClient:
         data: InteractionData,
         payload: dict[str, Any] = None,
         form: list[dict[str, Any]] = None,
-        files: Optional[Sequence[discord.File]] = MISSING,
+        files: Sequence[discord.File] | None = MISSING,
     ):
         if form is None:
             form = []
@@ -237,7 +238,7 @@ class InteractionHTTPClient:
         message_id,
         payload: dict[str, Any] = None,
         form: list[dict[str, Any]] = None,
-        files: Optional[Sequence[discord.File]] = MISSING,
+        files: Sequence[discord.File] | None = MISSING,
     ):
         if form is None:
             form = []
