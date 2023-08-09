@@ -62,7 +62,7 @@ def handler_message_parameter(
     reference: discord.MessageReference | discord.PartialMessage = MISSING,
     previous_allowed_mentions: discord.AllowedMentions | None = None,
     mention_author: bool = None,
-    stickers: list[discord.Sticker | int] = MISSING
+    stickers: list[discord.Sticker | int] = MISSING,
 ):
     if files is not MISSING and file is not MISSING:
         raise TypeError("Cannot mix file and files keyword arguments.")
@@ -177,7 +177,9 @@ class InteractionHTTPClient:
         self.http = http
 
     # Interaction Response
-    async def post_initial_response(self, data: InteractionData, payload: dict[str, Any]):
+    async def post_initial_response(
+        self, data: InteractionData, payload: dict[str, Any]
+    ):
         r = Route(
             "POST", "/interactions/{id}/{token}/callback", id=data.id, token=data.token
         )
@@ -193,11 +195,11 @@ class InteractionHTTPClient:
         return await self.http.request(r)
 
     async def edit_initial_response(
-            self,
-            data: InteractionData,
-            payload: dict[str, Any] = None,
-            form: list[dict[str, Any]] = None,
-            files: Sequence[discord.File] | None = MISSING
+        self,
+        data: InteractionData,
+        payload: dict[str, Any] = None,
+        form: list[dict[str, Any]] = None,
+        files: Sequence[discord.File] | None = MISSING,
     ):
         if form is None:
             form = []
@@ -215,11 +217,11 @@ class InteractionHTTPClient:
 
     # Interaction Response (Followup)
     async def post_followup(
-            self,
-            data: InteractionData,
-            payload: dict[str, Any] = None,
-            form: list[dict[str, Any]] = None,
-            files: Sequence[discord.File] | None = MISSING
+        self,
+        data: InteractionData,
+        payload: dict[str, Any] = None,
+        form: list[dict[str, Any]] = None,
+        files: Sequence[discord.File] | None = MISSING,
     ):
         if form is None:
             form = []
@@ -231,12 +233,12 @@ class InteractionHTTPClient:
         return await self.http.request(r, json=payload)
 
     async def edit_followup(
-            self,
-            data: InteractionData,
-            message_id,
-            payload: dict[str, Any] = None,
-            form: list[dict[str, Any]] = None,
-            files: Sequence[discord.File] | None = MISSING
+        self,
+        data: InteractionData,
+        message_id,
+        payload: dict[str, Any] = None,
+        form: list[dict[str, Any]] = None,
+        files: Sequence[discord.File] | None = MISSING,
     ):
         if form is None:
             form = []

@@ -91,17 +91,17 @@ class CommandOption:
     """
 
     def __init__(
-            self,
-            name: str = None,
-            option_type: type = None,
-            description: str = "No description.",
-            choices: list[CommandOptionChoice] = None,
-            channel_type: discord.ChannelType | int = None,
-            channel_types: list[discord.ChannelType | int] = None,
-            min_value: float | int = None,
-            max_value: float | int = None,
-            required: bool = False,
-            autocomplete: bool = False
+        self,
+        name: str = None,
+        option_type: type = None,
+        description: str = "No description.",
+        choices: list[CommandOptionChoice] = None,
+        channel_type: discord.ChannelType | int = None,
+        channel_types: list[discord.ChannelType | int] = None,
+        min_value: float | int = None,
+        max_value: float | int = None,
+        required: bool = False,
+        autocomplete: bool = False,
     ):
         if choices is None:
             choices = []
@@ -195,9 +195,7 @@ class CommandOption:
             return
         channel_type = []
         for x in self._channel_type:
-            channel_type.append(
-                get_enum(discord.ChannelType, x)
-            )
+            channel_type.append(get_enum(discord.ChannelType, x))
         return channel_type
 
     @property
@@ -316,10 +314,10 @@ class CommandOption:
 
 class ApplicationSubcommand:
     def __init__(
-            self,
-            name: str,
-            description: str = "No description.",
-            options: list[CommandOption] | None = None
+        self,
+        name: str,
+        description: str = "No description.",
+        options: list[CommandOption] | None = None,
     ):
         self.name = name
         self.description = description
@@ -360,10 +358,10 @@ class ApplicationSubcommand:
 
 class ApplicationSubcommandGroup:
     def __init__(
-            self,
-            name: str,
-            options: list[ApplicationSubcommand],
-            description: str = "No description.",
+        self,
+        name: str,
+        options: list[ApplicationSubcommand],
+        description: str = "No description.",
     ):
         self.name = name
         self.description = description
@@ -425,12 +423,12 @@ class ApplicationCommand:
     """
 
     def __init__(
-            self,
-            name: str,
-            description: str = None,
-            guild_id: int | None = None,
-            command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
-            default_member_permissions: str = None,
+        self,
+        name: str,
+        description: str = None,
+        guild_id: int | None = None,
+        command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
+        default_member_permissions: str = None,
     ):
         self.id: int = 0  # default: None
         self.name: str = name
@@ -464,7 +462,7 @@ class ApplicationCommand:
             "description": self.description,
         }
         if self.default_member_permissions is not None:
-            data['default_member_permissions'] = self.default_member_permissions
+            data["default_member_permissions"] = self.default_member_permissions
         return data
 
     @property
@@ -495,15 +493,19 @@ class SlashCommand(ApplicationCommand):
     """
 
     def __init__(
-            self,
-            options: list[CommandOption | ApplicationSubcommandGroup | ApplicationSubcommand] = None,
-            **kwargs
+        self,
+        options: list[
+            CommandOption | ApplicationSubcommandGroup | ApplicationSubcommand
+        ] = None,
+        **kwargs
     ):
         if options is None:
             options = []
         super().__init__(**kwargs)
         self.type = ApplicationCommandType.CHAT_INPUT
-        self.options: list[CommandOption | ApplicationSubcommand | ApplicationSubcommandGroup] = options
+        self.options: list[
+            CommandOption | ApplicationSubcommand | ApplicationSubcommandGroup
+        ] = options
 
     def __eq__(self, other):
         return super().__eq__(other) and self.options == other.options
@@ -558,16 +560,16 @@ def from_payload(data: dict) -> command_types:
 
 # For Decorator
 def option(
-        name: str = None,
-        option_type: type = None,
-        description: str = "No description.",
-        choices: list[CommandOptionChoice] = None,
-        channel_type: discord.ChannelType | int = None,
-        channel_types: list[discord.ChannelType | int] = None,
-        min_value: float | int = None,
-        max_value: float | int = None,
-        required: bool = False,
-        autocomplete: bool = False
+    name: str = None,
+    option_type: type = None,
+    description: str = "No description.",
+    choices: list[CommandOptionChoice] = None,
+    channel_type: discord.ChannelType | int = None,
+    channel_types: list[discord.ChannelType | int] = None,
+    min_value: float | int = None,
+    max_value: float | int = None,
+    required: bool = False,
+    autocomplete: bool = False,
 ):
     options = CommandOption(
         name=name,

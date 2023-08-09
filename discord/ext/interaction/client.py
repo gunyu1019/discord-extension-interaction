@@ -85,10 +85,7 @@ class ClientBase:
         ]
         self._fetch_interactions: list[dict[str, ApplicationCommand]] | None = None
 
-        self._detect_components: dict[
-            str,
-            list[DetectComponent]
-        ] = dict()
+        self._detect_components: dict[str, list[DetectComponent]] = dict()
 
         self.__sync_command_before_ready_register = []
         self.__sync_command_before_ready_popping = []
@@ -138,8 +135,7 @@ class ClientBase:
             raise CommandRegistrationError(command.name)
 
         return await self.http.upsert_global_command(
-            await self._application_id(),
-            payload=command.to_register_dict()
+            await self._application_id(), payload=command.to_register_dict()
         )
 
     async def _find_command(
@@ -184,8 +180,7 @@ class ClientBase:
         """
         command_id = await self._find_command(command, command_id)
         return await self.http.delete_global_command(
-            await self._application_id(),
-            command_id=command_id or command.id
+            await self._application_id(), command_id=command_id or command.id
         )
 
     # Listener
@@ -339,9 +334,7 @@ class ClientBase:
             self._fetch_interactions[command_type.value - 1][_result.name] = _result
         return _result
 
-    async def _fetch_command_cached(self) -> list[
-        dict[str, ApplicationCommand]
-    ]:
+    async def _fetch_command_cached(self) -> list[dict[str, ApplicationCommand]]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions
@@ -434,9 +427,7 @@ class ClientBase:
         self._load_from_module_spec(spec, name, **kwargs)
         return
 
-    def load_extensions(
-        self, package: str, directory: str = None, **kwargs
-    ) -> None:
+    def load_extensions(self, package: str, directory: str = None, **kwargs) -> None:
         """Fetches all extensions in the specified folder.
         They must have the setup function configured.
 
@@ -518,9 +509,7 @@ class ClientBase:
         return self._detect_components
 
     def remove_detect_component(
-            self,
-            custom_id: str,
-            detect_component: DetectComponent = None
+        self, custom_id: str, detect_component: DetectComponent = None
     ):
         """Remove detect_component function.
 
@@ -544,10 +533,7 @@ class ClientBase:
         return
 
     def add_interaction(
-            self,
-            command: decorator_command_types,
-            sync_command: bool = None,
-            _parent=None
+        self, command: decorator_command_types, sync_command: bool = None, _parent=None
     ):
         """Add interaction command to discord bot
 
@@ -611,11 +597,7 @@ class ClientBase:
             result += x.values()
         return result
 
-    def delete_interaction(
-            self,
-            command: command_types,
-            sync_command: bool = None
-    ):
+    def delete_interaction(self, command: command_types, sync_command: bool = None):
         """Remove interaction command from discord bot
 
         If sync_command is True
@@ -656,10 +638,7 @@ class ClientBase:
             else:
                 self.__sync_command_before_ready_popping.append(command)
 
-    def add_interaction_cog(
-            self,
-            interaction_cog
-    ):
+    def add_interaction_cog(self, interaction_cog):
         """Add a "cog" to the bot.
 
         A cog is a class that has its own event listeners, detect_components and commands.
@@ -851,7 +830,9 @@ class ClientBase:
         listeners.append((future, check, False))
         return asyncio.wait_for(future, timeout)
 
-    def wait_for_global_component(self, check=None, timeout=None) -> _Coroutine[ComponentsContext]:
+    def wait_for_global_component(
+        self, check=None, timeout=None
+    ) -> _Coroutine[ComponentsContext]:
         """Unconstrained by custom_id, waits for any component_id.
 
         The ``timeout`` parameter is passed to :func:`asyncio.wait_for()`.
