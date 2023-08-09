@@ -22,10 +22,9 @@ SOFTWARE.
 """
 
 
-import inspect
 from abc import *
-from typing import Union, Optional, Type, Any
-
+import inspect
+from typing import Any
 import discord
 
 from .core import BaseCore
@@ -33,7 +32,7 @@ from .utils import get_enum
 
 
 class Components(metaclass=ABCMeta):
-    TYPE: Optional[int] = None
+    TYPE: int | None = None
 
     def __init__(self, components_type: discord.ComponentType):
         self.type = components_type
@@ -73,12 +72,12 @@ class SelectOption:
     """
 
     def __init__(
-        self,
-        label: str,
-        value: str,
-        description: Optional[str] = None,
-        emoji: Union[discord.PartialEmoji, dict] = None,
-        default: bool = False,
+            self,
+            label: str,
+            value: str,
+            description: str | None = None,
+            emoji: discord.PartialEmoji | dict = None,
+            default: bool = False
     ):
         self.label = label
         self.value = value
@@ -122,7 +121,7 @@ class SelectOption:
     def from_dict(cls, payload: dict):
         label: str = payload.get("label")
         value: str = payload.get("value")
-        description: Optional[str] = payload.get("description")
+        description: str | None = payload.get("description")
         emoji: discord.PartialEmoji = payload.get("emoji")
         default: bool = payload.get("default", False)
         return cls(
@@ -155,10 +154,16 @@ class ActionRow(Components):
         self.components: list = components
 
     def to_dict(self) -> dict:
-        return {"type": 1, "components": self.components}
+        return {
+            "type": 1,
+            "components": self.components
+        }
 
     def to_all_dict(self) -> dict:
-        return {"type": 1, "components": [i.to_dict() for i in self.components]}
+        return {
+            "type": 1,
+            "components": [i.to_dict() for i in self.components]
+        }
 
     @classmethod
     def from_dict(cls, payload: dict):
@@ -200,13 +205,13 @@ class Button(Components):
     TYPE = 2
 
     def __init__(
-        self,
-        style: Union[discord.ButtonStyle, int],
-        label: str = None,
-        emoji: Union[discord.PartialEmoji, str, dict] = None,
-        custom_id: str = None,
-        url: str = None,
-        disabled: bool = None,
+            self,
+            style: int | discord.ButtonStyle,
+            label: str = None,
+            emoji: discord.PartialEmoji | str | dict = None,
+            custom_id: str = None,
+            url: str = None,
+            disabled: bool = None
     ):
         super().__init__(components_type=discord.ComponentType.button)
 
@@ -221,14 +226,19 @@ class Button(Components):
         self.disabled = disabled
 
     def to_dict(self) -> dict:
-        base = {"type": 2, "style": int(self.style)}
+        base = {
+            "type": 2,
+            "style": int(self.style)
+        }
 
         if self.label is not None:
             base["label"] = self.label
         if self.emoji is not None and isinstance(self.emoji, discord.PartialEmoji):
             base["emoji"] = self.emoji.to_dict()
         elif self.emoji is not None and isinstance(self.emoji, str):
-            base["emoji"] = {"name": self.emoji}
+            base["emoji"] = {
+                "name": self.emoji
+            }
         elif self.emoji is not None:
             base["emoji"] = self.emoji
 
@@ -288,13 +298,13 @@ class Selection(Components):
     TYPE = 3
 
     def __init__(
-        self,
-        custom_id: str,
-        options: list[Union[dict, SelectOption]],
-        disabled: bool = False,
-        placeholder: str = None,
-        min_values: int = None,
-        max_values: int = None,
+            self,
+            custom_id: str,
+            options: list[dict | SelectOption],
+            disabled: bool = False,
+            placeholder: str = None,
+            min_values: int = None,
+            max_values: int = None,
     ):
         super().__init__(components_type=discord.ComponentType.select)
 
@@ -311,7 +321,9 @@ class Selection(Components):
             "custom_id": self.custom_id,
             "disabled": self.disabled,
             "options": [
-                option.to_dict() if isinstance(option, SelectOption) else option
+                option.to_dict()
+                if isinstance(option, SelectOption)
+                else option
                 for option in self.options
             ],
         }
@@ -337,7 +349,9 @@ class Selection(Components):
     @classmethod
     def from_dict(cls, payload: dict):
         custom_id = payload["custom_id"]
-        options = [SelectOption.from_dict(x) for x in payload.get("options", [])]
+        options = [
+            SelectOption.from_dict(x) for x in payload.get("options", [])
+        ]
         placeholder = payload.get("placeholder")
         min_values = payload.get("min_values")
         max_values = payload.get("max_values")
@@ -380,15 +394,15 @@ class TextInput(Components):
     TYPE = 4
 
     def __init__(
-        self,
-        custom_id: str,
-        style: int,
-        label: str,
-        min_length: Optional[int] = None,
-        max_length: Optional[int] = None,
-        required: bool = False,
-        value: Optional[str] = None,
-        placeholder: Optional[str] = None,
+            self,
+            custom_id: str,
+            style: int,
+            label: str,
+            min_length: int | None = None,
+            max_length: int | None = None,
+            required: bool = False,
+            value: str | None = None,
+            placeholder: str | None = None,
     ):
         super().__init__(components_type=discord.ComponentType.text_input)
 
@@ -449,8 +463,8 @@ class TextInput(Components):
 
 
 def from_payload(
-    payload: list[dict[str, Any]]
-) -> list[Union[ActionRow, Button, Selection, TextInput]]:
+        payload: list[dict[str, Any]]
+) -> list[ActionRow | Button | Selection | TextInput]:
     components = []
 
     for i in payload:
@@ -467,26 +481,24 @@ def from_payload(
 
 # For Decorator
 class DetectComponent(BaseCore):
-    def __init__(
-        self, func, custom_id, component_type: Type[Components] = None, checks=None
-    ):
+    def __init__(self, func, custom_id, component_type: type[Components] = None, checks=None):
         self.custom_id = custom_id
         self.type = component_type
         self.func = func
         super().__init__(func=func, checks=checks)
 
     @property
-    def type_id(self) -> Optional[int]:
+    def type_id(self) -> int | None:
         if isinstance(self.type, Components):
             return self.type.TYPE
         return
 
 
 def detect_component(
-    cls: classmethod = None,
-    custom_id: str = None,
-    component_type: Type[Components] = None,
-    checks=None,
+        cls: classmethod = None,
+        custom_id: str = None,
+        component_type: type[Components] = None,
+        checks=None,
 ):
     """A decorator that transforms a function into a :class:`.DetectComponent`
 

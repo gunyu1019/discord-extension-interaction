@@ -22,7 +22,7 @@ SOFTWARE.
 """
 
 import logging
-from typing import Optional, List, Union, Sequence
+from collections.abc import Sequence
 
 import discord
 from discord.channel import _channel_factory
@@ -48,7 +48,7 @@ log = logging.getLogger()
 
 
 class InteractionContext:
-    """Represents a interaction context from Discord
+    """Represents an interaction context from Discord
 
     Attributes
     ----------
@@ -117,14 +117,14 @@ class InteractionContext:
             self.http = InteractionHTTPClient(http=self.client.http)
 
     @property
-    def guild(self) -> Optional[discord.Guild]:
+    def guild(self) -> discord.Guild | None:
         """The guild the interaction was sent from."""
         if self.guild_id is not None:
             return self.client.get_guild(int(self.guild_id))
         return
 
     @property
-    def channel(self) -> Optional:
+    def channel(self) -> discord.TextChannel | discord.PartialMessageable | None:
         """The channel the interaction was sent from."""
         if self.channel_id is not None:
             if self.guild is not None:
@@ -143,12 +143,12 @@ class InteractionContext:
 
     @staticmethod
     def _get_payload(
-        content=None,
-        tts: bool = False,
-        embed=None,
-        hidden: bool = False,
-        allowed_mentions=None,
-        components=None,
+            content=None,
+            tts: bool = False,
+            embed=None,
+            hidden: bool = False,
+            allowed_mentions=None,
+            components=None
     ) -> dict:
         payload = {}
         if content:
@@ -166,7 +166,7 @@ class InteractionContext:
         return payload
 
     @property
-    def voice_client(self) -> Optional[discord.VoiceClient]:
+    def voice_client(self) -> discord.VoiceClient | None:
         if self.guild is None:
             return None
         return self.guild.voice_client
@@ -192,18 +192,18 @@ class InteractionContext:
         return
 
     async def send(
-        self,
-        content: Optional[str] = MISSING,
-        *,
-        tts: bool = False,
-        embed: discord.Embed = MISSING,
-        embeds: list[discord.Embed] = MISSING,
-        file: discord.File = MISSING,
-        files: list[discord.File] = MISSING,
-        hidden: bool = False,
-        allowed_mentions: discord.AllowedMentions = None,
-        suppress_embeds: bool = False,
-        components: list[Union[ActionRow, Button, Selection]] = None,
+            self,
+            content: str | None = MISSING,
+            *,
+            tts: bool = False,
+            embed: discord.Embed = MISSING,
+            embeds: list[discord.Embed] = MISSING,
+            file: discord.File = MISSING,
+            files: list[discord.File] = MISSING,
+            hidden: bool = False,
+            allowed_mentions: discord.AllowedMentions = None,
+            suppress_embeds: bool = False,
+            components: list[ActionRow | Button | Selection] = None
     ):
         """Responds to this interaction by sending a message.
 
@@ -281,15 +281,15 @@ class InteractionContext:
         return ret
 
     async def edit(
-        self,
-        message_id="@original",
-        content=None,
-        *,
-        embed: discord.Embed = MISSING,
-        embeds: list[discord.Embed] = MISSING,
-        attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
-        allowed_mentions: discord.AllowedMentions = MISSING,
-        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+            self,
+            message_id="@original",
+            content=None,
+            *,
+            embed: discord.Embed = MISSING,
+            embeds: list[discord.Embed] = MISSING,
+            attachments: Sequence[discord.Attachment | discord.File] = MISSING,
+            allowed_mentions: discord.AllowedMentions = MISSING,
+            components: list[ActionRow | Button | Selection] = MISSING
     ):
         """Responds to this interaction by editing the original message or followed message.
 
@@ -352,7 +352,12 @@ class InteractionContext:
 
 
 class ModalPossible(InteractionContext):
-    async def modal(self, custom_id: str, title: str, components: list[Components]):
+    async def modal(
+            self,
+            custom_id: str,
+            title: str,
+            components: list[Components]
+    ):
         """Respond to this interaction by sending a modal.
 
         Parameters
@@ -377,14 +382,19 @@ class ModalPossible(InteractionContext):
                 ],
             },
         }
-        return await self.http.post_initial_response(data=self.data, payload=payload)
+        return await self.http.post_initial_response(
+            data=self.data,
+            payload=payload
+        )
 
 
 class BaseApplicationContext(ModalPossible):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
         self._state: ConnectionState = getattr(client, "_connection")
-        self._from_data(payload.get("data", {}))
+        self._from_data(
+            payload.get("data", {})
+        )
 
     def _from_data(self, data):
         self.target_id = data.get("target_id")
@@ -408,20 +418,24 @@ class BaseApplicationContext(ModalPossible):
             and self.guild_id is not None
         ):
             resolved = self._resolved.get("members", {})
-            member_data = resolved.get(str(target_id), {})
+            member_data = resolved.get(
+                str(target_id), {}
+            )
 
             # USER DATA INJECT!
             user_resolved = self._resolved.get("users", {})
-            user_data = user_resolved.get(str(target_id), {})
+            user_data = user_resolved.get(
+                str(target_id), {}
+            )
             member_data["user"] = user_data
 
             data = discord.Member(data=member_data, state=self._state, guild=self.guild)
             return data
         elif target_type == "users" and "users" in self._resolved:
             resolved = self._resolved.get("users", {})
-            data = discord.User(
-                data=resolved.get(str(target_id), {}), state=self._state
-            )
+            data = discord.User(data=resolved.get(
+                str(target_id), {}
+            ), state=self._state)
             return data
         elif (
             target_type == "roles"
@@ -501,13 +515,13 @@ class SubcommandContext(BaseApplicationContext):
                         "users", target_id=value
                     )
             elif option_type == 7:
-                self.options[key]: Optional[Union[channel_types]] = client.get_channel(
-                    value
-                ) or self.target("channels", target_id=value)
+                self.options[key]: channel_types | None = (
+                    client.get_channel(value) or self.target("channels", target_id=value)
+                )
             elif option_type == 8:
-                self.options[key]: Optional[discord.Role] = self.guild.get_role(
-                    value
-                ) or self.target("roles", target_id=value)
+                self.options[key]: discord.Role | None = (
+                        self.guild.get_role(value) or self.target('roles', target_id=value)
+                )
             elif option_type == 10:
                 self.options[key]: float = float(value)
             elif option_type == 11:
@@ -575,15 +589,13 @@ class ApplicationContext(BaseApplicationContext):
                             "users", target_id=value
                         )
                 elif option_type == 7:
-                    self.options[key]: Optional[
-                        Union[channel_types]
-                    ] = client.get_channel(value) or self.target(
-                        "channels", target_id=value
+                    self.options[key]: channel_types | None = (
+                            client.get_channel(value) or self.target("channels", target_id=value)
                     )
                 elif option_type == 8:
-                    self.options[key]: Optional[discord.Role] = self.guild.get_role(
-                        value
-                    ) or self.target("roles", target_id=value)
+                    self.options[key]: discord.Role | None = (
+                            self.guild.get_role(value) or self.target("roles", target_id=value)
+                    )
                 elif option_type == 10:
                     self.options[key]: float = float(value)
                 elif option_type == 11:
@@ -658,18 +670,18 @@ class ComponentsContext(ModalPossible):
         return
 
     async def update(
-        self,
-        content: Optional[str] = MISSING,
-        *,
-        tts: bool = False,
-        embed: discord.Embed = MISSING,
-        embeds: list[discord.Embed] = MISSING,
-        file: discord.File = MISSING,
-        files: list[discord.File] = MISSING,
-        hidden: bool = False,
-        allowed_mentions: discord.AllowedMentions = None,
-        suppress_embeds: bool = False,
-        components: list[Union[ActionRow, Button, Selection]] = None,
+            self,
+            content: str | None = MISSING,
+            *,
+            tts: bool = False,
+            embed: discord.Embed = MISSING,
+            embeds: list[discord.Embed] = MISSING,
+            file: discord.File = MISSING,
+            files: list[discord.File] = MISSING,
+            hidden: bool = False,
+            allowed_mentions: discord.AllowedMentions = None,
+            suppress_embeds: bool = False,
+            components: list[ActionRow | Button | Selection] = None
     ):
         """Responds to this interaction by update a message.
 
@@ -744,7 +756,7 @@ class ComponentsContext(ModalPossible):
 
 
 class AutocompleteContext(ApplicationContext):
-    """A responded context consisting of a auto complete."""
+    """A responded context consisting of an auto complete."""
 
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
@@ -761,9 +773,14 @@ class AutocompleteContext(ApplicationContext):
         self.responded = True
         payload = {
             "type": 8,
-            "data": {"choices": [choice.to_dict() for choice in choices]},
+            "data": {
+                "choices": [choice.to_dict() for choice in choices]
+            }
         }
-        return await self.http.post_initial_response(data=self.data, payload=payload)
+        return await self.http.post_initial_response(
+            data=self.data,
+            payload=payload
+        )
 
 
 class ModalContext(InteractionContext):
@@ -782,7 +799,7 @@ class ModalContext(InteractionContext):
         self.type = discord.InteractionType.modal_submit
         data = payload.get("data", {})
         components = from_payload(data.get("components", []))
-        if isinstance(components, List):
+        if isinstance(components, list):
             _components = []
             for x in components:
                 _components += x.components

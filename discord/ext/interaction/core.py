@@ -22,7 +22,7 @@ SOFTWARE.
 """
 
 import inspect
-from typing import Optional, Union, Callable, Coroutine, Any
+from typing import Callable, Coroutine, Any
 
 from .commands import (
     ApplicationSubcommand,
@@ -72,7 +72,7 @@ class SubCommand(BaseCore, ApplicationSubcommand):
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
         if kwargs.get("name") is None:
             kwargs["name"] = func.__name__
-        self.parents: Union[Command, SubCommandGroup] = parents
+        self.parents: Command | SubCommandGroup = parents
         self.top_parents: Command = kwargs.pop("top_parents", self.parents)
         self.parents.options.append(self)
 
@@ -107,17 +107,17 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
         if kwargs.get("name") is None:
             kwargs["name"] = func.__name__
-        self.parents: Union[Command] = parents
+        self.parents: Command = parents
         super().__init__(func=func, checks=checks, *args, **kwargs)
         self.parents.options.append(self)
 
     def subcommand(
-        self,
-        name: str = None,
-        description: str = "No description.",
-        cls: classmethod = None,
-        checks=None,
-        options: Optional[list[CommandOption]] = None,
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            checks=None,
+            options: list[CommandOption] | None = None,
     ):
         if options is None:
             options = []
@@ -148,7 +148,7 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
 
 class BaseCommand(BaseCore):
     def __init__(
-        self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs
+            self, func: Callable, checks=None, sync_command: bool = None, *args, **kwargs
     ):
         if kwargs.get("name") is None:
             kwargs["name"] = func.__name__
@@ -158,12 +158,12 @@ class BaseCommand(BaseCore):
 
 class Command(BaseCommand, SlashCommand):
     def __init__(
-        self,
-        func: Callable,
-        checks=None,
-        options: list[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
-        sync_command: bool = None,
-        **kwargs
+            self,
+            func: Callable,
+            checks=None,
+            options: list[CommandOption | SubCommand | SubCommandGroup] = None,
+            sync_command: bool = None,
+            **kwargs
     ):
         if options is None:
             options = []
@@ -200,12 +200,12 @@ class Command(BaseCommand, SlashCommand):
         return
 
     def subcommand(
-        self,
-        name: str = None,
-        description: str = "No description.",
-        cls: classmethod = None,
-        checks=None,
-        options: list[CommandOption] = None,
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            checks=None,
+            options: list[CommandOption] = None,
     ):
         if options is None:
             options = []
@@ -229,11 +229,11 @@ class Command(BaseCommand, SlashCommand):
         return decorator
 
     def subcommand_group(
-        self,
-        name: str = None,
-        description: str = "No description.",
-        cls: classmethod = None,
-        options: list = None,
+            self,
+            name: str = None,
+            description: str = "No description.",
+            cls: classmethod = None,
+            options: list = None,
     ):
         if options is None:
             options = []
@@ -243,7 +243,11 @@ class Command(BaseCommand, SlashCommand):
 
         def decorator(func):
             new_cls = cls(
-                func, name=name, description=description, options=options, parents=self
+                func,
+                name=name,
+                description=description,
+                options=options,
+                parents=self
             )
             return new_cls
 
@@ -266,16 +270,16 @@ class ContextMenuCommand(BaseCommand, ContextMenu):
     pass
 
 
-decorator_command_types = Union[Command, MemberCommand, ContextMenuCommand]
+decorator_command_types = Command | MemberCommand | ContextMenuCommand
 
 
 def command(
-    name: str = None,
-    description: str = "No description.",
-    cls: classmethod = None,
-    checks=None,
-    options: list[CommandOption] = None,
-    sync_command: bool = None,
+        name: str = None,
+        description: str = "No description.",
+        cls: classmethod = None,
+        checks=None,
+        options: list[CommandOption] = None,
+        sync_command: bool = None,
 ):
     if options is None:
         options = []
@@ -297,10 +301,10 @@ def command(
 
 
 def user(
-    name: str = None,
-    cls: classmethod = None,
-    checks=None,
-    sync_command: bool = None,
+        name: str = None,
+        cls: classmethod = None,
+        checks=None,
+        sync_command: bool = None,
 ):
     if cls is None:
         cls = MemberCommand
@@ -312,30 +316,43 @@ def user(
 
 
 def context(
-    name: str = None,
-    cls: classmethod = None,
-    checks=None,
-    sync_command: bool = None,
+        name: str = None,
+        cls: classmethod = None,
+        checks=None,
+        sync_command: bool = None,
 ):
     if cls is None:
         cls = ContextMenuCommand
 
     def decorator(func):
-        return cls(func, name=name, checks=checks, sync_command=sync_command)
+        return cls(
+            func,
+            name=name,
+            checks=checks,
+            sync_command=sync_command
+        )
 
     return decorator
 
 
-def get_signature_option(func, options, skipping_argument: int = 1):
+def get_signature_option(
+        func,
+        options,
+        skipping_argument: int = 1
+):
     signature_arguments = inspect.signature(func).parameters
     arguments = []
     signature_arguments_count = len(signature_arguments) - skipping_argument
 
     if len(options) == 0 and len(signature_arguments) > skipping_argument - 1:
         for _ in range(signature_arguments_count):
-            options.append(CommandOption.empty_option())
+            options.append(
+                CommandOption.empty_option()
+            )
     elif signature_arguments_count > len(options):
-        for _ in range(signature_arguments_count - len(options)):
+        for _ in range(
+                signature_arguments_count - len(options)
+        ):
             options.append(CommandOption.empty_option())
     elif signature_arguments_count < len(options):
         raise TypeError("number of options and the number of arguments are different.")
