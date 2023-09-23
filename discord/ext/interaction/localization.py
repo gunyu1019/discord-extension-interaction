@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 from .enums import Locale
 
 if TYPE_CHECKING:
-    from .commands import CommandOption, CommandOptionChoice
+    from .commands import ApplicationCommand, CommandOption, CommandOptionChoice
 
 
 class LocalizedCommand:
@@ -20,7 +20,23 @@ class LocalizedCommand:
         self.name = name
         self.description = description
         self.options = options
-        pass
+
+        self._original_command: Optional["ApplicationCommand"] = None
+
+    @classmethod
+    def command_transition(
+            cls,
+            origin_command: "ApplicationCommand",
+            locale: Locale,
+            localized_name: str = None,
+            localized_description: str = None
+    ):
+        if localized_name is None:
+            localized_name = origin_command.name
+        if localized_description is None:
+            localized_description = origin_command.description
+        new_cls = cls(locale, localized_name, localized_description, origin_command.options)
+        new_cls._original_command = origin_command
 
 
 class LocalizedOption:
