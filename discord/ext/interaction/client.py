@@ -38,7 +38,7 @@ import discord.http
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from ._types import CoroutineFunction, UserCheck
+from ._types import CoroutineFunction, UserCheck, T
 from .commands import ApplicationCommand, from_payload, command_types
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
@@ -640,7 +640,7 @@ class ClientBase:
             else:
                 self.__sync_command_before_ready_popping.append(command)
 
-    def add_interaction_cog(self, interaction_cog):
+    def add_interaction_cog(self, interaction_cog: T):
         """Add a "cog" to the bot.
 
         A cog is a class that has its own event listeners, detect_components and commands.
