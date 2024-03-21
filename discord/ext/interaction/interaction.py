@@ -680,7 +680,8 @@ class ComponentsContext(ModalPossible):
         embed: Optional[discord.Embed]
             The rich embed for the content to update. This cannot be mixed with ``embeds`` parameter.
         embeds: Optional[list[discord.Embed]]
-            A list of embeds to update with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+            A list of embeds to update with the content.
+            Maximum of 10. This cannot be mixed with the ``embed`` parameter.
         file: Optional[discord.File]
             The file to upload.
         files: Optional[list[discord.File]]
