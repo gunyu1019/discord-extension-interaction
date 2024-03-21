@@ -32,13 +32,13 @@ import os
 import sys
 import types
 import zlib
-from typing import Optional, List, Coroutine, Any, Union
+from typing import Any
 
 import discord.http
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from ._types import CoroutineFunction, UserCheck, T
+from ._types import CoroutineFunction, UserCheck, _Coroutine
 from .commands import ApplicationCommand, from_payload, command_types
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
@@ -83,7 +83,7 @@ class ClientBase:
             dict(),
             dict(),
         ]
-        self._fetch_interactions: Optional[list[dict[str, ApplicationCommand]]] = None
+        self._fetch_interactions: list[dict[str, ApplicationCommand]] | None = None
 
         self._detect_components: dict[str, list[DetectComponent]] = dict()
 
@@ -93,7 +93,7 @@ class ClientBase:
         self._checks: list[UserCheck] = []
 
         self._deferred_components: dict[str, list] = dict()
-        self._deferred_global_components: List = list()
+        self._deferred_global_components: list = list()
 
         self._multiple_setup_hook: list[CoroutineFunction] = list()
 
@@ -140,7 +140,7 @@ class ClientBase:
 
     async def _find_command(
         self, command: ApplicationCommand, command_id: int
-    ) -> Optional[int]:
+    ) -> int | None:
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
             if command.name not in command_ids[command.type.value - 1]:
@@ -150,7 +150,7 @@ class ClientBase:
         return command_id
 
     async def edit_command(
-        self, command: ApplicationCommand, command_id: Optional[int] = None
+        self, command: ApplicationCommand, command_id: int | None = None
     ):
         """Edit application commands with Discord Bot.
 
@@ -387,14 +387,14 @@ class ClientBase:
             self.__extensions[key] = lib
 
     @staticmethod
-    def _resolve_name(name: str, package: Optional[str]) -> str:
+    def _resolve_name(name: str, package: str | None) -> str:
         try:
             return importlib.util.resolve_name(name, package)
         except ImportError:
             raise ExtensionNotFound(name)
 
     def load_extension(
-        self, name: str, *, package: Optional[str] = None, **kwargs
+        self, name: str, *, package: str | None = None, **kwargs
     ) -> None:
         """Loads an extension.
 
@@ -407,7 +407,7 @@ class ClientBase:
         Parameters
         ----------
         name : str
-            The extension name to load. It must be dot separated like regular Python imports if accessing a sub-module.
+            The extension name to load. It must be dot separated like regular Python imports if accessing a submodule.
             e.g. `foo.test` if you want to import `foo/test.py`.
         package : Optional[str]
             The package name to resolve relative imports with.
@@ -427,9 +427,7 @@ class ClientBase:
         self._load_from_module_spec(spec, name, **kwargs)
         return
 
-    def load_extensions(
-        self, package: str, directory: str = None, **kwargs
-    ) -> Optional[Coroutine]:
+    def load_extensions(self, package: str, directory: str = None, **kwargs) -> None:
         """Fetches all extensions in the specified folder.
         They must have the setup function configured.
 
@@ -494,7 +492,7 @@ class ClientBase:
         detect_component: DetectComponent
             Coroutine functions that are called when a button is pressed or a selection is made.
         _parent
-            This parameters is used for cog.
+            These parameters is used for cog.
         """
         name = detect_component.custom_id
         if _parent is not None:
@@ -556,7 +554,7 @@ class ClientBase:
             which means that if it is None,
             it will follow the synchronization status ``global_sync_command`` attribute set by discord bot client.
         _parent
-            This parameters is used for cog.
+            These parameters is used for cog.
 
         Warnings
         --------
@@ -793,7 +791,7 @@ class ClientBase:
     # Components
     def wait_for_component(
         self, custom_id: str, check=None, timeout=None
-    ) -> ComponentsContext:
+    ) -> _Coroutine[ComponentsContext]:
         """Wait for the component with the specified custom_id to be sent.
 
         The ``timeout`` parameter is passed to :func:`asyncio.wait_for()`.
@@ -832,7 +830,9 @@ class ClientBase:
         listeners.append((future, check, False))
         return asyncio.wait_for(future, timeout)
 
-    def wait_for_global_component(self, check=None, timeout=None) -> ComponentsContext:
+    def wait_for_global_component(
+        self, check=None, timeout=None
+    ) -> _Coroutine[ComponentsContext]:
         """Unconstrained by custom_id, waits for any component_id.
 
         The ``timeout`` parameter is passed to :func:`asyncio.wait_for()`.
@@ -862,7 +862,7 @@ class ClientBase:
         self._deferred_global_components.append((future, check, True))
         return asyncio.wait_for(future, timeout)
 
-    async def can_run(self, ctx: Union[ApplicationContext, ComponentsContext]) -> bool:
+    async def can_run(self, ctx: ApplicationContext | ComponentsContext) -> bool:
         data = self._checks
         if len(data) == 0:
             return True

@@ -10,12 +10,10 @@ if not version:
 
 
 extras_require = {
-    'discordpy': [
-        'discord.py',
-    ],
-    'pycord': [
-        'py-cord'
-    ],
+    'discordpy': ['discord.py'],
+    'pycord': ['py-cord'],
+    "test": ["pytest", "pytest-cov"],
+    "lint": ["pycodestyle", "black"]
 }
 
 setup(
@@ -25,9 +23,10 @@ setup(
     url='https://github.com/gunyu1019/discord-extension-interaction',
     license='MIT',
     author='gunyu1019',
+    extras_require=extras_require,
     author_email='gunyu1019@yhs.kr',
     description='Framework for Application Commands built on discord.py',
-    python_requires='>=3.7',
+    python_requires='>=3.10',
     long_description=open('README.md', encoding='UTF-8').read(),
     long_description_content_type='text/markdown',
     include_package_data=True,
@@ -39,9 +38,6 @@ setup(
         'Natural Language :: Korean',
         'Natural Language :: English',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Topic :: Internet',

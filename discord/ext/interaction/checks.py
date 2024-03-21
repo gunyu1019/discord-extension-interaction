@@ -23,7 +23,7 @@ SOFTWARE.
 
 import functools
 import inspect
-from typing import Union, Callable
+from typing import Callable
 
 import discord.utils
 from discord.ext.commands.errors import *
@@ -126,7 +126,7 @@ def check_any(*checks) -> Callable:
     return check(predicate)
 
 
-def has_role(item: Union[int, str]) -> Callable:
+def has_role(item: int | str) -> Callable:
     """A :func:`.check` that is added that checks if the member invoking the
     command has the role specified via the name or ID specified.
 
@@ -164,7 +164,7 @@ def has_role(item: Union[int, str]) -> Callable:
     return check(predicate)
 
 
-def has_any_role(*items: Union[int, str]) -> Callable:
+def has_any_role(*items: int | str) -> Callable:
     """A :func:`.check` that is added that checks if the member invoking the
     command has **any** of the roles specified. This means that if they have
     one out of the three roles specified, then this check will return `True`.
@@ -198,9 +198,11 @@ def has_any_role(*items: Union[int, str]) -> Callable:
         # ctx.guild is None doesn't narrow ctx.author to Member
         getter = functools.partial(discord.utils.get, ctx.author.roles)  # type: ignore
         if any(
-            getter(id=item) is not None
-            if isinstance(item, int)
-            else getter(name=item) is not None
+            (
+                getter(id=item) is not None
+                if isinstance(item, int)
+                else getter(name=item) is not None
+            )
             for item in items
         ):
             return True
@@ -250,9 +252,11 @@ def bot_has_any_role(*items: int) -> Callable:
         me = ctx.me
         getter = functools.partial(discord.utils.get, me.roles)
         if any(
-            getter(id=item) is not None
-            if isinstance(item, int)
-            else getter(name=item) is not None
+            (
+                getter(id=item) is not None
+                if isinstance(item, int)
+                else getter(name=item) is not None
+            )
             for item in items
         ):
             return True

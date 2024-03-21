@@ -22,7 +22,7 @@ SOFTWARE.
 """
 
 import logging
-from typing import Optional, List, Union, Sequence
+from collections.abc import Sequence
 
 import discord
 from discord.channel import _channel_factory
@@ -48,7 +48,7 @@ log = logging.getLogger()
 
 
 class InteractionContext:
-    """Represents a interaction context from Discord
+    """Represents an interaction context from Discord
 
     Attributes
     ----------
@@ -117,14 +117,14 @@ class InteractionContext:
             self.http = InteractionHTTPClient(http=self.client.http)
 
     @property
-    def guild(self) -> Optional[discord.Guild]:
+    def guild(self) -> discord.Guild | None:
         """The guild the interaction was sent from."""
         if self.guild_id is not None:
             return self.client.get_guild(int(self.guild_id))
         return
 
     @property
-    def channel(self) -> Optional:
+    def channel(self) -> discord.TextChannel | discord.PartialMessageable | None:
         """The channel the interaction was sent from."""
         if self.channel_id is not None:
             if self.guild is not None:
@@ -166,7 +166,7 @@ class InteractionContext:
         return payload
 
     @property
-    def voice_client(self) -> Optional[discord.VoiceClient]:
+    def voice_client(self) -> discord.VoiceClient | None:
         if self.guild is None:
             return None
         return self.guild.voice_client
@@ -193,7 +193,7 @@ class InteractionContext:
 
     async def send(
         self,
-        content: Optional[str] = MISSING,
+        content: str | None = MISSING,
         *,
         tts: bool = False,
         embed: discord.Embed = MISSING,
@@ -203,7 +203,7 @@ class InteractionContext:
         hidden: bool = False,
         allowed_mentions: discord.AllowedMentions = None,
         suppress_embeds: bool = False,
-        components: list[Union[ActionRow, Button, Selection]] = None,
+        components: list[ActionRow | Button | Selection] = None,
     ):
         """Responds to this interaction by sending a message.
 
@@ -233,9 +233,9 @@ class InteractionContext:
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
                 ephemeral=hidden,
-                suppress_embeds=suppress_embeds
-                if suppress_embeds and not self.responded
-                else False,
+                suppress_embeds=(
+                    suppress_embeds if suppress_embeds and not self.responded else False
+                ),
             )
         else:
             flags = MISSING
@@ -287,9 +287,9 @@ class InteractionContext:
         *,
         embed: discord.Embed = MISSING,
         embeds: list[discord.Embed] = MISSING,
-        attachments: Sequence[Union[discord.Attachment, discord.File]] = MISSING,
+        attachments: Sequence[discord.Attachment | discord.File] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
-        components: list[Union[ActionRow, Button, Selection]] = MISSING,
+        components: list[ActionRow | Button | Selection] = MISSING,
     ):
         """Responds to this interaction by editing the original message or followed message.
 
@@ -501,11 +501,11 @@ class SubcommandContext(BaseApplicationContext):
                         "users", target_id=value
                     )
             elif option_type == 7:
-                self.options[key]: Optional[Union[channel_types]] = client.get_channel(
+                self.options[key]: channel_types | None = client.get_channel(
                     value
                 ) or self.target("channels", target_id=value)
             elif option_type == 8:
-                self.options[key]: Optional[discord.Role] = self.guild.get_role(
+                self.options[key]: discord.Role | None = self.guild.get_role(
                     value
                 ) or self.target("roles", target_id=value)
             elif option_type == 10:
@@ -575,13 +575,11 @@ class ApplicationContext(BaseApplicationContext):
                             "users", target_id=value
                         )
                 elif option_type == 7:
-                    self.options[key]: Optional[
-                        Union[channel_types]
-                    ] = client.get_channel(value) or self.target(
-                        "channels", target_id=value
-                    )
+                    self.options[key]: channel_types | None = client.get_channel(
+                        value
+                    ) or self.target("channels", target_id=value)
                 elif option_type == 8:
-                    self.options[key]: Optional[discord.Role] = self.guild.get_role(
+                    self.options[key]: discord.Role | None = self.guild.get_role(
                         value
                     ) or self.target("roles", target_id=value)
                 elif option_type == 10:
@@ -659,7 +657,7 @@ class ComponentsContext(ModalPossible):
 
     async def update(
         self,
-        content: Optional[str] = MISSING,
+        content: str | None = MISSING,
         *,
         tts: bool = False,
         embed: discord.Embed = MISSING,
@@ -669,7 +667,7 @@ class ComponentsContext(ModalPossible):
         hidden: bool = False,
         allowed_mentions: discord.AllowedMentions = None,
         suppress_embeds: bool = False,
-        components: list[Union[ActionRow, Button, Selection]] = None,
+        components: list[ActionRow | Button | Selection] = None,
     ):
         """Responds to this interaction by update a message.
 
@@ -682,7 +680,8 @@ class ComponentsContext(ModalPossible):
         embed: Optional[discord.Embed]
             The rich embed for the content to update. This cannot be mixed with ``embeds`` parameter.
         embeds: Optional[list[discord.Embed]]
-            A list of embeds to update with the content. Maximum of 10. This cannot be mixed with the ``embed`` parameter.
+            A list of embeds to update with the content.
+            Maximum of 10. This cannot be mixed with the ``embed`` parameter.
         file: Optional[discord.File]
             The file to upload.
         files: Optional[list[discord.File]]
@@ -699,9 +698,9 @@ class ComponentsContext(ModalPossible):
         if suppress_embeds or hidden:
             flags = discord.MessageFlags(
                 ephemeral=hidden,
-                suppress_embeds=suppress_embeds
-                if suppress_embeds and not self.responded
-                else False,
+                suppress_embeds=(
+                    suppress_embeds if suppress_embeds and not self.responded else False
+                ),
             )
         else:
             flags = MISSING
@@ -744,7 +743,7 @@ class ComponentsContext(ModalPossible):
 
 
 class AutocompleteContext(ApplicationContext):
-    """A responded context consisting of a auto complete."""
+    """A responded context consisting of an auto complete."""
 
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
@@ -782,7 +781,7 @@ class ModalContext(InteractionContext):
         self.type = discord.InteractionType.modal_submit
         data = payload.get("data", {})
         components = from_payload(data.get("components", []))
-        if isinstance(components, List):
+        if isinstance(components, list):
             _components = []
             for x in components:
                 _components += x.components
