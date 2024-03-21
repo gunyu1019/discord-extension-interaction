@@ -22,7 +22,7 @@ SOFTWARE.
 """
 
 import inspect
-from typing import Optional, Union, Callable, Coroutine, Any
+from typing import Callable, Coroutine, Any
 
 from .commands import (
     ApplicationSubcommand,
@@ -72,7 +72,7 @@ class SubCommand(BaseCore, ApplicationSubcommand):
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
         if kwargs.get("name") is None:
             kwargs["name"] = func.__name__
-        self.parents: Union[Command, SubCommandGroup] = parents
+        self.parents: Command | SubCommandGroup = parents
         self.top_parents: Command = kwargs.pop("top_parents", self.parents)
         self.parents.options.append(self)
 
@@ -107,7 +107,7 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
     def __init__(self, func: Callable, parents, checks=None, *args, **kwargs):
         if kwargs.get("name") is None:
             kwargs["name"] = func.__name__
-        self.parents: Union[Command] = parents
+        self.parents: Command = parents
         super().__init__(func=func, checks=checks, *args, **kwargs)
         self.parents.options.append(self)
 
@@ -117,7 +117,7 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
         description: str = "No description.",
         cls: classmethod = None,
         checks=None,
-        options: Optional[list[CommandOption]] = None,
+        options: list[CommandOption] | None = None,
     ):
         if options is None:
             options = []
@@ -161,7 +161,7 @@ class Command(BaseCommand, SlashCommand):
         self,
         func: Callable,
         checks=None,
-        options: list[Union[CommandOption, SubCommand, SubCommandGroup]] = None,
+        options: list[CommandOption | SubCommand | SubCommandGroup] = None,
         sync_command: bool = None,
         **kwargs
     ):
@@ -266,7 +266,7 @@ class ContextMenuCommand(BaseCommand, ContextMenu):
     pass
 
 
-decorator_command_types = Union[Command, MemberCommand, ContextMenuCommand]
+decorator_command_types = Command | MemberCommand | ContextMenuCommand
 
 
 def command(
