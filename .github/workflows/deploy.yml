@@ -30,7 +30,7 @@ jobs:
       - build
     environment:
       name: pypi
-      url: https://pypi.org/p/chzzkpy
+      url: https://pypi.org/p/Discord-Extension-Interaction
     permissions:
       id-token: write
     steps:
