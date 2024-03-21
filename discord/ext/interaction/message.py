@@ -69,9 +69,9 @@ class Message(discord.Message):
         files: list[discord.File] | None = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
         components: list[ActionRow, Button, Selection] | None = MISSING,
-        reference: discord.Message
-        | discord.MessageReference
-        | discord.PartialMessage = None,
+        reference: (
+            discord.Message | discord.MessageReference | discord.PartialMessage
+        ) = None,
         mention_author: bool = None,
         stickers: list[discord.Sticker, int] | None = MISSING,
         suppress_embeds: bool = False
