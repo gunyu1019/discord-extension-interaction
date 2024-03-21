@@ -23,6 +23,7 @@ setup(
     url='https://github.com/gunyu1019/discord-extension-interaction',
     license='MIT',
     author='gunyu1019',
+    extras_require=extras_require,
     author_email='gunyu1019@yhs.kr',
     description='Framework for Application Commands built on discord.py',
     python_requires='>=3.10',
