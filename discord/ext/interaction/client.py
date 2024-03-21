@@ -638,7 +638,7 @@ class ClientBase:
             else:
                 self.__sync_command_before_ready_popping.append(command)
 
-    def add_interaction_cog(self, interaction_cog):
+    def add_interaction_cog(self, interaction_cog: T):
         """Add a "cog" to the bot.
 
         A cog is a class that has its own event listeners, detect_components and commands.
