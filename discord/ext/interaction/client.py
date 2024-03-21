@@ -38,7 +38,7 @@ import discord.http
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from ._types import CoroutineFunction, UserCheck, _Coroutine
+from ._types import CoroutineFunction, UserCheck, _Coroutine, T
 from .commands import ApplicationCommand, from_payload, command_types
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
