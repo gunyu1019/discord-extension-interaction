@@ -10,12 +10,10 @@ if not version:
 
 
 extras_require = {
-    'discordpy': [
-        'discord.py',
-    ],
-    'pycord': [
-        'py-cord'
-    ],
+    'discordpy': ['discord.py'],
+    'pycord': ['py-cord'],
+    "test": ["pytest", "pytest-cov"],
+    "lint": ["pycodestyle", "black"]
 }
 
 setup(
