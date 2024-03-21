@@ -1,6 +1,8 @@
 <h1 align="center">Discord Extension Interaction</h1>
 <p align="center">
-    <img src="https://img.shields.io/badge/release_version-0.6.0%20beta-0080aa?style=flat" alt="Release" >
+    <img src="https://img.shields.io/pypi/v/discord-extension-interaction?style=flat" alt="Release" >
+    <img src="https://img.shields.io/pypi/dm/discord-extension-interaction?style=flat" alt="Release" >
+    <img src="https://img.shields.io/pypi/l/discord-extension-interaction?style=flat" alt="Release" >
 </p>
 
 # Introduce
