@@ -25,7 +25,7 @@ __title__ = "Discord-Extension-Interaction"
 __author__ = "gunyu1019"
 __license__ = "MIT"
 __copyright__ = "Copyright 2021-present gunyu1019"
-__version__ = "0.6.0"  # version_info.to_string()
+__version__ = "0.6.1"  # version_info.to_string()
 
 from typing import NamedTuple, Literal, Optional
 
@@ -92,5 +92,5 @@ class VersionInfo(NamedTuple):
 
 
 version_info: VersionInfo = VersionInfo(
-    major=0, minor=6, micro=0, release_level=None, serial=0
+    major=0, minor=6, micro=1, release_level=None, serial=0
 )
