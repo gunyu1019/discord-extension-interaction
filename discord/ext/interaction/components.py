@@ -447,7 +447,7 @@ class TextInput(Components):
 
 
 def from_payload(
-    payload: list[dict[str, Any]]
+    payload: list[dict[str, Any]],
 ) -> list[ActionRow | Button | Selection | TextInput]:
     components = []
 
