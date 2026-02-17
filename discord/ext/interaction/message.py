@@ -20,21 +20,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING
 from collections.abc import Sequence
 
-import discord
-from discord.state import ConnectionState
+from discord.message import Message as OriginMessage
+from discord.message import MessageFlags  # noqa
 from discord.utils import MISSING
 
 from .components import ActionRow, Button, Selection, from_payload
 from .errors import InvalidArgument, AlreadyDeferred
 from .parser import handle_message_parameter
 
+if TYPE_CHECKING:
+    from typing import Any, Optional, Union, List
 
-class Message(discord.Message):
+    from discord.channel import TextChannel, DMChannel, GroupChannel
+    from discord.embeds import Embed
+    from discord.file import File
+    from discord.sticker import Sticker
+    from discord.mentions import AllowedMentions
+    from discord.poll import Poll
+    from discord.sticker import GuildSticker, StickerItem
+    from discord.state import ConnectionState
+    from discord.message import Attachment, MessageReference, PartialMessage
+
+
+class Message(OriginMessage):
     """Represents a message from Discord for ``discord-extension-interaction``
     This depends on :class:`discord.Message`.
 
@@ -48,7 +62,7 @@ class Message(discord.Message):
         self,
         *,
         state: ConnectionState,
-        channel: discord.TextChannel | discord.DMChannel | discord.GroupChannel,
+        channel: TextChannel | DMChannel | GroupChannel,
         data: dict[str, Any]
     ):
         if "message_reference" in data and "channel_id" not in data.get(
@@ -60,21 +74,22 @@ class Message(discord.Message):
 
     async def send(
         self,
-        content: str | None = MISSING,
+        content: Optional[str] = None,
         *,
         tts: bool = False,
-        embed: discord.Embed = MISSING,
-        embeds: list[discord.Embed] = MISSING,
-        file: discord.File | None = MISSING,
-        files: list[discord.File] | None = MISSING,
-        allowed_mentions: discord.AllowedMentions = MISSING,
-        components: list[ActionRow, Button, Selection] | None = MISSING,
-        reference: (
-            discord.Message | discord.MessageReference | discord.PartialMessage
-        ) = None,
-        mention_author: bool = None,
-        stickers: list[discord.Sticker, int] | None = MISSING,
-        suppress_embeds: bool = False
+        embed: Optional[Embed] = None,
+        embeds: Optional[Sequence[Embed]] = None,
+        file: Optional[File] = None,
+        files: Optional[Sequence[File]] = None,
+        stickers: Optional[Sequence[Union[GuildSticker, StickerItem]]] = None,
+        delete_after: Optional[float] = None,
+        nonce: Optional[Union[str, int]] = None,
+        allowed_mentions: Optional[AllowedMentions] = None,
+        reference: Optional[Union[Message, MessageReference, PartialMessage]] = None,
+        mention_author: Optional[bool] = None,
+        suppress_embeds: bool = False,
+        silent: bool = False,
+        poll: Optional[Poll] = None,
     ):
         channel = MessageTransferable(state=self._state, channel=self.channel)
         return await channel.send(
@@ -85,7 +100,7 @@ class Message(discord.Message):
             file=file,
             files=files,
             allowed_mentions=allowed_mentions,
-            components=components,
+            # components=components,
             reference=reference,
             mention_author=mention_author,
             stickers=stickers,
@@ -96,13 +111,13 @@ class Message(discord.Message):
         self,
         content: str | None = MISSING,
         *,
-        embed: discord.Embed = MISSING,
-        embeds: list[discord.Embed] = MISSING,
-        attachment: discord.Attachment | discord.File = MISSING,
-        attachments: Sequence[discord.Attachment | discord.File] = MISSING,
-        allowed_mentions: discord.AllowedMentions = MISSING,
+        embed: Embed = MISSING,
+        embeds: list[Embed] = MISSING,
+        attachment: Attachment | File = MISSING,
+        attachments: Sequence[Attachment | File] = MISSING,
+        allowed_mentions: AllowedMentions = MISSING,
         components: list[ActionRow | Button | Selection] = MISSING,
-        stickers: list[discord.Sticker] = MISSING
+        stickers: list[Sticker] = MISSING
     ):
         message = MessageEditable(self.channel, self.id)
         return await message.edit(
@@ -140,15 +155,15 @@ class MessageTransferable:
         content: str | None = MISSING,
         *,
         tts: bool = False,
-        embed: discord.Embed = MISSING,
-        embeds: Sequence[discord.Embed] = MISSING,
-        file: discord.File = MISSING,
-        files: list[discord.File] = MISSING,
-        allowed_mentions: discord.AllowedMentions = MISSING,
+        embed: Embed = MISSING,
+        embeds: Sequence[Embed] = MISSING,
+        file: File = MISSING,
+        files: list[File] = MISSING,
+        allowed_mentions: AllowedMentions = MISSING,
         components: list[ActionRow | Button | Selection] = MISSING,
-        reference: Message | discord.MessageReference | discord.PartialMessage = None,
+        reference: Message | MessageReference | PartialMessage = None,
         mention_author: bool = None,
-        stickers: list[discord.Sticker | int] = MISSING,
+        stickers: list[Sticker | int] = MISSING,
         suppress_embeds: bool = False
     ):
         if reference is not None:
@@ -162,11 +177,11 @@ class MessageTransferable:
             reference_dict = MISSING
 
         if suppress_embeds:
-            flags = discord.MessageFlags(suppress_embeds=suppress_embeds)
+            flags = MessageFlags(suppress_embeds=suppress_embeds)
         else:
             flags = MISSING
 
-        params = handler_message_parameter(
+        params = handle_message_parameter(
             content=content,
             tts=tts,
             embed=embed,
@@ -177,7 +192,6 @@ class MessageTransferable:
             allowed_mentions=allowed_mentions,
             flags=flags,
             components=components,
-            reference=reference_dict,
             mention_author=mention_author,
             stickers=stickers,
         )
@@ -212,13 +226,13 @@ class MessageEditable:
         self,
         content: str | None = MISSING,
         *,
-        embed: discord.Embed = MISSING,
-        embeds: list[discord.Embed] = MISSING,
-        attachment: discord.Attachment | discord.File = MISSING,
-        attachments: Sequence[discord.Attachment | discord.File] = MISSING,
-        allowed_mentions: discord.AllowedMentions = MISSING,
+        embed: Embed = MISSING,
+        embeds: list[Embed] = MISSING,
+        attachment: Attachment | File = MISSING,
+        attachments: Sequence[Attachment | File] = MISSING,
+        allowed_mentions: AllowedMentions = MISSING,
         components: list[ActionRow | Button | Selection] = MISSING,
-        stickers: list[discord.Sticker] = MISSING
+        stickers: list[Sticker] = MISSING
     ):
         if attachment is not MISSING:
             if attachment is not MISSING and attachments is not MISSING:
