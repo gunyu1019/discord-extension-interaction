@@ -20,14 +20,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import discord
 
-from .enums import ApplicationCommandType
+from .enums import ApplicationCommandType, ApplicationContextType, ApplicationIntegrationType
 from .errors import InvalidArgument
 from .utils import get_enum
+
+if TYPE_CHECKING:
+    from discord import ChannelType
+    from discord.types.command import ApplicationCommand as OriginApplicationCommand
+    from discord.types.command import ApplicationCommandOptionChoice as OriginApplicationCommandOptionChoice
+    from discord.types.command import ApplicationCommandOption as OriginApplicationCommandOption
+    from typing import Type, Union, Optional
 
 log = logging.getLogger(__name__)
 
@@ -52,13 +61,13 @@ class CommandOptionChoice:
     def __init__(
         self,
         name: str,
-        value: int | str | float,
+        value: Union[int, str, float],
     ):
         self.name = name
         self.value = value
 
     @classmethod
-    def from_payload(cls, data):
+    def from_payload(cls, data: OriginApplicationCommandOptionChoice):
         return cls(name=data["name"], value=data["value"])
 
     def to_dict(self) -> dict:
@@ -80,26 +89,34 @@ class CommandOption:
         The description of the option; max 100 characters.
     choices: list[CommandOptionChoice]
         A list of choices for the command to choose from for this option.
-    min_value: Union[float, int]
+    min_value: Optional[Union[int, float]]
+        For option type ``integer``, ``float``, the minimum allowed value;
+    max_value: Optional[Union[int, float]]
+        For option type ``integer``, ``float``, the minimum allowed value;
+    min_length: Optional[int]
         For option type ``string``, the minimum allowed length; min 0, max 6000
-    max_value: Optional[int]
+    max_length: Optional[int]
         For option type ``string``, the maximum allowed length; min 1, max 6000
-    required: bool
+    channel_types: Optional[List[discord.ChannelType, int]]
+        For option type ``channel``, the channel types the user must select from;
+    required: Optional[bool]
         Whether the option is required. (defaults to ``false``)
-    autocomplete: bool
+    autocomplete: Optional[bool]
         Whether the option has autocomplete. (defaults to ``false``)
     """
 
     def __init__(
         self,
         name: str = None,
-        option_type: type = None,
+        option_type: Type = None,
         description: str = "No description.",
         choices: list[CommandOptionChoice] = None,
-        channel_type: discord.ChannelType | int = None,
-        channel_types: list[discord.ChannelType | int] = None,
+        channel_type: Union[ChannelType, int] = None,
+        channel_types: list[Union[ChannelType, int]] = None,
         min_value: float | int = None,
         max_value: float | int = None,
+        min_length: int = None,
+        max_length: int = None,
         required: bool = False,
         autocomplete: bool = False,
     ):
@@ -112,7 +129,7 @@ class CommandOption:
         self.required = required
         self.autocomplete = autocomplete
 
-        self.parameter_name: str | None = None
+        self.parameter_name: Optional[str] = None
 
         if option_type is not None:
             if (len(choices) > 0 or autocomplete) and not (
@@ -163,8 +180,21 @@ class CommandOption:
                 raise TypeError(
                     "max_value can only be called when the parameter types are int and float."
                 )
-        self.min_value: int | None = min_value
-        self.max_value: int | None = max_value
+
+            if min_length is not None and str not in option_type.__mro__:
+                raise TypeError(
+                    "min_length can only be called when the parameter types are string."
+                )
+            if max_length is not None and str not in option_type.__mro__:
+                raise TypeError(
+                    "max_length can only be called when the parameter types are string."
+                )
+
+        self.min_value: Optional[int, float] = min_value
+        self.max_value: Optional[int, float] = max_value
+
+        self.min_length: Optional[int] = min_length
+        self.max_length: Optional[int] = max_length
 
     @classmethod
     def empty_option(cls):
@@ -182,7 +212,7 @@ class CommandOption:
         self._name = value
 
     @property
-    def type(self) -> type:
+    def type(self) -> Type:
         """The type of the option"""
         if self._type is None:
             raise ValueError("The type of the option must be defined.")
@@ -241,9 +271,13 @@ class CommandOption:
             data["min_value"] = self.min_value
         if self.max_value is not None:
             data["max_value"] = self.max_value
+        if self.min_length is not None:
+            data["min_length"] = self.min_length
+        if self.max_length is not None:
+            data["max_length"] = self.max_length
         return data
 
-    def __eq__(self, other):
+    def __eq__(self, other: "CommandOption"):
         default_check = (
             self.name == other.name
             and other._type in self._type.__mro__
@@ -258,6 +292,12 @@ class CommandOption:
                 and self.min_value == other.min_value
                 and self.max_value == other.max_value
             )
+        elif str in self._type.__mro__ or float in self._type.__mro__:
+            default_check = (
+                default_check
+                and self.min_length == other.min_length
+                and self.max_length == other.max_length
+            )
         elif discord.abc.GuildChannel in self._type.__mro__:
             default_check = default_check and self._channel_type == other._channel_type
         return default_check
@@ -266,12 +306,12 @@ class CommandOption:
         return not self.__eq__(other)
 
     @classmethod
-    def from_payload(cls, data: dict):
+    def from_payload(cls, data: OriginApplicationCommandOption):
         new_cls = cls.empty_option()
-        tp_v = data["type"]
-        if tp_v == 1:
+        type_raw_value = data["type"]
+        if type_raw_value == 1:
             return ApplicationSubcommand.from_payload(data)
-        if tp_v == 2:
+        if type_raw_value == 2:
             return ApplicationSubcommandGroup.from_payload(data)
 
         for x in ("name", "description", "required", "autocomplete"):
@@ -292,17 +332,18 @@ class CommandOption:
             Mentionable,
             float,
             discord.Attachment,
-        )[(tp_v - 3)]
+        )[(type_raw_value - 3)]
+
         if new_cls.type == discord.abc.GuildChannel and "channel_types" in data.keys():
             new_cls._channel_type = data.get("channel_types", [])
-        if (
-            new_cls.type == int or new_cls.type == float
-        ) and "min_value" in data.keys():
+        if new_cls.type == int or new_cls.type == float and "min_value" in data.keys():
             new_cls.min_value = data.get("min_value")
-        if (
-            new_cls.type == int or new_cls.type == float
-        ) and "max_value" in data.keys():
+        if new_cls.type == int or new_cls.type == float and "max_value" in data.keys():
             new_cls.max_value = data.get("max_value")
+        if new_cls.type == str and "min_length" in data.keys():
+            new_cls.min_length = data.get("min_length")
+        if new_cls.type == str and "max_length" in data.keys():
+            new_cls.max_length = data.get("max_length")
 
         new_cls.choices = []
         choices = data.get("choices", [])
@@ -317,7 +358,7 @@ class ApplicationSubcommand:
         self,
         name: str,
         description: str = "No description.",
-        options: list[CommandOption] | None = None,
+        options: Optional[list[CommandOption]] = None,
     ):
         self.name = name
         self.description = description
@@ -330,7 +371,7 @@ class ApplicationSubcommand:
         return 1
 
     @classmethod
-    def from_payload(cls, data: dict):
+    def from_payload(cls, data: OriginApplicationCommandOption):
         new_cls = cls(name=data["name"], description=data["description"])
         if "options" in data:
             new_cls.options = [CommandOption.from_payload(x) for x in data["options"]]
@@ -372,7 +413,7 @@ class ApplicationSubcommandGroup:
         return 2
 
     @classmethod
-    def from_payload(cls, data: dict):
+    def from_payload(cls, data: OriginApplicationCommandOption):
         return cls(
             name=data["name"],
             description=data["description"],
@@ -429,6 +470,9 @@ class ApplicationCommand:
         guild_id: int | None = None,
         command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
         default_member_permissions: str = None,
+        nsfw: bool = False,
+        integration_types: Optional[list[int | ApplicationIntegrationType]] = None,
+        contexts: Optional[list[int | ApplicationContextType]] = None,
     ):
         self.id: int = 0  # default: None
         self.name: str = name
@@ -437,10 +481,15 @@ class ApplicationCommand:
         self.guild_id: int | None = guild_id
         self.description: str | None = description
         self.default_member_permissions: str | None = default_member_permissions
+
+        self.nsfw: bool = nsfw
+        self.integration_types: list[int | ApplicationIntegrationType] = integration_types or []
+        self.contexts: list[int | ApplicationContextType] = contexts or []
+
         self.version: int = 1  # default: None
 
     @classmethod
-    def from_payload(cls, data: dict):
+    def from_payload(cls, data: OriginApplicationCommand):
         new_cls = cls(
             name=data["name"],
             description=data["description"],
@@ -448,21 +497,30 @@ class ApplicationCommand:
             guild_id=data.get("guild_id"),
         )
 
-        for key in ("id", "application_id", "version"):
+        for key in ("id", "application_id", "version", "nsfw"):
             value = data.get(key)
             setattr(new_cls, key, value)
-        command_type = data["type"]
-        new_cls.type = get_enum(ApplicationCommandType, command_type)
+
+        # Parse Enumeration Values
+        new_cls.type = get_enum(ApplicationCommandType, data["type"])
+        new_cls.integration_types = get_enum(ApplicationIntegrationType, data["integration_types"])
+        new_cls.contexts = get_enum(ApplicationContextType, data["contexts"])
+
         return new_cls
 
-    def to_register_dict(self) -> dict:
-        data = {
+    def to_register_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "name": self.name,
             "type": self.type.value,
             "description": self.description,
         }
         if self.default_member_permissions is not None:
             data["default_member_permissions"] = self.default_member_permissions
+
+        if len(self.contexts) > 0:
+            data["contexts"] = [context.value for context in self.contexts]
+        if len(self.integration_types) > 0:
+            data["integration_types"] = [integration_type.value for integration_type in self.integration_types]
         return data
 
     @property
@@ -477,6 +535,11 @@ class ApplicationCommand:
             and self.type == other.type
             and description == other.description
             and self.default_member_permissions == other.default_member_permissions
+            and self.integration_types == other.integration_types
+            and self.contexts == other.contexts
+            and self.guild_id == other.guild_id
+            and self.nsfw == other.nsfw
+            and self.version == other.version
         )
 
     def __ne__(self, other):
@@ -514,7 +577,7 @@ class SlashCommand(ApplicationCommand):
         return not self.__eq__(other)
 
     @classmethod
-    def from_payload(cls, data: dict):
+    def from_payload(cls, data: OriginApplicationCommand):
         new_cls = super().from_payload(data)
         new_cls.options = [
             CommandOption.from_payload(opt) for opt in data.get("options", [])
@@ -546,7 +609,7 @@ class ContextMenu(ApplicationCommand):
 command_types = SlashCommand | UserCommand | ContextMenu
 
 
-def from_payload(data: dict) -> command_types:
+def from_payload(data: OriginApplicationCommand) -> command_types:
     if data["type"] == ApplicationCommandType.CHAT_INPUT:
         _result = SlashCommand.from_payload(data)
     elif data["type"] == ApplicationCommandType.USER:
@@ -568,6 +631,8 @@ def option(
     channel_types: list[discord.ChannelType | int] = None,
     min_value: float | int = None,
     max_value: float | int = None,
+    min_length: int = None,
+    max_length: int = None,
     required: bool = False,
     autocomplete: bool = False,
 ):
@@ -580,6 +645,8 @@ def option(
         channel_types=channel_types,
         min_value=min_value,
         max_value=max_value,
+        min_length=min_length,
+        max_length=max_length,
         required=required,
         autocomplete=autocomplete,
     )
