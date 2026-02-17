@@ -31,7 +31,7 @@ from discord.utils import MISSING
 
 from .components import ActionRow, Button, Selection, from_payload
 from .errors import InvalidArgument, AlreadyDeferred
-from .http import handler_message_parameter
+from .parser import handle_message_parameter
 
 
 class Message(discord.Message):
@@ -117,98 +117,6 @@ class Message(discord.Message):
         )
 
 
-class MessageCommand(Message):
-    """The message command represents the context.
-
-    Notes
-    -----
-    MessageCommand was officially disabled in v0.1.
-    There are cases where this is used via an override.
-    However, it is usually not available.
-    """
-
-    def __init__(
-        self,
-        *,
-        state: ConnectionState,
-        channel: discord.TextChannel | discord.DMChannel | discord.GroupChannel,
-        data: dict[str, Any]
-    ):
-        super().__init__(state=state, channel=channel, data=data)
-        options = self.content.split()
-
-        if len(options) >= 1:
-            self.name = options[0]
-        else:
-            self.name = None
-
-        if len(options) >= 2:
-            self.options = self.content.split()[1:]
-        else:
-            self.options = []
-
-        self.deferred = False
-        self.deferred_task: asyncio.Task | None = None
-
-    @staticmethod
-    def _typing_done_callback(fut: asyncio.Future) -> None:
-        # just retrieve any exception and call it a day
-        try:
-            fut.exception()
-        except (asyncio.CancelledError, Exception):
-            pass
-
-    async def _do_deferred(self) -> None:
-        for count in range(0, 300, 10):
-            await super().channel.typing()
-            if not self.deferred:
-                break
-            await asyncio.sleep(10)
-
-    async def defer(self, _: bool = None) -> None:
-        if self.deferred:
-            raise AlreadyDeferred()
-        self.deferred = True
-        self.deferred_task = self._state.loop.create_task(self._do_deferred())
-        self.deferred_task.add_done_callback(self._typing_done_callback)
-        return
-
-    async def send(
-        self,
-        content=None,
-        *,
-        tts: bool = False,
-        embed: discord.Embed = None,
-        embeds: list[discord.Embed] = None,
-        file: discord.File = None,
-        files: list[discord.File] = None,
-        allowed_mentions: discord.AllowedMentions = None,
-        components: list[ActionRow | Button | Selection] = None,
-        reference: Message | discord.MessageReference | discord.PartialMessage = None,
-        mention_author: bool = None,
-        stickers: list[discord.Sticker | int] = MISSING,
-        suppress_embeds: bool = False
-    ) -> Message | None:
-        self.deferred = False
-        if self.deferred_task is not None:
-            if not self.deferred_task.cancelled():
-                self.deferred_task.cancel()
-        return await super().send(
-            content=content,
-            tts=tts,
-            embed=embed,
-            embeds=embeds,
-            file=file,
-            files=files,
-            allowed_mentions=allowed_mentions,
-            components=components,
-            reference=reference,
-            mention_author=mention_author,
-            stickers=stickers,
-            suppress_embeds=suppress_embeds,
-        )
-
-
 class MessageTransferable:
     """Use :class:`discord.Message` in ``discord-extension-interaction`` to send a message.
     Usage is the same as ``send()`` in :class:`discord.Message`.
@@ -281,12 +189,6 @@ class MessageTransferable:
         return ret
 
 
-class MessageSendable(MessageTransferable):
-    """It will be deprecated."""
-
-    pass
-
-
 class MessageEditable:
     """Use :class:`discord.Message` in ``discord-extension-interaction`` to edit a message.
     Usage is the same as ``edit()`` in :class:`discord.Message`.
@@ -322,7 +224,7 @@ class MessageEditable:
             if attachment is not MISSING and attachments is not MISSING:
                 raise InvalidArgument()
             attachments = [attachment]
-        params = handler_message_parameter(
+        params = handle_message_parameter(
             content=content,
             embed=embed,
             embeds=embeds,
