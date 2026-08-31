@@ -32,11 +32,9 @@ import logging
 import os
 import sys
 import types
-import zlib
 from typing import TYPE_CHECKING
 
 import discord.http
-from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
 from .commands import ApplicationCommand, from_payload, command_types
@@ -48,10 +46,10 @@ from .interaction import (
     ApplicationContext,
     ComponentsContext,
     AutocompleteContext,
-    ModalContext,
+    ModalSubmitContext,
 )
 from .message import Message
-from .utils import _from_json, async_all
+from .utils import async_all
 
 if TYPE_CHECKING:
     from discord.client import _ClientOptions  # noqa
@@ -59,11 +57,13 @@ if TYPE_CHECKING:
 
     from ._types import CoroutineFunction, UserCheck, _Coroutine, T
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
-class ClientBase(discord.Client):
-    # This class will be inherited from discord.Client.
+class ClientBase:
+    # Mix-in for :class:`discord.Client` / :class:`discord.AutoShardedClient`.
+    # Instantiated only through :class:`Client` / :class:`AutoShardedClient` below,
+    # so ``super().__init__`` cooperatively reaches the real client constructor.
     _connection: discord.state.ConnectionState
     loop: asyncio.AbstractEventLoop
     http: discord.http.HTTPClient
@@ -74,8 +74,6 @@ class ClientBase(discord.Client):
         intents: discord.Intents = discord.Intents.default(),
         **options: Unpack[_ClientOptions],
     ):
-        # if discord.version_info.major >= 2:
-        #     options["enable_debug_events"] = True
         super().__init__(intents=intents, **options)
 
         self.global_sync_command = global_sync_command
@@ -89,7 +87,9 @@ class ClientBase(discord.Client):
             ApplicationCommandType.USER: dict(),
             ApplicationCommandType.MESSAGE: dict(),
         }
-        self._fetch_interactions: list[dict[str, ApplicationCommand]] | None = None
+        self._fetch_interactions: (
+            dict[ApplicationCommandType, dict[str, command_types]] | None
+        ) = None
 
         self._detect_components: dict[str, list[DetectComponent]] = dict()
 
@@ -107,6 +107,8 @@ class ClientBase(discord.Client):
         self.__extensions: dict[str, types.ModuleType] = dict()
 
         self.extra_events["on_ready"] = [self.on_ready]
+
+        self._install_interaction_parsers()
 
     def dispatch(self, event_name: str, /, *args: Any, **kwargs: Any) -> None:
         # super() will resolve to Client
@@ -135,7 +137,7 @@ class ClientBase(discord.Client):
             Application Command to register with discord bot.
         """
         command_ids = await self._fetch_command_cached()
-        if command.name in command_ids[command.type.value - 1]:
+        if command.name in command_ids[command.type]:
             raise CommandRegistrationError(command.name)
 
         return await self.http.upsert_global_command(
@@ -147,10 +149,10 @@ class ClientBase(discord.Client):
     ) -> int | None:
         if command_id is None and command.id is None:
             command_ids = await self._fetch_command_cached()
-            if command.name not in command_ids[command.type.value - 1]:
+            if command.name not in command_ids[command.type]:
                 raise CommandNotFound(f'Command "{command.name}" is not found')
 
-            command_id = command_ids[command.type.value - 1][command.name].id
+            command_id = command_ids[command.type][command.name].id
         return command_id
 
     async def edit_command(
@@ -278,22 +280,32 @@ class ClientBase(discord.Client):
 
     # Application ID (from store data)
     async def _application_id(self):
-        if self._application_id_value is None:
+        # ``Client.application_id`` is populated once the gateway READY arrives;
+        # fall back to a REST lookup for calls made before then.
+        if self.application_id is not None:
+            return self.application_id
+        if self._pre_cached_application_id is None:
             application_info: discord.AppInfo = await self.application_info()
-            self._application_id_value = application_info.id
-        return self._application_id_value
+            self._pre_cached_application_id = application_info.id
+        return self._pre_cached_application_id
 
-    async def fetch_commands(self) -> list[dict[str, command_types]]:
+    @staticmethod
+    def _empty_command_map() -> dict[ApplicationCommandType, dict[str, command_types]]:
+        return {
+            ApplicationCommandType.CHAT_INPUT: {},
+            ApplicationCommandType.USER: {},
+            ApplicationCommandType.MESSAGE: {},
+        }
+
+    async def fetch_commands(
+        self,
+    ) -> dict[ApplicationCommandType, dict[str, command_types]]:
         """Fetch and update all application commands registered in discord to discord bot."""
         data = await self.http.get_global_commands(await self._application_id())
-        result = [{}, {}, {}]  # list order: [
-        #     ApplicationCommandType.CHAT_INPUT,
-        #     ApplicationCommandType.USER,
-        #     ApplicationCommandType.MESSAGE
-        # ]
+        result = self._empty_command_map()
         for x in data:
             _x = from_payload(x)
-            result[_x.type.value - 1][_x.name] = _x
+            result[ApplicationCommandType(_x.type)][_x.name] = _x
         self._fetch_interactions = result
         return result
 
@@ -324,21 +336,22 @@ class ClientBase(discord.Client):
 
         if use_cached:
             cached_command_list = await self._fetch_command_cached()
-            if command_id in cached_command_list[command_type.value - 1].keys():
-                return cached_command_list[command_type.value - 1][command_id]
+            if command_id in cached_command_list[command_type].keys():
+                return cached_command_list[command_type][command_id]
         data = await self.http.get_global_command(
             application_id=await self._application_id(), command_id=command_id
         )
         _result = from_payload(data)
         if (
             use_cached
-            and command_id
-            not in self._fetch_interactions[command_type.value - 1].keys()
+            and command_id not in self._fetch_interactions[command_type].keys()
         ):
-            self._fetch_interactions[command_type.value - 1][_result.name] = _result
+            self._fetch_interactions[command_type][_result.name] = _result
         return _result
 
-    async def _fetch_command_cached(self) -> list[dict[str, ApplicationCommand]]:
+    async def _fetch_command_cached(
+        self,
+    ) -> dict[ApplicationCommandType, dict[str, command_types]]:
         if self._fetch_interactions is None:
             await self.fetch_commands()
         return self._fetch_interactions
@@ -346,11 +359,11 @@ class ClientBase(discord.Client):
     async def _sync_command(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data[command.type.value - 1].keys():
-            command_id = fetch_data[command.type.value - 1][command.name].id
-            if command.name in self._interactions[command.type.value - 1]:
-                self._interactions[command.type.value - 1][command.name].id = command_id
-            if fetch_data[command.type.value - 1][command.name] != command:
+        if command.name in fetch_data[command.type].keys():
+            command_id = fetch_data[command.type][command.name].id
+            if command.name in self._interactions[command.type]:
+                self._interactions[command.type][command.name].id = command_id
+            if fetch_data[command.type][command.name] != command:
                 await self.edit_command(command=command)
         else:
             await self.register_command(command)
@@ -359,8 +372,8 @@ class ClientBase(discord.Client):
     async def _sync_command_popping(self, command: command_types):
         await self.wait_until_ready()
         fetch_data = await self._fetch_command_cached()
-        if command.name in fetch_data[command.type.value - 1].keys():
-            command_id = fetch_data[command.type.value - 1][command.name].id
+        if command.name in fetch_data[command.type].keys():
+            command_id = fetch_data[command.type][command.name].id
             await self.delete_command(command, command_id=command_id)
         return
 
@@ -481,12 +494,12 @@ class ClientBase(discord.Client):
                 "global_sync_command is activated. Delete unregistered commands on client."
             )
             popping_data = await self._fetch_command_cached()
-            for index in range(3):
-                for already_cmd in self._interactions[index]:
-                    if already_cmd in popping_data[index]:
-                        del popping_data[index][already_cmd]
+            for cmd_type in ApplicationCommandType:
+                for already_cmd in self._interactions[cmd_type]:
+                    if already_cmd in popping_data[cmd_type]:
+                        del popping_data[cmd_type][already_cmd]
 
-                for cmd in popping_data[index].values():
+                for cmd in list(popping_data[cmd_type].values()):
                     await self.delete_command(cmd)
 
     def add_detect_component(self, detect_component: DetectComponent, _parent=None):
@@ -572,7 +585,7 @@ class ClientBase(discord.Client):
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name in self._interactions[command.type.value - 1]:
+        if command.name in self._interactions[command.type]:
             raise CommandRegistrationError(command.name)
 
         if _parent is not None:
@@ -587,7 +600,7 @@ class ClientBase(discord.Client):
 
         if command.type == ApplicationCommandType.CHAT_INPUT:
             command.set_signature_option()
-        self._interactions[command.type.value - 1][command.name] = command
+        self._interactions[command.type][command.name] = command
 
         if sync_command:
             if self.is_ready():
@@ -601,8 +614,8 @@ class ClientBase(discord.Client):
     def get_interaction(self):
         """Get all interaction command included Application Command, User Command and Context Menu Command"""
         result = []
-        for x in self._interactions:
-            result += x.values()
+        for commands in self._interactions.values():
+            result += commands.values()
         return result
 
     def delete_interaction(self, command: command_types, sync_command: bool = None):
@@ -633,10 +646,10 @@ class ClientBase(discord.Client):
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name not in self._interactions[command.type.value - 1]:
+        if command.name not in self._interactions[command.type]:
             raise CommandNotFound(f'Command "{command.name}" is not found')
 
-        self._interactions[command.type.value - 1].pop(command.name)
+        self._interactions[command.type].pop(command.name)
 
         if sync_command:
             if self.is_ready():
@@ -673,64 +686,68 @@ class ClientBase(discord.Client):
                         self.add_listener(attr, name=name)
         return
 
-    # Socket Decoding
-    async def on_socket_raw_receive(self, msg):
-        if type(msg) is bytes:
-            self.__buffer.extend(msg)
-            if len(msg) < 4 or msg[-4:] != b"\x00\x00\xff\xff":
-                return
-            try:
-                msg = self.__zlib.decompress(self.__buffer)
-            except zlib.error as error:
-                # zlib.error: Error -3 while decompressing data: invalid stored block lengths
-                log.debug(
-                    "zlib.error: {0}\npayload data: {1}".format(
-                        [str(arg) for arg in error.args], msg
-                    )
-                )
-                log.warning("zlib.error: Client will reset zlib decompress object")
-                self.__zlib = zlib.decompressobj()
-                msg = self.__zlib.decompress(self.__buffer)
-            msg = msg.decode("utf-8")
-            self.__buffer = bytearray()
-        payload = _from_json(msg)
+    # Gateway (strategy B: ConnectionState parser hooks)
+    def _install_interaction_parsers(self) -> None:
+        """Route raw ``INTERACTION_CREATE`` / ``MESSAGE_CREATE`` gateway events into
+        this extension's own context objects.
 
-        data = payload.get("d", {})
-        t = payload.get("t", "")
-        op = payload.get("op", "")
-
-        if op != DiscordWebSocket.DISPATCH:
-            return
-        self.dispatch("payload_receive", payload=payload)
-
+        Hooking :attr:`discord.state.ConnectionState.parsers` (instead of
+        ``on_socket_raw_receive``) means discord.py has already handled transport
+        decompression (zlib *or* zstd) and JSON decoding, and the client no longer
+        needs ``enable_debug_events=True``. The library's own parser still runs, so
+        :class:`discord.Interaction`, the view/modal stores and ``on_interaction``
+        keep working.
+        """
         state: ConnectionState = self._connection
-        if t == "INTERACTION_CREATE":
-            state.dispatch("interaction_create", payload)
-            if data.get("type") == 2:
-                result = ApplicationContext(data, self)
-                if len(self._interactions[result.application_type - 1]) != 0:
-                    state.dispatch("interaction_command", result)
-            elif data.get("type") == 3:
-                result = ComponentsContext(data, self)
-                await self.process_components(result)
-                state.dispatch("components", result)
-            elif data.get("type") == 4:
-                result = AutocompleteContext(data, self)
-                state.dispatch("autocomplete", result)
-            elif data.get("type") == 5:
-                result = ModalContext(data, self)
-                state.dispatch("modal", result)
-            return
-        elif t == "MESSAGE_CREATE":
-            channel, _ = getattr(state, "_get_guild_channel")(data)
-            message = Message(state=state, data=data, channel=channel)
-            state.dispatch("interaction_message", message)
-            return
+        for event, extra in (
+            ("INTERACTION_CREATE", self._parse_interaction_create),
+            ("MESSAGE_CREATE", self._parse_message_create),
+        ):
+            state.parsers[event] = self._chain_parser(state.parsers.get(event), extra)
+
+    @staticmethod
+    def _chain_parser(original, extra):
+        def parser(data: dict) -> None:
+            if original is not None:
+                original(data)
+            try:
+                extra(data)
+            except Exception:
+                log.exception(
+                    "discord.ext.interaction failed to process a gateway event"
+                )
+
+        return parser
+
+    def _parse_interaction_create(self, data: dict) -> None:
+        state: ConnectionState = self._connection
+        interaction_type = data.get("type")
+        if interaction_type == 2:
+            result = ApplicationContext(data, self)
+            if len(self._interactions[ApplicationCommandType(result.application_type)]) != 0:
+                state.dispatch("interaction_command", result)
+        elif interaction_type == 3:
+            result = ComponentsContext(data, self)
+            state.dispatch("components", result)
+        elif interaction_type == 4:
+            result = AutocompleteContext(data, self)
+            state.dispatch("autocomplete", result)
+        elif interaction_type == 5:
+            result = ModalSubmitContext(data, self)
+            state.dispatch("modal", result)
+
+    def _parse_message_create(self, data: dict) -> None:
+        state: ConnectionState = self._connection
+        channel, _ = state._get_guild_channel(data)
+        message = Message(state=state, data=data, channel=channel)
+        state.dispatch("interaction_message", message)
 
     # Application Context
     async def process_interaction(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
-        command = self._interactions[ctx.application_type - 1].get(ctx.name)
+        command = self._interactions[ApplicationCommandType(ctx.application_type)].get(
+            ctx.name
+        )
         if command is None:
             return
 
@@ -794,6 +811,10 @@ class ClientBase(discord.Client):
 
     async def on_interaction_command(self, ctx: ApplicationContext):
         await self.process_interaction(ctx)
+        return
+
+    async def on_components(self, ctx: ComponentsContext):
+        await self.process_components(ctx)
         return
 
     # Components
