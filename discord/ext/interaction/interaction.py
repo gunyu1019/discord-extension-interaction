@@ -41,7 +41,7 @@ from .components import (
 )
 from .enums import Locale
 from .errors import AlreadyDeferred
-from .parser import InteractionHTTPClient, InteractionData, handler_message_parameter
+from .parser import InteractionHTTPClient, InteractionData, handle_message_parameter
 from .message import Message
 from .utils import get_as_snowflake, channel_types, get_enum
 
@@ -112,10 +112,11 @@ class InteractionContext:
         self.data = InteractionData(
             token=self.token, id=self.id, application_id=self.application
         )
-        if hasattr(self.client, "interaction_http"):
-            self.http = self.client.interaction_http
-        else:
-            self.http = InteractionHTTPClient(http=self.client.http)
+        # A client may share a single wrapper via ``interaction_http``; otherwise
+        # wrap this client's HTTPClient directly (the wrapper is stateless).
+        self.http: InteractionHTTPClient = getattr(
+            self.client, "interaction_http", None
+        ) or InteractionHTTPClient(http=self.client.http)
 
     @property
     def guild(self) -> discord.Guild | None:
@@ -142,30 +143,6 @@ class InteractionContext:
             return channel
         return
 
-    @staticmethod
-    def _get_payload(
-        content=None,
-        tts: bool = False,
-        embed=None,
-        hidden: bool = False,
-        allowed_mentions=None,
-        components=None,
-    ) -> dict:
-        payload = {}
-        if content:
-            payload["content"] = content
-        if tts:
-            payload["tts"] = tts
-        if embed:
-            payload["embeds"] = embed
-        if allowed_mentions:
-            payload["allowed_mentions"] = allowed_mentions
-        if hidden:
-            payload["flags"] = 1 << 6
-        if components is not None:
-            payload["components"] = components
-        return payload
-
     @property
     def voice_client(self) -> discord.VoiceClient | None:
         if self.guild is None:
@@ -186,7 +163,7 @@ class InteractionContext:
 
         base = {"type": 5}
         if hidden:
-            base["data"] = {"flags": 64}
+            base["data"] = {"flags": discord.MessageFlags(ephemeral=True).value}
 
         await self.http.post_initial_response(payload=base, data=self.data)
         self.deferred = True
@@ -241,7 +218,7 @@ class InteractionContext:
         else:
             flags = MISSING
 
-        params = handler_message_parameter(
+        params = handle_message_parameter(
             content=content,
             tts=tts,
             embed=embed,
@@ -314,7 +291,7 @@ class InteractionContext:
         components: list[Components]
             The component to edit with the message
         """
-        params = handler_message_parameter(
+        params = handle_message_parameter(
             content=content,
             embed=embed,
             embeds=embeds,
@@ -650,7 +627,7 @@ class ComponentsContext(ModalPossible):
         """
         base = {"type": 6}
         if hidden:
-            base["data"] = {"flags": 64}
+            base["data"] = {"flags": discord.MessageFlags(ephemeral=True).value}
 
         await self.http.post_initial_response(payload=base, data=self.data)
         self.deferred = True
@@ -706,7 +683,7 @@ class ComponentsContext(ModalPossible):
         else:
             flags = MISSING
 
-        params = handler_message_parameter(
+        params = handle_message_parameter(
             content=content,
             tts=tts,
             embed=embed,
