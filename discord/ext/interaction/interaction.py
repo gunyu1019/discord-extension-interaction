@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
@@ -40,7 +41,7 @@ from .components import (
 )
 from .enums import Locale
 from .errors import AlreadyDeferred
-from .http import InteractionHTTPClient, InteractionData, handler_message_parameter
+from .parser import InteractionHTTPClient, InteractionData, handler_message_parameter
 from .message import Message
 from .utils import get_as_snowflake, channel_types, get_enum
 
@@ -765,7 +766,7 @@ class AutocompleteContext(ApplicationContext):
         return await self.http.post_initial_response(data=self.data, payload=payload)
 
 
-class ModalContext(InteractionContext):
+class ModalSubmitContext(InteractionContext):
     """A responded context consisting of a modal.
 
     Attributes

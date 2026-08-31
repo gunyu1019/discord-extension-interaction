@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 
 import asyncio
 import copy
@@ -32,19 +33,17 @@ import os
 import sys
 import types
 import zlib
-from typing import Any
+from typing import TYPE_CHECKING
 
 import discord.http
 from discord.gateway import DiscordWebSocket
 from discord.state import ConnectionState
 
-from ._types import CoroutineFunction, UserCheck, _Coroutine, T
 from .commands import ApplicationCommand, from_payload, command_types
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
 from .enums import ApplicationCommandType
 from .errors import *
-from .http import InteractionHTTPClient
 from .interaction import (
     ApplicationContext,
     ComponentsContext,
@@ -54,10 +53,17 @@ from .interaction import (
 from .message import Message
 from .utils import _from_json, async_all
 
+if TYPE_CHECKING:
+    from discord.client import _ClientOptions  # noqa
+    from typing import Any, Unpack
+
+    from ._types import CoroutineFunction, UserCheck, _Coroutine, T
+
 log = logging.getLogger()
 
 
-class ClientBase:
+class ClientBase(discord.Client):
+    # This class will be inherited from discord.Client.
     _connection: discord.state.ConnectionState
     loop: asyncio.AbstractEventLoop
     http: discord.http.HTTPClient
@@ -66,23 +72,23 @@ class ClientBase:
         self,
         global_sync_command: bool = False,
         intents: discord.Intents = discord.Intents.default(),
-        **options,
+        **options: Unpack[_ClientOptions],
     ):
-        if discord.version_info.major >= 2:
-            options["enable_debug_events"] = True
+        # if discord.version_info.major >= 2:
+        #     options["enable_debug_events"] = True
         super().__init__(intents=intents, **options)
+
         self.global_sync_command = global_sync_command
 
-        self.__buffer = bytearray()
-        self.__zlib = zlib.decompressobj()
+        self._pre_cached_application_id = None
 
-        self._application_id_value = None
+        # Command of Group feature
         self._interactions_of_group = []
-        self._interactions: list[dict[str, decorator_command_types]] = [
-            dict(),
-            dict(),
-            dict(),
-        ]
+        self._interactions: dict[ApplicationCommandType, dict[str, decorator_command_types]] = {
+            ApplicationCommandType.CHAT_INPUT: dict(),
+            ApplicationCommandType.USER: dict(),
+            ApplicationCommandType.MESSAGE: dict(),
+        }
         self._fetch_interactions: list[dict[str, ApplicationCommand]] | None = None
 
         self._detect_components: dict[str, list[DetectComponent]] = dict()
@@ -99,8 +105,6 @@ class ClientBase:
 
         self.extra_events: dict[str, list[CoroutineFunction]] = dict()
         self.__extensions: dict[str, types.ModuleType] = dict()
-
-        self.interaction_http = InteractionHTTPClient(self.http)
 
         self.extra_events["on_ready"] = [self.on_ready]
 
@@ -360,6 +364,8 @@ class ClientBase:
             await self.delete_command(command, command_id=command_id)
         return
 
+    # Extensions
+
     def _load_from_module_spec(
         self, spec: importlib.machinery.ModuleSpec, key: str, **kwargs
     ) -> None:
@@ -454,6 +460,8 @@ class ClientBase:
         for cog in cogs:
             self.load_extension(cog, **kwargs)
         return
+
+    # Sync Command
 
     async def _sync_command_task(self):
         if len(self.__sync_command_before_ready_register) != 0:
