@@ -492,19 +492,26 @@ class ApplicationCommand:
     def from_payload(cls, data: OriginApplicationCommand):
         new_cls = cls(
             name=data["name"],
-            description=data["description"],
+            description=data.get("description") or None,
             default_member_permissions=data.get("default_member_permissions"),
             guild_id=data.get("guild_id"),
         )
 
-        for key in ("id", "application_id", "version", "nsfw"):
-            value = data.get(key)
-            setattr(new_cls, key, value)
+        for key in ("id", "application_id", "version"):
+            setattr(new_cls, key, data.get(key))
+        new_cls.nsfw = data.get("nsfw", False)
 
-        # Parse Enumeration Values
-        new_cls.type = get_enum(ApplicationCommandType, data["type"])
-        new_cls.integration_types = get_enum(ApplicationIntegrationType, data["integration_types"])
-        new_cls.contexts = get_enum(ApplicationContextType, data["contexts"])
+        # Parse Enumeration Values. ``integration_types`` / ``contexts`` are lists
+        # and may be absent (or null) in the payload.
+        new_cls.type = ApplicationCommandType(data["type"])
+        new_cls.integration_types = [
+            get_enum(ApplicationIntegrationType, x)
+            for x in (data.get("integration_types") or [])
+        ]
+        new_cls.contexts = [
+            get_enum(ApplicationContextType, x)
+            for x in (data.get("contexts") or [])
+        ]
 
         return new_cls
 
@@ -518,9 +525,11 @@ class ApplicationCommand:
             data["default_member_permissions"] = self.default_member_permissions
 
         if len(self.contexts) > 0:
-            data["contexts"] = [context.value for context in self.contexts]
+            data["contexts"] = [int(context) for context in self.contexts]
         if len(self.integration_types) > 0:
-            data["integration_types"] = [integration_type.value for integration_type in self.integration_types]
+            data["integration_types"] = [
+                int(integration_type) for integration_type in self.integration_types
+            ]
         return data
 
     @property
@@ -529,17 +538,18 @@ class ApplicationCommand:
         return self.guild_id is not None
 
     def __eq__(self, other):
-        description = self.description or ""
+        # ``version`` is assigned by Discord, not part of the local definition, so
+        # it is intentionally excluded from equality (it is used to decide whether
+        # a registered command still matches the code).
         return (
             self.name == other.name
             and self.type == other.type
-            and description == other.description
+            and (self.description or "") == (other.description or "")
             and self.default_member_permissions == other.default_member_permissions
             and self.integration_types == other.integration_types
             and self.contexts == other.contexts
             and self.guild_id == other.guild_id
             and self.nsfw == other.nsfw
-            and self.version == other.version
         )
 
     def __ne__(self, other):
