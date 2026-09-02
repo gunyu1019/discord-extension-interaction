@@ -34,6 +34,7 @@ from .commands import CommandOptionChoice
 from .components import (
     ActionRow,
     Button,
+    Label,
     Selection,
     Components,
     from_payload,
@@ -41,7 +42,8 @@ from .components import (
 )
 from .enums import Locale
 from .errors import AlreadyDeferred
-from .parser import InteractionHTTPClient, InteractionData, handle_message_parameter
+from .http import InteractionHTTPClient, InteractionData
+from .parser import handle_message_parameter
 from .message import Message
 from .utils import get_as_snowflake, channel_types, get_enum
 
@@ -341,7 +343,7 @@ class ModalPossible(InteractionContext):
             The title of the modal.
         components: list[Components]
             A list of component included in the modal.
-            Only input-text and action row are used.
+            Text inputs / selects wrapped in an Action Row or a Label are used.
         """
         self.responded = True
         payload = {
@@ -350,7 +352,7 @@ class ModalPossible(InteractionContext):
                 "custom_id": custom_id,
                 "title": title,
                 "components": [
-                    i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict()
+                    i.to_all_dict() if isinstance(i, (ActionRow, Label)) else i.to_dict()
                     for i in components
                 ],
             },
@@ -758,12 +760,18 @@ class ModalSubmitContext(InteractionContext):
         super().__init__(payload, client)
         self.type = discord.InteractionType.modal_submit
         data = payload.get("data", {})
-        components = from_payload(data.get("components", []))
-        if isinstance(components, list):
-            _components = []
-            for x in components:
-                _components += x.components
-        else:
-            _components = components
+
+        # Discord nests the submitted inputs in a container: an Action Row
+        # (type 1, ``components`` list) for classic modals, or a Label
+        # (type 18, single ``component``) for the redesigned modal format.
+        # Unwrap either into a flat list of leaf components.
+        _components: list = []
+        for entry in from_payload(data.get("components", [])):
+            children = getattr(entry, "components", None)
+            if children is None:
+                _components.append(entry)
+            else:
+                _components.extend(children)
+
         self.custom_id = data.get("custom_id")
         self.components: list[TextInput] = _components

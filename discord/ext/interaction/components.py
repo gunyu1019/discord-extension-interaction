@@ -175,6 +175,88 @@ class ActionRow(Components):
         return not self.__eq__(other)
 
 
+class Label(Components):
+    """Represents a Label.
+
+    A Label is a modal-only container that wraps a single component
+    (a text input or a select menu) with a visible label and optional description.
+
+    Notes
+    -----
+    Introduced with Discord's modal redesign. On a modal submit the input is
+    delivered wrapped in a Label (type ``18``) instead of an Action Row (type ``1``).
+    Discord still accepts the Action Row form when *sending* a modal.
+
+    Attributes
+    ----------
+    label : Optional[str]
+        The label shown above the component; max 45 characters.
+    description : Optional[str]
+        Additional description shown under the label; max 100 characters.
+    component : Components
+        The single wrapped component.
+    """
+
+    TYPE = 18
+
+    def __init__(
+        self,
+        component: Components,
+        label: str | None = None,
+        description: str | None = None,
+    ):
+        super().__init__(components_type=discord.ComponentType.label)
+
+        self.label = label
+        self.description = description
+        self.component = component
+
+    @property
+    def components(self) -> list:
+        """The wrapped component as a one-element list (mirrors :class:`ActionRow`)."""
+        return [self.component] if self.component is not None else []
+
+    def to_dict(self) -> dict:
+        base = {"type": 18, "component": self.component}
+        if self.label is not None:
+            base["label"] = self.label
+        if self.description is not None:
+            base["description"] = self.description
+        return base
+
+    def to_all_dict(self) -> dict:
+        base = self.to_dict()
+        base["component"] = self.component.to_dict()
+        return base
+
+    @classmethod
+    def from_dict(cls, payload: dict):
+        return cls(
+            component=payload.get("component"),
+            label=payload.get("label"),
+            description=payload.get("description"),
+        )
+
+    @classmethod
+    def from_payload(cls, payload: dict):
+        child = from_payload([payload["component"]]) if payload.get("component") else []
+        return cls(
+            component=child[0] if child else None,
+            label=payload.get("label"),
+            description=payload.get("description"),
+        )
+
+    def __eq__(self, other):
+        return (
+            self.component == other.component
+            and self.label == other.label
+            and super().__eq__(other)
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
 class Button(Components):
     """Represents a Button.
 
@@ -448,7 +530,7 @@ class TextInput(Components):
 
 def from_payload(
     payload: list[dict[str, Any]],
-) -> list[ActionRow | Button | Selection | TextInput]:
+) -> list[ActionRow | Button | Selection | TextInput | Label]:
     components = []
 
     for i in payload:
@@ -460,6 +542,8 @@ def from_payload(
             components.append(Selection.from_dict(i))
         elif i.get("type") == 4:
             components.append(TextInput.from_dict(i))
+        elif i.get("type") == 18:
+            components.append(Label.from_payload(i))
     return components
 
 
