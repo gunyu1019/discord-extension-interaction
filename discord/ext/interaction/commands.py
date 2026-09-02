@@ -501,8 +501,7 @@ class ApplicationCommand:
             setattr(new_cls, key, data.get(key))
         new_cls.nsfw = data.get("nsfw", False)
 
-        # Parse Enumeration Values. ``integration_types`` / ``contexts`` are lists
-        # and may be absent (or null) in the payload.
+        # ``integration_types`` / ``contexts`` are lists and may be absent or null.
         new_cls.type = ApplicationCommandType(data["type"])
         new_cls.integration_types = [
             get_enum(ApplicationIntegrationType, x)
@@ -538,9 +537,8 @@ class ApplicationCommand:
         return self.guild_id is not None
 
     def __eq__(self, other):
-        # ``version`` is assigned by Discord, not part of the local definition, so
-        # it is intentionally excluded from equality (it is used to decide whether
-        # a registered command still matches the code).
+        # ``version`` is server-assigned; comparing it would always fail the
+        # "registered command still matches the code" check.
         return (
             self.name == other.name
             and self.type == other.type

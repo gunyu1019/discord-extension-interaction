@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 class InteractionData(NamedTuple):
-    """The minimal identity of an interaction required to respond over the REST API.
+    """Identifiers needed to send a response for one interaction.
 
     Attributes
     ----------
@@ -53,16 +53,14 @@ class InteractionData(NamedTuple):
 
 
 class InteractionHTTPClient:
-    """A thin wrapper around :class:`discord.http.HTTPClient` for interaction responses.
+    """Sends interaction responses through :class:`discord.http.HTTPClient`.
 
-    Every route used here is a permanent Discord REST endpoint
-    (``/interactions/{id}/{token}/callback`` and the interaction followup webhooks),
-    so this stays stable across discord.py releases while delegating rate-limit
-    handling, retries and error translation to the underlying ``HTTPClient``.
+    Only permanent Discord REST endpoints are used
+    (``/interactions/{id}/{token}/callback`` and the interaction followup webhooks).
+    Rate-limit handling, retries and error translation come from ``HTTPClient``.
 
-    ``webhook_id`` / ``webhook_token`` are used as the route parameter names so that
-    :attr:`discord.http.Route.major_parameters` buckets these requests the same way
-    discord.py buckets its own interaction and webhook calls.
+    Route parameters are named ``webhook_id`` / ``webhook_token`` so that
+    :attr:`discord.http.Route.major_parameters` buckets these requests correctly.
     """
 
     def __init__(self, http: HTTPClient):
@@ -96,8 +94,8 @@ class InteractionHTTPClient:
         form: Optional[list[Dict[str, Any]]] = None,
         files: Optional[Sequence[File]] = None,
     ):
-        # ``@original`` is baked into the path (not passed as a parameter) so that
-        # ``Route`` does not percent-encode the ``@`` into ``%40``.
+        # ``@original`` is part of the path, not a parameter: Route would
+        # percent-encode the ``@`` to ``%40``.
         route = Route(
             "PATCH",
             "/webhooks/{webhook_id}/{webhook_token}/messages/@original",

@@ -761,9 +761,8 @@ class ModalSubmitContext(InteractionContext):
         self.type = discord.InteractionType.modal_submit
         data = payload.get("data", {})
 
-        # Discord nests the submitted inputs in a container: an Action Row
-        # (type 1, ``components`` list) for classic modals, or a Label
-        # (type 18, single ``component``) for the redesigned modal format.
+        # Submitted inputs arrive wrapped in a container: an Action Row
+        # (type 1, ``components`` list) or a Label (type 18, single ``component``).
         # Unwrap either into a flat list of leaf components.
         _components: list = []
         for entry in from_payload(data.get("components", [])):

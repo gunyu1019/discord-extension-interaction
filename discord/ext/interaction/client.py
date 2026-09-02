@@ -686,17 +686,15 @@ class ClientBase:
                         self.add_listener(attr, name=name)
         return
 
-    # Gateway (strategy B: ConnectionState parser hooks)
+    # Gateway event hooks
     def _install_interaction_parsers(self) -> None:
-        """Route raw ``INTERACTION_CREATE`` / ``MESSAGE_CREATE`` gateway events into
-        this extension's own context objects.
+        """Route ``INTERACTION_CREATE`` / ``MESSAGE_CREATE`` into this extension's
+        own context objects.
 
-        Hooking :attr:`discord.state.ConnectionState.parsers` (instead of
-        ``on_socket_raw_receive``) means discord.py has already handled transport
-        decompression (zlib *or* zstd) and JSON decoding, and the client no longer
-        needs ``enable_debug_events=True``. The library's own parser still runs, so
-        :class:`discord.Interaction`, the view/modal stores and ``on_interaction``
-        keep working.
+        Wraps :attr:`discord.state.ConnectionState.parsers`, so ``data`` is already
+        decompressed and JSON-decoded. The library's own parser is still called,
+        keeping :class:`discord.Interaction`, the view/modal stores and
+        ``on_interaction`` working.
         """
         state: ConnectionState = self._connection
         for event, extra in (

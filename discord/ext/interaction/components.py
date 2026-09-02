@@ -183,9 +183,8 @@ class Label(Components):
 
     Notes
     -----
-    Introduced with Discord's modal redesign. On a modal submit the input is
-    delivered wrapped in a Label (type ``18``) instead of an Action Row (type ``1``).
-    Discord still accepts the Action Row form when *sending* a modal.
+    On a modal submit, inputs arrive wrapped in a Label (type ``18``). When
+    sending a modal, Discord also accepts the Action Row (type ``1``) form.
 
     Attributes
     ----------
@@ -213,7 +212,7 @@ class Label(Components):
 
     @property
     def components(self) -> list:
-        """The wrapped component as a one-element list (mirrors :class:`ActionRow`)."""
+        """The wrapped component as a one-element list, matching :attr:`ActionRow.components`."""
         return [self.component] if self.component is not None else []
 
     def to_dict(self) -> dict:
