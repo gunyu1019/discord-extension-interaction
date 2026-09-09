@@ -24,12 +24,12 @@ from __future__ import annotations
 
 from discord.http import handle_message_parameters as origin_handle_message_parameter
 from discord.webhook.async_ import interaction_message_response_params, interaction_response_params  # noqa
-from discord.utils import MISSING
+from discord.utils import MISSING, _from_json, _to_json
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
 
 
-from .components import ActionRow, Button, Selection
+from .components import ActionRow, Label, Button, Selection
 
 if TYPE_CHECKING:
     from discord import Attachment, MessageFlags
@@ -42,6 +42,40 @@ if TYPE_CHECKING:
     from discord.types.snowflake import SnowflakeList
     from discord.poll import Poll
     from typing import Any, Optional, Union, Dict
+
+
+def _apply_components(result, components):
+    """Write ``components`` into a :class:`~discord.http.MultipartParameters`.
+
+    When files are present discord.py leaves ``payload`` as ``None`` and puts the
+    JSON body in the ``payload_json`` multipart field, so patch that instead.
+    """
+    if components is MISSING:
+        return result
+
+    serialized = (
+        [
+            i.to_all_dict() if isinstance(i, (ActionRow, Label)) else i.to_dict()
+            for i in components
+        ]
+        if components is not None
+        else []
+    )
+
+    if result.payload is not None:
+        result.payload["components"] = serialized
+        return result
+
+    for part in result.multipart or ():
+        if part.get("name") != "payload_json":
+            continue
+        body = _from_json(part["value"])
+        # interaction callbacks wrap the message in {"type": ..., "data": {...}}
+        target = body["data"] if isinstance(body.get("data"), dict) and "type" in body else body
+        target["components"] = serialized
+        part["value"] = _to_json(body)
+        break
+    return result
 
 
 def handle_message_parameter(
@@ -74,13 +108,13 @@ def handle_message_parameter(
         username=username,
         avatar_url=avatar_url,
         tts=tts,
-        nonce =nonce,
+        nonce=nonce,
         flags=flags,
         file=file,
         files=files,
         embed=embed,
         embeds=embeds,
-        attachments =attachments ,
+        attachments=attachments,
         allowed_mentions=allowed_mentions,
         message_reference=message_reference,
         stickers=stickers,
@@ -92,16 +126,7 @@ def handle_message_parameter(
         poll=poll,
     )
 
-    if components is not MISSING:
-        if components is not None:
-            result.payload["components"] = [
-                i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict()
-                for i in components
-            ]
-        else:
-            result.payload["components"] = []
-
-    return result
+    return _apply_components(result, components)
 
 
 def handle_interaction_response_parameter(
@@ -142,13 +167,4 @@ def handle_interaction_message_parameter(
         poll=poll,
     )
 
-    if components is not MISSING:
-        if components is not None:
-            result.payload["components"] = [
-                i.to_all_dict() if isinstance(i, ActionRow) else i.to_dict()
-                for i in components
-            ]
-        else:
-            result.payload["components"] = []
-
-    return result
+    return _apply_components(result, components)

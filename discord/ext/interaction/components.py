@@ -225,7 +225,11 @@ class Label(Components):
 
     def to_all_dict(self) -> dict:
         base = self.to_dict()
-        base["component"] = self.component.to_dict()
+        child = self.component.to_dict()
+        # The Label carries the label/description; Discord rejects them on the child.
+        child.pop("label", None)
+        child.pop("description", None)
+        base["component"] = child
         return base
 
     @classmethod
@@ -462,7 +466,7 @@ class TextInput(Components):
         self,
         custom_id: str,
         style: int,
-        label: str,
+        label: str | None = None,
         min_length: int | None = None,
         max_length: int | None = None,
         required: bool = False,
@@ -491,9 +495,10 @@ class TextInput(Components):
             "type": 4,
             "custom_id": self.custom_id,
             "style": self.style,
-            "label": self.label,
             "required": self.required,
         }
+        if self.label is not None:
+            base["label"] = self.label
         if self.placeholder is not None:
             base["placeholder"] = self.placeholder
         if self.min_length is not None:
