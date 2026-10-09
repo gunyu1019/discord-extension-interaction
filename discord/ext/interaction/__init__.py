@@ -78,6 +78,8 @@ from .domain.thumbnail import Thumbnail
 from .domain.unfurled_media_item import UnfurledMediaItem
 from .domain.media_gallery import MediaGallery, MediaGalleryItem
 from .domain.file_component import File
+from .domain.user_select import UserSelect
+from .domain.role_select import RoleSelect
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext,

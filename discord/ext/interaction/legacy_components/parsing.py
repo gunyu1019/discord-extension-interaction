@@ -3,7 +3,7 @@
 from typing import Any
 
 from ..domain.unknown_component import UnknownComponent
-from ..serialization.v2_components import parse_v2_component
+from ..serialization.component_models import parse_component_model
 from .action_row import ActionRow
 from .button import Button
 from .label import Label
@@ -27,8 +27,8 @@ def from_payload(
             components.append(TextInput.from_dict(item))
         elif item.get("type") == 18:
             components.append(Label.from_payload(item))
-        elif item.get("type") in (9, 10, 11, 12, 13, 14, 17):
-            components.append(parse_v2_component(item))
+        elif item.get("type") in (5, 6, 9, 10, 11, 12, 13, 14, 17):
+            components.append(parse_component_model(item))
         else:
             components.append(UnknownComponent.from_payload(item))
     return components

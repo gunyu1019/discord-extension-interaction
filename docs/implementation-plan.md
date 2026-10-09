@@ -142,6 +142,8 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
   - [x] **7-b2:** 옵션과 min/max/default 조합을 검증한다.
   - [x] **7-b3:** 제출된 String Select values를 접근 가능한 결과로 제공한다.
 - [ ] **7-c 자동 선택:** User/Role/Mentionable/Channel Select를 독립 모델로 구현한다.
+  - [x] **7-c1:** 공통 AutoSelect와 User/Role Select 모델을 구현한다.
+  - [ ] **7-c2:** Mentionable/Channel Select 모델을 구현한다.
 - [ ] **7-d 기본 선택:** default_values와 Channel Select의 channel_types를 지원한다.
 - [ ] **7-e 결과 해석:** values와 resolved를 연결해 선택된 Discord 객체를 반환한다.
 - [ ] **7-f 콜백 연결:** 새 유형에도 custom_id 핸들러와 wait_for가 동작하게 한다.
