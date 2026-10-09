@@ -34,6 +34,7 @@ from .components import ActionRow, Label, Button, Selection
 from .application.component_validation import (
     validate_legacy_message_components,
     validate_v2_component_count,
+    validate_v2_component_layout,
     validate_v2_message_fields,
 )
 from .domain.component import Component
@@ -84,6 +85,8 @@ def _apply_components(result, components):
         if components is not None
         else []
     )
+    if components is not None and _uses_components_v2(components):
+        validate_v2_component_layout(serialized)
 
     if result.payload is not None:
         result.payload["components"] = serialized
@@ -105,7 +108,6 @@ def _uses_components_v2(components) -> bool:
     return components is not MISSING and components is not None and any(
         isinstance(component, Component) for component in components
     )
-
 
 def _component_flags(flags, components):
     if not _uses_components_v2(components):

@@ -4,6 +4,7 @@ import discord
 import pytest
 
 from discord.ext import interaction
+from discord.ext.interaction.domain.unknown_component import UnknownComponent
 from discord.ext.interaction.parser import (
     handle_interaction_message_parameter,
     handle_message_parameter,
@@ -66,3 +67,25 @@ def test_v2_component_limit_counts_nested_components():
         handle_message_parameter(
             components=[interaction.Container(children + [interaction.TextDisplay("extra")])]
         )
+
+
+def test_v2_rejects_thumbnail_at_top_level():
+    with pytest.raises(ValueError, match="V2 position"):
+        handle_message_parameter(components=[
+            interaction.Thumbnail(interaction.UnfurledMediaItem("https://example.com/a.png"))
+        ])
+
+
+def test_v2_rejects_duplicate_component_ids():
+    with pytest.raises(ValueError, match="duplicate component id"):
+        handle_message_parameter(components=[
+            interaction.TextDisplay("One", id=7),
+            interaction.TextDisplay("Two", id=7),
+        ])
+
+
+def test_v2_rejects_duplicate_custom_ids_across_nested_sections():
+    button = UnknownComponent({"type": 2, "style": 1, "label": "Go", "custom_id": "go"})
+    sections = [interaction.Section([interaction.TextDisplay(str(i))], button) for i in range(2)]
+    with pytest.raises(ValueError, match="duplicate component custom_id"):
+        handle_message_parameter(components=[interaction.Container(sections)])

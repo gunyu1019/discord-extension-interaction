@@ -97,3 +97,57 @@ def validate_v2_component_count(components) -> None:
     """Count containers and their nested components against Discord's limit."""
     if sum(_component_count(component) for component in components) > 40:
         raise ValueError("Components V2 allows at most 40 total components")
+
+
+def validate_v2_component_layout(payloads: list[dict]) -> None:
+    """Check V2 placement and unique component/id identifiers."""
+    component_ids = set()
+    custom_ids = set()
+
+    def visit(payload: dict, allowed: set[int]) -> None:
+        component_type = payload.get("type")
+        if component_type not in allowed:
+            raise ValueError(f"component type {component_type} is invalid in this V2 position")
+
+        component_id = payload.get("id")
+        if component_id not in (None, 0):
+            if type(component_id) is not int or not 0 <= component_id <= 0xFFFFFFFF:
+                raise ValueError("component id must be a 32-bit unsigned integer")
+            if component_id in component_ids:
+                raise ValueError(f"duplicate component id: {component_id}")
+            component_ids.add(component_id)
+
+        custom_id = payload.get("custom_id")
+        if custom_id is not None:
+            if not isinstance(custom_id, str) or not 1 <= len(custom_id) <= 100:
+                raise ValueError("component custom_id must contain 1 to 100 characters")
+            if custom_id in custom_ids:
+                raise ValueError(f"duplicate component custom_id: {custom_id}")
+            custom_ids.add(custom_id)
+
+        if component_type == 1:
+            children = payload.get("components", [])
+            child_types = [child.get("type") for child in children]
+            if not (1 <= len(children) <= 5 and (
+                all(item == 2 for item in child_types)
+                or len(children) == 1 and child_types[0] in (3, 5, 6, 7, 8)
+            )):
+                raise ValueError("V2 ActionRow requires buttons or one select menu")
+            for child in children:
+                visit(child, {2, 3, 5, 6, 7, 8})
+        elif component_type == 9:
+            children = payload.get("components", [])
+            if not 1 <= len(children) <= 3:
+                raise ValueError("V2 Section requires 1 to 3 children")
+            for child in children:
+                visit(child, {10})
+            visit(payload["accessory"], {2, 11})
+        elif component_type == 17:
+            children = payload.get("components", [])
+            if not children:
+                raise ValueError("V2 Container requires children")
+            for child in children:
+                visit(child, {1, 9, 10, 12, 13, 14})
+
+    for payload in payloads:
+        visit(payload, {1, 9, 10, 12, 13, 14, 17})
