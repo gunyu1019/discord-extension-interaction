@@ -31,6 +31,7 @@ from discord.utils import MISSING
 
 from .commands import CommandOptionChoice
 from .domain.component import Component
+from .domain.file_upload import FileUpload
 from .application.component_validation import validate_modal_components
 from .components import (
     ActionRow,
@@ -714,4 +715,9 @@ class ModalSubmitContext(InteractionContext):
                 _components.extend(children)
 
         self.custom_id = data.get("custom_id")
-        self.components: list[TextInput] = _components
+        self.components: list[Components | Component] = _components
+        self._resolved = data.get("resolved", {})
+        self.file_uploads = {
+            component.custom_id: [resolve_attachment(self, value) for value in component.values]
+            for component in _components if isinstance(component, FileUpload)
+        }
