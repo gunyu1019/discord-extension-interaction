@@ -44,6 +44,7 @@ class Label(Components):
         # The Label carries the label/description; Discord rejects them on the child.
         child.pop("label", None)
         child.pop("description", None)
+        child.pop("disabled", None)
         base["component"] = child
         return base
 

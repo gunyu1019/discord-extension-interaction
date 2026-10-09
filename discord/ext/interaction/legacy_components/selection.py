@@ -19,6 +19,7 @@ class Selection(Components):
         placeholder: str = None,
         min_values: int = None,
         max_values: int = None,
+        required: bool | None = None,
     ):
         super().__init__(components_type=discord.ComponentType.select)
 
@@ -28,6 +29,7 @@ class Selection(Components):
         self.placeholder = placeholder
         self.min_values = min_values
         self.max_values = max_values
+        self.required = required
 
     def to_dict(self) -> dict:
         base = {
@@ -45,6 +47,8 @@ class Selection(Components):
             base["min_values"] = self.min_values
         if self.max_values is not None:
             base["max_values"] = self.max_values
+        if self.required is not None:
+            base["required"] = self.required
 
         return base
 
@@ -65,10 +69,12 @@ class Selection(Components):
         placeholder = payload.get("placeholder")
         min_values = payload.get("min_values")
         max_values = payload.get("max_values")
+        required = payload.get("required")
         return cls(
             custom_id=custom_id,
             options=options,
             placeholder=placeholder,
             min_values=min_values,
             max_values=max_values,
+            required=required,
         )
