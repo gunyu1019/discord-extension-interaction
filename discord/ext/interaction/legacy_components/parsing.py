@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from ..domain.unknown_component import UnknownComponent
 from .action_row import ActionRow
 from .button import Button
 from .label import Label
@@ -11,7 +12,7 @@ from .text_input import TextInput
 
 def from_payload(
     payload: list[dict[str, Any]],
-) -> list[ActionRow | Button | Selection | TextInput | Label]:
+) -> list[ActionRow | Button | Selection | TextInput | Label | UnknownComponent]:
     components = []
 
     for item in payload:
@@ -25,4 +26,6 @@ def from_payload(
             components.append(TextInput.from_dict(item))
         elif item.get("type") == 18:
             components.append(Label.from_payload(item))
+        else:
+            components.append(UnknownComponent.from_payload(item))
     return components

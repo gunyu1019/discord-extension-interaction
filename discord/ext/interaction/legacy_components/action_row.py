@@ -18,7 +18,13 @@ class ActionRow(Components):
         return {"type": 1, "components": self.components}
 
     def to_all_dict(self) -> dict:
-        return {"type": 1, "components": [i.to_dict() for i in self.components]}
+        return {
+            "type": 1,
+            "components": [
+                i.to_dict() if isinstance(i, Components) else i.to_payload()
+                for i in self.components
+            ],
+        }
 
     @classmethod
     def from_dict(cls, payload: dict):

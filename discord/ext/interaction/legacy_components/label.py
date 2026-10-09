@@ -36,7 +36,11 @@ class Label(Components):
 
     def to_all_dict(self) -> dict:
         base = self.to_dict()
-        child = self.component.to_dict()
+        child = (
+            self.component.to_dict()
+            if isinstance(self.component, Components)
+            else self.component.to_payload()
+        )
         # The Label carries the label/description; Discord rejects them on the child.
         child.pop("label", None)
         child.pop("description", None)
