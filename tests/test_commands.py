@@ -2,7 +2,9 @@
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.commands import ApplicationCommand, SlashCommand, from_payload
+from discord.ext.interaction.commands import (
+    ApplicationCommand, CommandOptionChoice, SlashCommand, from_payload,
+)
 from discord.ext.interaction.enums import (
     ApplicationCommandType,
     ApplicationContextType,
@@ -94,6 +96,35 @@ def test_command_metadata_default_is_not_nsfw():
     fields = ApplicationCommand(name="public", description="safe").to_register_dict()
     assert "nsfw" not in fields
     assert "default_member_permissions" not in fields
+
+
+def test_command_localizations_round_trip_and_affect_comparison():
+    command = SlashCommand(
+        name="hello", description="say hello",
+        name_localizations={"ko": "안녕"},
+        description_localizations={"ko": "인사합니다"},
+    )
+    payload = command.to_register_dict()
+    assert payload["name_localizations"] == {"ko": "안녕"}
+    assert payload["description_localizations"] == {"ko": "인사합니다"}
+
+    restored = from_payload({**MINIMAL, **payload})
+    assert restored.name_localizations == command.name_localizations
+    assert restored.description_localizations == command.description_localizations
+    assert command == restored
+    restored.name_localizations["ko"] = "반갑습니다"
+    assert command != restored
+
+
+def test_choice_name_localizations_round_trip_and_affect_comparison():
+    choice = CommandOptionChoice(
+        name="Red", value="red", name_localizations={"ko": "빨강"}
+    )
+    restored = CommandOptionChoice.from_payload(choice.to_dict())
+    assert restored.to_dict()["name_localizations"] == {"ko": "빨강"}
+    assert restored == choice
+    restored.name_localizations["ko"] = "붉은색"
+    assert restored != choice
 
 
 def test_equality_ignores_server_assigned_version():

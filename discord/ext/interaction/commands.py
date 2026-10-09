@@ -31,6 +31,7 @@ from .enums import ApplicationCommandType, ApplicationContextType, ApplicationIn
 from .errors import InvalidArgument
 from .utils import get_enum
 from .serialization.command_metadata import to_register_fields
+from .serialization.localizations import add_localizations, read_localizations
 
 if TYPE_CHECKING:
     from discord import ChannelType
@@ -63,19 +64,31 @@ class CommandOptionChoice:
         self,
         name: str,
         value: Union[int, str, float],
+        name_localizations: dict[str, str] | None = None,
     ):
         self.name = name
         self.value = value
+        self.name_localizations = dict(name_localizations or {})
 
     @classmethod
     def from_payload(cls, data: OriginApplicationCommandOptionChoice):
-        return cls(name=data["name"], value=data["value"])
+        return cls(
+            name=data["name"],
+            value=data["value"],
+            name_localizations=read_localizations(data, "name_localizations"),
+        )
 
     def to_dict(self) -> dict:
-        return {"name": self.name, "value": self.value}
+        data = {"name": self.name, "value": self.value}
+        add_localizations(data, self.name_localizations)
+        return data
 
     def __eq__(self, other):
-        return self.name == other.name and self.value == other.value
+        return (
+            self.name == other.name
+            and self.value == other.value
+            and self.name_localizations == other.name_localizations
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -474,6 +487,8 @@ class ApplicationCommand:
         nsfw: bool = False,
         integration_types: Optional[list[int | ApplicationIntegrationType]] = None,
         contexts: Optional[list[int | ApplicationContextType]] = None,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
     ):
         self.id: int = 0  # default: None
         self.name: str = name
@@ -486,6 +501,8 @@ class ApplicationCommand:
         self.nsfw: bool = nsfw
         self.integration_types: list[int | ApplicationIntegrationType] = integration_types or []
         self.contexts: list[int | ApplicationContextType] = contexts or []
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
 
         self.version: int = 1  # default: None
 
@@ -512,6 +529,10 @@ class ApplicationCommand:
             get_enum(ApplicationContextType, x)
             for x in (data.get("contexts") or [])
         ]
+        new_cls.name_localizations = read_localizations(data, "name_localizations")
+        new_cls.description_localizations = read_localizations(
+            data, "description_localizations"
+        )
 
         return new_cls
 
@@ -522,6 +543,9 @@ class ApplicationCommand:
             "description": self.description,
         }
         data.update(to_register_fields(self))
+        add_localizations(
+            data, self.name_localizations, self.description_localizations
+        )
         return data
 
     @property
@@ -541,6 +565,8 @@ class ApplicationCommand:
             and self.contexts == other.contexts
             and self.guild_id == other.guild_id
             and self.nsfw == other.nsfw
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
         )
 
     def __ne__(self, other):
