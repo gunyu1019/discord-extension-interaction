@@ -5,3 +5,4 @@ from .auto_select import AutoSelect
 
 class ChannelSelect(AutoSelect):
     TYPE = 8
+    DEFAULT_TYPES = ("channel",)
