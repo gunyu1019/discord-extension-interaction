@@ -31,6 +31,7 @@ from discord.message import MessageFlags  # noqa
 from discord.utils import MISSING
 
 from .components import ActionRow, Button, Selection, from_payload
+from .domain.component import Component
 from .errors import InvalidArgument, AlreadyDeferred
 from .parser import handle_message_parameter
 
@@ -90,7 +91,7 @@ class Message(OriginMessage):
         suppress_embeds: bool = False,
         silent: bool = False,
         poll: Optional[Poll] = None,
-        components: list = MISSING,
+        components: list[ActionRow | Button | Selection | Component] = MISSING,
     ):
         channel = MessageTransferable(state=self._state, channel=self.channel)
         return await channel.send(
@@ -117,7 +118,7 @@ class Message(OriginMessage):
         attachment: Attachment | File = MISSING,
         attachments: Sequence[Attachment | File] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
-        components: list[ActionRow | Button | Selection] = MISSING,
+        components: list[ActionRow | Button | Selection | Component] = MISSING,
         stickers: list[Sticker] = MISSING
     ):
         message = MessageEditable(self.channel, self.id)
@@ -161,7 +162,7 @@ class MessageTransferable:
         file: File = MISSING,
         files: list[File] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
-        components: list[ActionRow | Button | Selection] = MISSING,
+        components: list[ActionRow | Button | Selection | Component] = MISSING,
         reference: Message | MessageReference | PartialMessage = None,
         mention_author: bool = None,
         stickers: list[Sticker | int] = MISSING,
@@ -232,7 +233,7 @@ class MessageEditable:
         attachment: Attachment | File = MISSING,
         attachments: Sequence[Attachment | File] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
-        components: list[ActionRow | Button | Selection] = MISSING,
+        components: list[ActionRow | Button | Selection | Component] = MISSING,
         stickers: list[Sticker] = MISSING
     ):
         if attachment is not MISSING:

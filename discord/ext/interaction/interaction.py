@@ -186,7 +186,7 @@ class InteractionContext:
         hidden: bool = False,
         allowed_mentions: discord.AllowedMentions = None,
         suppress_embeds: bool = False,
-        components: list[ActionRow | Button | Selection] = None,
+        components: list[ActionRow | Button | Selection | Component] = None,
     ):
         """Responds to this interaction by sending a message.
 
@@ -272,7 +272,7 @@ class InteractionContext:
         embeds: list[discord.Embed] = MISSING,
         attachments: Sequence[discord.Attachment | discord.File] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
-        components: list[ActionRow | Button | Selection] = MISSING,
+        components: list[ActionRow | Button | Selection | Component] = MISSING,
     ):
         """Responds to this interaction by editing the original message or followed message.
 
@@ -335,7 +335,7 @@ class InteractionContext:
 
 
 class ModalPossible(InteractionContext):
-    async def modal(self, custom_id: str, title: str, components: list[Components]):
+    async def modal(self, custom_id: str, title: str, components: list[Components | Component]):
         """Respond to this interaction by sending a modal.
 
         Parameters
@@ -588,7 +588,7 @@ class ComponentsContext(ModalPossible):
         hidden: bool = False,
         allowed_mentions: discord.AllowedMentions = None,
         suppress_embeds: bool = False,
-        components: list[ActionRow | Button | Selection] = None,
+        components: list[ActionRow | Button | Selection | Component] = None,
     ):
         """Responds to this interaction by update a message.
 
