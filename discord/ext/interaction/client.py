@@ -38,6 +38,7 @@ import discord.http
 from discord.state import ConnectionState
 
 from .commands import ApplicationCommand, from_payload, command_types
+from .application.command_comparison import same_command_declaration
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
 from .enums import ApplicationCommandType
@@ -368,7 +369,9 @@ class ClientBase:
             command_id = fetch_data[command.type][command.name].id
             if command.name in self._interactions[command.type]:
                 self._interactions[command.type][command.name].id = command_id
-            if fetch_data[command.type][command.name] != command:
+            if not same_command_declaration(
+                command, fetch_data[command.type][command.name]
+            ):
                 await self.edit_command(command=command)
         else:
             await self.register_command(command)
