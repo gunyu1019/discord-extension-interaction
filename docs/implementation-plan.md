@@ -147,7 +147,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 - [x] **7-d 기본 선택:** default_values와 Channel Select의 channel_types를 지원한다.
   - [x] **7-d1:** 기본 선택 값 객체와 유형·개수 검증을 구현한다.
   - [x] **7-d2:** Channel Select의 channel_types를 구현한다.
-- [ ] **7-e 결과 해석:** values와 resolved를 연결해 선택된 Discord 객체를 반환한다.
+- [x] **7-e 결과 해석:** values와 resolved를 연결해 선택된 Discord 객체를 반환한다.
 - [ ] **7-f 콜백 연결:** 새 유형에도 custom_id 핸들러와 wait_for가 동작하게 한다.
 - [ ] **7-g 검증:** 각 유형의 송신·수신·객체 해석과 잘못된 필드 조합을 테스트한다.
 

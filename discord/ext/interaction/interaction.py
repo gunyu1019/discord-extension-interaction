@@ -48,6 +48,7 @@ from .parser import handle_message_parameter
 from .message import Message
 from .serialization.resolved import resolve_attachment, resolve_mentionable
 from .serialization.resolved_objects import resolve_target
+from .serialization.resolved_selects import resolve_select_values
 from .utils import get_as_snowflake, channel_types, get_enum
 
 log = logging.getLogger()
@@ -550,10 +551,9 @@ class ComponentsContext(ModalPossible):
 
         self.custom_id = data.get("custom_id")
         self.component_type = data.get("component_type")
-        if self.component_type == 3:
-            self.values: list[str] = data.get("values")
-        else:
-            self.values: list[str] = []
+        self.values: list[str] = list(data.get("values", ())) if self.component_type in (3, 5, 6, 7, 8) else []
+        self._resolved = data.get("resolved", {})
+        self.resolved_values = resolve_select_values(self, self.component_type, self.values)
 
         self.message = Message(
             state=self._state, channel=self.channel, data=payload.get("message", {})
