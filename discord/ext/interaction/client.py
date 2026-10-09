@@ -763,8 +763,10 @@ class ClientBase:
                     is_subcommand = getattr(command, "is_subcommand", False)
                     if is_subcommand:
                         options = command.options
+                        selected_options = ctx.options
                         if "subcommand_group" in ctx.options:
                             sub_command_group = ctx.options["subcommand_group"]
+                            selected_options = sub_command_group.options
                             for opt in command.options:
                                 if (
                                     isinstance(opt, SubCommandGroup)
@@ -772,7 +774,7 @@ class ClientBase:
                                 ):
                                     options = opt.options
                                     break
-                        sub_command = ctx.options["subcommand"]
+                        sub_command = selected_options["subcommand"]
                         for opt in options:
                             if opt.name == sub_command.name and isinstance(
                                 opt, SubCommand
