@@ -71,6 +71,7 @@ from .components import (
     detect_component,
 )
 from .domain.text_display import TextDisplay
+from .domain.separator import Separator
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext,

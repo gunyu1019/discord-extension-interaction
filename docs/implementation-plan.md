@@ -113,7 +113,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 
 - [ ] **6-a 텍스트/레이아웃:** Text Display, Section, Container, Separator를 별도 모듈에 구현한다.
   - [x] **6-a1:** Text Display의 생성·직렬화·역직렬화를 구현한다.
-  - [ ] **6-a2:** Separator의 생성·직렬화·역직렬화를 구현한다.
+  - [x] **6-a2:** Separator의 생성·직렬화·역직렬화를 구현한다.
   - [ ] **6-a3:** Section의 자식·accessory 구조를 구현한다.
   - [ ] **6-a4:** Container의 중첩 구조를 구현한다.
 - [ ] **6-b 미디어:** Thumbnail, Media Gallery, File과 미디어 항목 모델을 구현한다.
