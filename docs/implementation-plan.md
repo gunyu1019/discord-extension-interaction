@@ -26,7 +26,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
       유지 정책을 기록한다. 검증: 공개 API 목록 리뷰.
 - [x] **0-d 경계 설계:** `domain`, `application`, `serialization`, `transport`, 공개 facade 사이의
       의존 방향과 데이터 흐름을 설계 결정 문서로 기록한다. 검증: import 방향 리뷰.
-- [ ] **0-e 호환 범위:** Python, `discord.py`, 기존 생성자와 데코레이터의 지원 범위를 정한다.
+- [x] **0-e 호환 범위:** Python, `discord.py`, 기존 생성자와 데코레이터의 지원 범위를 정한다.
       검증: 설치 메타데이터와 예제의 일치 여부 확인.
 
 ## 1. 기존 동작 안정화
