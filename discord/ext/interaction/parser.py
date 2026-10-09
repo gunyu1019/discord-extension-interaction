@@ -33,6 +33,7 @@ from collections.abc import Sequence
 from .components import ActionRow, Label, Button, Selection
 from .application.component_validation import (
     validate_legacy_message_components,
+    validate_v2_component_count,
     validate_v2_message_fields,
 )
 from .domain.component import Component
@@ -65,8 +66,11 @@ def _apply_components(result, components):
             for component in components
         ]
 
-    if components is not None and not _uses_components_v2(components):
-        validate_legacy_message_components(components)
+    if components is not None:
+        if _uses_components_v2(components):
+            validate_v2_component_count(components)
+        else:
+            validate_legacy_message_components(components)
 
     serialized = (
         [

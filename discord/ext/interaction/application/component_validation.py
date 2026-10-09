@@ -82,3 +82,18 @@ def validate_v2_message_fields(*, content: bool, embeds: bool, poll: bool, stick
     ]
     if disabled:
         raise ValueError("Components V2 cannot include " + ", ".join(disabled))
+
+
+def _component_count(component) -> int:
+    children = getattr(component, "components", None) or ()
+    total = 1 + sum(_component_count(child) for child in children)
+    accessory = getattr(component, "accessory", None)
+    if accessory is not None:
+        total += _component_count(accessory)
+    return total
+
+
+def validate_v2_component_count(components) -> None:
+    """Count containers and their nested components against Discord's limit."""
+    if sum(_component_count(component) for component in components) > 40:
+        raise ValueError("Components V2 allows at most 40 total components")

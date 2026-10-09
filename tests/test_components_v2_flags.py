@@ -56,3 +56,13 @@ def test_v2_interaction_callback_rejects_content():
             content="old content",
             components=[interaction.TextDisplay("New")],
         )
+
+
+def test_v2_component_limit_counts_nested_components():
+    children = [interaction.TextDisplay(f"item {index}") for index in range(39)]
+    accepted = handle_message_parameter(components=[interaction.Container(children)])
+    assert len(accepted.payload["components"][0]["components"]) == 39
+    with pytest.raises(ValueError, match="at most 40"):
+        handle_message_parameter(
+            components=[interaction.Container(children + [interaction.TextDisplay("extra")])]
+        )
