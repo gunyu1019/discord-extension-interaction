@@ -25,12 +25,18 @@ __title__ = "Discord-Extension-Interaction"
 __author__ = "gunyu1019"
 __license__ = "MIT"
 __copyright__ = "Copyright 2021-present gunyu1019"
-__version__ = "0.6.2"  # version_info.to_string()
+__version__ = "0.8.0"  # discord.py v2.6+ support
 
 from typing import NamedTuple, Literal, Optional
 
 from .client import Client, AutoShardedClient
 from .checks import *
+from .enums import (
+    ApplicationCommandType,
+    ApplicationContextType,
+    ApplicationIntegrationType,
+    Locale,
+)
 from .commands import (
     CommandOption,
     CommandOptionChoice,
@@ -40,7 +46,6 @@ from .commands import (
     ApplicationSubcommandGroup,
     ApplicationSubcommand,
     ApplicationCommand,
-    ApplicationCommandType,
     Mentionable,
     option,
 )
@@ -57,6 +62,7 @@ from .core import (
 from .components import (
     Components,
     ActionRow,
+    Label,
     Button,
     Selection,
     TextInput,
@@ -71,7 +77,7 @@ from .interaction import (
     SubcommandContext,
     ComponentsContext,
     AutocompleteContext,
-    ModalContext,
+    ModalSubmitContext,
 )
 from .message import Message, MessageTransferable, MessageEditable
 from .listener import listener
@@ -92,5 +98,5 @@ class VersionInfo(NamedTuple):
 
 
 version_info: VersionInfo = VersionInfo(
-    major=0, minor=6, micro=2, release_level=None, serial=0
+    major=0, minor=8, micro=0, release_level=None, serial=0
 )

@@ -9,11 +9,14 @@ if not version:
     raise RuntimeError('version is not set')
 
 
+install_requires = [
+    'discord.py>=2.7.1,<3',
+]
+
 extras_require = {
-    'discordpy': ['discord.py'],
-    'pycord': ['py-cord'],
-    "test": ["pytest", "pytest-cov"],
-    "lint": ["pycodestyle", "black"]
+    'discordpy': ['discord.py>=2.7.1,<3'],
+    'test': ['pytest>=7', 'pytest-cov'],
+    'lint': ['pycodestyle', 'black'],
 }
 
 setup(
@@ -30,9 +33,9 @@ setup(
     long_description=open('README.md', encoding='UTF-8').read(),
     long_description_content_type='text/markdown',
     include_package_data=True,
-    install_requires=open('requirements.txt', encoding='UTF-8').read(),
+    install_requires=install_requires,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Developers',
         'Natural Language :: Korean',
@@ -40,6 +43,8 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
