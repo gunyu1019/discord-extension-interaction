@@ -44,3 +44,20 @@ def test_string_select_defaults_cannot_exceed_max_values():
     )
     with pytest.raises(ValueError, match="defaults"):
         handle_message_parameter(components=[select])
+
+
+def test_modal_string_select_submission_preserves_values(offline_client, user_payload):
+    payload = {
+        "id": "40", "application_id": "20", "type": 5, "token": "tk",
+        "version": 1, "user": user_payload, "channel_id": "30",
+        "data": {
+            "custom_id": "survey",
+            "components": [{
+                "type": 18,
+                "component": {"type": 3, "custom_id": "pet", "values": ["cat"]},
+            }],
+        },
+    }
+    context = interaction.ModalSubmitContext(payload, offline_client)
+    assert context.components[0].values == ["cat"]
+    assert "values" not in context.components[0].to_dict()

@@ -137,10 +137,10 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 - [x] **7-a 버튼 스타일:** 일반·링크·프리미엄 스타일의 custom_id/url/sku_id 규칙을 구현한다.
   - [x] **7-a1:** Premium 스타일의 sku_id 생성과 직렬화·역직렬화를 추가한다.
   - [x] **7-a2:** 스타일별 필수·금지 필드를 검증한다.
-- [ ] **7-b String Select:** 옵션, 기본값, 모달 required 및 선택 결과를 정리한다.
+- [x] **7-b String Select:** 옵션, 기본값, 모달 required 및 선택 결과를 정리한다.
   - [x] **7-b1:** 기존 Selection에 모달 required 필드를 연결한다.
   - [x] **7-b2:** 옵션과 min/max/default 조합을 검증한다.
-  - [ ] **7-b3:** 제출된 String Select values를 접근 가능한 결과로 제공한다.
+  - [x] **7-b3:** 제출된 String Select values를 접근 가능한 결과로 제공한다.
 - [ ] **7-c 자동 선택:** User/Role/Mentionable/Channel Select를 독립 모델로 구현한다.
 - [ ] **7-d 기본 선택:** default_values와 Channel Select의 channel_types를 지원한다.
 - [ ] **7-e 결과 해석:** values와 resolved를 연결해 선택된 Discord 객체를 반환한다.
