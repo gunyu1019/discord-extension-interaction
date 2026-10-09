@@ -3,11 +3,10 @@
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.domain.unknown_component import UnknownComponent
 
 
 def test_container_round_trip_with_nested_section():
-    accessory = UnknownComponent({"type": 11, "media": {"url": "https://example.com/a.png"}})
+    accessory = interaction.Thumbnail(interaction.UnfurledMediaItem("https://example.com/a.png"))
     section = interaction.Section([interaction.TextDisplay("Hello")], accessory)
     container = interaction.Container(
         [section, interaction.Separator(spacing=2), interaction.TextDisplay("Bye")],

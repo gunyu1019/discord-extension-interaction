@@ -117,6 +117,9 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
   - [x] **6-a3:** Section의 자식·accessory 구조를 구현한다.
   - [x] **6-a4:** Container의 중첩 구조를 구현한다.
 - [ ] **6-b 미디어:** Thumbnail, Media Gallery, File과 미디어 항목 모델을 구현한다.
+  - [x] **6-b1:** Unfurled Media Item과 Thumbnail을 구현한다.
+  - [ ] **6-b2:** Media Gallery와 항목 모델을 구현한다.
+  - [ ] **6-b3:** File 컴포넌트를 구현한다.
 - [ ] **6-c V2 모드:** V2 전송에서 IS_COMPONENTS_V2 플래그를 자동 설정한다.
 - [ ] **6-d 필드 검증:** V2에서 사용할 수 없는 기존 메시지 필드와 컴포넌트 수를 검증한다.
 - [ ] **6-e 송수신 연결:** 일반 메시지·인터랙션 응답·수정·수신에서 V2 구조를 보존한다.

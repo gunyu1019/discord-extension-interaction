@@ -4,6 +4,7 @@ from typing import Any
 
 from .component import Component
 from .text_display import TextDisplay
+from .thumbnail import Thumbnail
 from .unknown_component import UnknownComponent
 
 
@@ -45,6 +46,10 @@ class Section(Component):
         ]
         return cls(
             children,
-            UnknownComponent.from_payload(payload["accessory"]),
+            (
+                Thumbnail.from_payload(payload["accessory"])
+                if payload["accessory"]["type"] == 11
+                else UnknownComponent.from_payload(payload["accessory"])
+            ),
             id=payload.get("id"),
         )
