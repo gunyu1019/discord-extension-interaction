@@ -21,35 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from abc import *
 import inspect
 from typing import Any
 import discord
 
 from .core import BaseCore
+from .legacy_components.base import Components
 from .utils import get_enum
-
-
-class Components(metaclass=ABCMeta):
-    TYPE: int | None = None
-
-    def __init__(self, components_type: discord.ComponentType):
-        self.type = components_type
-
-    @abstractmethod
-    def to_dict(self) -> dict:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, payload: dict) -> dict:
-        pass
-
-    def __eq__(self, other):
-        return self.type == other.type
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
 
 class SelectOption:

@@ -26,6 +26,7 @@ setup(
         'discord.ext.interaction',
         'discord.ext.interaction.application',
         'discord.ext.interaction.domain',
+        'discord.ext.interaction.legacy_components',
         'discord.ext.interaction.serialization',
         'discord.ext.interaction.transport',
     ],
