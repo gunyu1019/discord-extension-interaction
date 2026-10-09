@@ -30,6 +30,7 @@ from discord.state import ConnectionState
 from discord.utils import MISSING
 
 from .commands import CommandOptionChoice
+from .application.component_validation import validate_modal_container
 from .components import (
     ActionRow,
     Button,
@@ -346,7 +347,8 @@ class ModalPossible(InteractionContext):
             A list of component included in the modal.
             Text inputs / selects wrapped in an Action Row or a Label are used.
         """
-        self.responded = True
+        for component in components:
+            validate_modal_container(component)
         payload = {
             "type": 9,
             "data": {
@@ -358,7 +360,9 @@ class ModalPossible(InteractionContext):
                 ],
             },
         }
-        return await self.http.post_initial_response(data=self.data, payload=payload)
+        result = await self.http.post_initial_response(data=self.data, payload=payload)
+        self.responded = True
+        return result
 
 
 class BaseApplicationContext(ModalPossible):
