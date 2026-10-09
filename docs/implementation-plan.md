@@ -87,7 +87,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 
 - [x] **5-a 기본 계약:** `type`, 선택적 `id`, `to_payload`, `from_payload`를 정의한다.
 - [x] **5-b 유형 등록:** 유형 번호와 모델/파서를 연결하는 등록표를 만든다.
-- [ ] **5-c 알 수 없는 유형:** 원본 필드를 보존하는 UnknownComponent를 만든다.
+- [x] **5-c 알 수 없는 유형:** 원본 필드를 보존하는 UnknownComponent를 만든다.
 - [ ] **5-d 기존 유형 이전:** Action Row, Button, String Select, Text Input, Label을 개별 모듈로 나눈다.
 - [ ] **5-e 구조 검증:** 메시지/모달별 허용 위치, 개수, 필수 필드를 검증한다.
 - [ ] **5-f 호환 facade:** 기존 공개 생성자와 `to_dict`의 동작을 결정된 정책에 맞게 연결한다.

@@ -4,6 +4,7 @@ import inspect
 from typing import Any
 
 from ..domain.component import Component
+from ..domain.unknown_component import UnknownComponent
 
 
 class ComponentRegistry:
@@ -29,5 +30,5 @@ class ComponentRegistry:
         component_type = payload["type"]
         model = self._models.get(component_type)
         if model is None:
-            raise ValueError(f"component type {component_type} is not registered")
+            return UnknownComponent.from_payload(payload)
         return model.from_payload(payload)
