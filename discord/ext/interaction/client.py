@@ -264,7 +264,7 @@ class ClientBase:
             Coroutine function to call when setting up the loop
         """
         try:
-            self._multiple_setup_hook.append(func)
+            self._multiple_setup_hook.remove(func)
         except ValueError:
             pass
         return
@@ -336,17 +336,19 @@ class ClientBase:
 
         if use_cached:
             cached_command_list = await self._fetch_command_cached()
-            if command_id in cached_command_list[command_type].keys():
-                return cached_command_list[command_type][command_id]
+            for cached in cached_command_list[command_type].values():
+                if str(cached.id) == str(command_id):
+                    return cached
         data = await self.http.get_global_command(
             application_id=await self._application_id(), command_id=command_id
         )
         _result = from_payload(data)
-        if (
-            use_cached
-            and command_id not in self._fetch_interactions[command_type].keys()
-        ):
-            self._fetch_interactions[command_type][_result.name] = _result
+        if use_cached:
+            cache = self._fetch_interactions[command_type]
+            for name, cached in list(cache.items()):
+                if str(cached.id) == str(command_id) and name != _result.name:
+                    del cache[name]
+            cache[_result.name] = _result
         return _result
 
     async def _fetch_command_cached(
