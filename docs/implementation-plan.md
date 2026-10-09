@@ -106,7 +106,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
   - [x] **5-e-c:** 기존 단일 컴포넌트 호환성과 최상위 배치·custom_id 중복을 검증한다.
     - [x] **5-e-c1:** 기존 단일 Button/Selection을 전송 시 ActionRow로 감싼다.
     - [x] **5-e-c2:** 메시지·모달 최상위 배치와 custom_id 중복을 검증한다.
-- [ ] **5-f 호환 facade:** 기존 공개 생성자와 `to_dict`의 동작을 결정된 정책에 맞게 연결한다.
+- [x] **5-f 호환 facade:** 기존 공개 생성자와 `to_dict`의 동작을 결정된 정책에 맞게 연결한다.
 - [ ] **5-g 왕복 검증:** 기존 유형과 알 수 없는 유형의 직렬화·역직렬화 테스트를 추가한다.
 
 ## 6. 메시지 Components V2
@@ -157,3 +157,5 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 3. 새 `SyncCommand` 정책이 없는 범위에는 자동 동기화를 수행하지 않는다.
    기존 `global_sync_command=True`나 개별 `sync_command=True`는 명시적 설정으로 취급하며,
    기존 인자의 연결 방식은 3-g에서 검증한다.
+4. 기존 메시지 API의 단일 Button·Selection은 전송 시 각각 ActionRow로 감싼다.
+   사용자가 전달한 객체와 목록은 변경하지 않는다.

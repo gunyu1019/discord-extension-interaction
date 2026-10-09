@@ -3,6 +3,9 @@
 import discord
 
 from discord.ext import interaction
+from discord.ext.interaction.legacy_components import (
+    action_row, button, label, select_option, selection, text_input,
+)
 
 
 def test_readme_command_registration_without_network():
@@ -32,3 +35,20 @@ def test_existing_component_names_are_importable():
     assert interaction.TextInput is not None
     assert interaction.Label is not None
     assert interaction.ModalSubmitContext is not None
+
+
+def test_existing_component_facade_keeps_class_identity_and_to_dict():
+    assert interaction.ActionRow is action_row.ActionRow
+    assert interaction.Button is button.Button
+    assert interaction.Label is label.Label
+    assert interaction.SelectOption is select_option.SelectOption
+    assert interaction.Selection is selection.Selection
+    assert interaction.TextInput is text_input.TextInput
+
+    item = interaction.Button(style=1, label="Open", custom_id="open")
+    row = interaction.ActionRow([item])
+    assert item.to_dict() == {
+        "type": 2, "style": 1, "label": "Open", "custom_id": "open"
+    }
+    assert row.to_dict()["components"] == [item]
+    assert row.to_all_dict()["components"] == [item.to_dict()]
