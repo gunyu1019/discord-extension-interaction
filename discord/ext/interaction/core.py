@@ -32,6 +32,7 @@ from .commands import (
     UserCommand,
     ContextMenu,
 )
+from .enums import ApplicationContextType, ApplicationIntegrationType
 from .utils import async_all
 
 
@@ -291,6 +292,10 @@ def command(
     sync_command: bool = None,
     name_localizations: dict[str, str] | None = None,
     description_localizations: dict[str, str] | None = None,
+    default_member_permissions: str | None = None,
+    nsfw: bool = False,
+    integration_types: list[int | ApplicationIntegrationType] | None = None,
+    contexts: list[int | ApplicationContextType] | None = None,
 ):
     if options is None:
         options = []
@@ -308,6 +313,10 @@ def command(
             sync_command=sync_command,
             name_localizations=name_localizations,
             description_localizations=description_localizations,
+            default_member_permissions=default_member_permissions,
+            nsfw=nsfw,
+            integration_types=integration_types,
+            contexts=contexts,
         )
 
     return decorator
@@ -319,6 +328,10 @@ def user(
     checks=None,
     sync_command: bool = None,
     name_localizations: dict[str, str] | None = None,
+    default_member_permissions: str | None = None,
+    nsfw: bool = False,
+    integration_types: list[int | ApplicationIntegrationType] | None = None,
+    contexts: list[int | ApplicationContextType] | None = None,
 ):
     if cls is None:
         cls = MemberCommand
@@ -327,6 +340,10 @@ def user(
         return cls(
             func, name=name, checks=checks, sync_command=sync_command,
             name_localizations=name_localizations,
+            default_member_permissions=default_member_permissions,
+            nsfw=nsfw,
+            integration_types=integration_types,
+            contexts=contexts,
         )
 
     return decorator
@@ -338,6 +355,10 @@ def context(
     checks=None,
     sync_command: bool = None,
     name_localizations: dict[str, str] | None = None,
+    default_member_permissions: str | None = None,
+    nsfw: bool = False,
+    integration_types: list[int | ApplicationIntegrationType] | None = None,
+    contexts: list[int | ApplicationContextType] | None = None,
 ):
     if cls is None:
         cls = ContextMenuCommand
@@ -346,6 +367,10 @@ def context(
         return cls(
             func, name=name, checks=checks, sync_command=sync_command,
             name_localizations=name_localizations,
+            default_member_permissions=default_member_permissions,
+            nsfw=nsfw,
+            integration_types=integration_types,
+            contexts=contexts,
         )
 
     return decorator
