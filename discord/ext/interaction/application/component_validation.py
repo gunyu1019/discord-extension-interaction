@@ -8,10 +8,41 @@ def validate_message_action_row(row) -> None:
         raise ValueError("message ActionRow requires 1 to 5 components")
     types = [getattr(child, "TYPE", None) for child in children]
     if all(component_type == 2 for component_type in types):
+        for child in children:
+            validate_button_payload({
+                "style": int(child.style),
+                "custom_id": child.custom_id,
+                "url": child.url,
+                "sku_id": child.sku_id,
+                "label": child.label,
+                "emoji": child.emoji,
+            })
         return
     if len(types) == 1 and types[0] in (3, 5, 6, 7, 8):
         return
     raise ValueError("message ActionRow requires buttons or one select menu")
+
+
+def validate_button_payload(payload: dict) -> None:
+    """Check the mutually exclusive Discord Button action targets."""
+    style = payload.get("style")
+    custom_id = payload.get("custom_id")
+    url = payload.get("url")
+    sku_id = payload.get("sku_id")
+    if style in (1, 2, 3, 4):
+        valid = isinstance(custom_id, str) and 1 <= len(custom_id) <= 100 and url is None and sku_id is None
+    elif style == 5:
+        valid = isinstance(url, str) and bool(url) and custom_id is None and sku_id is None
+    elif style == 6:
+        valid = (
+            str(sku_id).isdigit() and int(sku_id) > 0
+            and custom_id is None and url is None
+            and payload.get("label") is None and payload.get("emoji") is None
+        )
+    else:
+        valid = False
+    if not valid:
+        raise ValueError("Button style has invalid custom_id, url, or sku_id fields")
 
 
 def validate_modal_container(container) -> None:
@@ -124,6 +155,9 @@ def validate_v2_component_layout(payloads: list[dict]) -> None:
             if custom_id in custom_ids:
                 raise ValueError(f"duplicate component custom_id: {custom_id}")
             custom_ids.add(custom_id)
+
+        if component_type == 2:
+            validate_button_payload(payload)
 
         if component_type == 1:
             children = payload.get("components", [])

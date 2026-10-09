@@ -33,6 +33,7 @@ from collections.abc import Sequence
 from .components import ActionRow, Label, Button, Selection
 from .application.component_validation import (
     validate_legacy_message_components,
+    validate_message_action_row,
     validate_v2_component_count,
     validate_v2_component_layout,
     validate_attachment_references,
@@ -71,6 +72,9 @@ def _apply_components(result, components):
     if components is not None:
         if _uses_components_v2(components):
             validate_v2_component_count(components)
+            for component in components:
+                if isinstance(component, ActionRow):
+                    validate_message_action_row(component)
         else:
             validate_legacy_message_components(components)
 
