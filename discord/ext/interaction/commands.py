@@ -133,6 +133,8 @@ class CommandOption:
         max_length: int = None,
         required: bool = False,
         autocomplete: bool = False,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
     ):
         if choices is None:
             choices = []
@@ -142,6 +144,8 @@ class CommandOption:
         self.choices = choices
         self.required = required
         self.autocomplete = autocomplete
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
 
         self.parameter_name: Optional[str] = None
 
@@ -289,6 +293,9 @@ class CommandOption:
             data["min_length"] = self.min_length
         if self.max_length is not None:
             data["max_length"] = self.max_length
+        add_localizations(
+            data, self.name_localizations, self.description_localizations
+        )
         return data
 
     def __eq__(self, other: "CommandOption"):
@@ -299,6 +306,8 @@ class CommandOption:
             and self.choices == other.choices
             and self.required == other.required
             and self.autocomplete == other.autocomplete
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
         )
         if int in self._type.__mro__ or float in self._type.__mro__:
             default_check = (
@@ -330,6 +339,10 @@ class CommandOption:
 
         for x in ("name", "description", "required", "autocomplete"):
             setattr(new_cls, x, data.get(x))
+        new_cls.name_localizations = read_localizations(data, "name_localizations")
+        new_cls.description_localizations = read_localizations(
+            data, "description_localizations"
+        )
         # optional--default false
         if new_cls.required is None:
             new_cls.required = False
@@ -373,9 +386,13 @@ class ApplicationSubcommand:
         name: str,
         description: str = "No description.",
         options: Optional[list[CommandOption]] = None,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
     ):
         self.name = name
         self.description = description
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
         if options is None:
             options = []
         self.options = options
@@ -386,24 +403,37 @@ class ApplicationSubcommand:
 
     @classmethod
     def from_payload(cls, data: OriginApplicationCommandOption):
-        new_cls = cls(name=data["name"], description=data["description"])
+        new_cls = cls(
+            name=data["name"],
+            description=data["description"],
+            name_localizations=read_localizations(data, "name_localizations"),
+            description_localizations=read_localizations(
+                data, "description_localizations"
+            ),
+        )
         if "options" in data:
             new_cls.options = [CommandOption.from_payload(x) for x in data["options"]]
         return new_cls
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             "name": self.name,
             "description": self.description,
             "type": self._get_type_id,
             "options": [opt.to_dict() for opt in self.options],
         }
+        add_localizations(
+            data, self.name_localizations, self.description_localizations
+        )
+        return data
 
     def __eq__(self, other):
         default_check = (
             self.name == other.name
             and self.description == other.description
             and self.options == other.options
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
         )
         return default_check
 
@@ -417,9 +447,13 @@ class ApplicationSubcommandGroup:
         name: str,
         options: list[ApplicationSubcommand],
         description: str = "No description.",
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
     ):
         self.name = name
         self.description = description
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
         self.options = options
 
     @property
@@ -432,21 +466,31 @@ class ApplicationSubcommandGroup:
             name=data["name"],
             description=data["description"],
             options=[ApplicationSubcommand.from_payload(x) for x in data["options"]],
+            name_localizations=read_localizations(data, "name_localizations"),
+            description_localizations=read_localizations(
+                data, "description_localizations"
+            ),
         )
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             "name": self.name,
             "description": self.description,
             "type": self._get_type_id,
             "options": [opt.to_dict() for opt in self.options],
         }
+        add_localizations(
+            data, self.name_localizations, self.description_localizations
+        )
+        return data
 
     def __eq__(self, other):
         default_check = (
             self.name == other.name
             and self.description == other.description
             and self.options == other.options
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
         )
         return default_check
 

@@ -3,7 +3,8 @@ import pytest
 
 from discord.ext import interaction
 from discord.ext.interaction.commands import (
-    ApplicationCommand, CommandOptionChoice, SlashCommand, from_payload,
+    ApplicationCommand, ApplicationSubcommand, ApplicationSubcommandGroup,
+    CommandOption, CommandOptionChoice, SlashCommand, from_payload,
 )
 from discord.ext.interaction.enums import (
     ApplicationCommandType,
@@ -125,6 +126,36 @@ def test_choice_name_localizations_round_trip_and_affect_comparison():
     assert restored == choice
     restored.name_localizations["ko"] = "붉은색"
     assert restored != choice
+
+
+def test_nested_option_and_subcommand_localizations_round_trip():
+    option = CommandOption(
+        name="color", option_type=str, description="Choose a color",
+        name_localizations={"ko": "색상"},
+        description_localizations={"ko": "색상을 고르세요"},
+        choices=[CommandOptionChoice("Red", "red", {"ko": "빨강"})],
+    )
+    subcommand = ApplicationSubcommand(
+        name="set", description="Set color", options=[option],
+        name_localizations={"ko": "설정"},
+        description_localizations={"ko": "색상 설정"},
+    )
+    group = ApplicationSubcommandGroup(
+        name="theme", description="Theme options", options=[subcommand],
+        name_localizations={"ko": "테마"},
+        description_localizations={"ko": "테마 옵션"},
+    )
+    command = SlashCommand(name="configure", description="Configure", options=[group])
+
+    payload = command.to_register_dict()
+    restored = from_payload({**MINIMAL, **payload})
+
+    assert restored == command
+    assert payload["options"][0]["name_localizations"] == {"ko": "테마"}
+    assert payload["options"][0]["options"][0]["name_localizations"] == {"ko": "설정"}
+    assert payload["options"][0]["options"][0]["options"][0]["choices"][0]["name_localizations"] == {"ko": "빨강"}
+    restored.options[0].options[0].options[0].description_localizations["ko"] = "다른 설명"
+    assert restored != command
 
 
 def test_equality_ignores_server_assigned_version():
