@@ -1,6 +1,7 @@
 """Auto-select defaults use Discord's snowflake/type objects."""
 
 import pytest
+import discord
 
 from discord.ext import interaction
 
@@ -28,3 +29,18 @@ def test_auto_select_rejects_wrong_default_type_or_count():
             interaction.SelectDefaultValue(10, "role"),
             interaction.SelectDefaultValue(20, "role"),
         ])
+
+
+def test_channel_select_channel_types_round_trip():
+    select = interaction.ChannelSelect(
+        "channel", channel_types=[discord.ChannelType.text, 2],
+        default_values=[interaction.SelectDefaultValue(30, "channel")],
+    )
+    payload = select.to_payload()
+    assert payload["channel_types"] == [0, 2]
+    assert interaction.ChannelSelect.from_payload(payload).to_payload() == payload
+
+
+def test_channel_select_rejects_invalid_channel_type():
+    with pytest.raises(ValueError, match="channel_types"):
+        interaction.ChannelSelect("channel", channel_types=[True])
