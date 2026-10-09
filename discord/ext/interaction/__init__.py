@@ -70,6 +70,7 @@ from .components import (
     DetectComponent,
     detect_component,
 )
+from .domain.text_display import TextDisplay
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext,
