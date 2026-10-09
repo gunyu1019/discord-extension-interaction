@@ -45,6 +45,7 @@ from .errors import AlreadyDeferred
 from .http import InteractionHTTPClient, InteractionData
 from .parser import handle_message_parameter
 from .message import Message
+from .serialization.resolved import resolve_attachment, resolve_mentionable
 from .utils import get_as_snowflake, channel_types, get_enum
 
 log = logging.getLogger()
@@ -488,13 +489,12 @@ class SubcommandContext(BaseApplicationContext):
                 self.options[key]: discord.Role | None = self.guild.get_role(
                     value
                 ) or self.target("roles", target_id=value)
+            elif option_type == 9:
+                self.options[key] = resolve_mentionable(self, value)
             elif option_type == 10:
                 self.options[key]: float = float(value)
             elif option_type == 11:
-                state: ConnectionState = getattr(client, "_connection")
-                self.options[key]: discord.Attachment = discord.Attachment(
-                    data=value, state=state
-                )
+                self.options[key] = resolve_attachment(self, value)
             else:
                 self.options[key] = value
 
@@ -562,13 +562,12 @@ class ApplicationContext(BaseApplicationContext):
                     self.options[key]: discord.Role | None = self.guild.get_role(
                         value
                     ) or self.target("roles", target_id=value)
+                elif option_type == 9:
+                    self.options[key] = resolve_mentionable(self, value)
                 elif option_type == 10:
                     self.options[key]: float = float(value)
                 elif option_type == 11:
-                    state: ConnectionState = getattr(client, "_connection")
-                    self.options[key]: discord.Attachment = discord.Attachment(
-                        data=value, state=state
-                    )
+                    self.options[key] = resolve_attachment(self, value)
                 else:
                     self.options[key] = value
 
