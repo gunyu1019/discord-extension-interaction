@@ -32,12 +32,13 @@ from .legacy_components.select_option import SelectOption
 from .legacy_components.selection import Selection
 from .legacy_components.text_input import TextInput
 from .legacy_components.parsing import from_payload
+from .domain.component import Component
 
 
 # For Decorator
 class DetectComponent(BaseCore):
     def __init__(
-        self, func, custom_id, component_type: type[Components] = None, checks=None
+        self, func, custom_id, component_type: type[Components | Component] = None, checks=None
     ):
         self.custom_id = custom_id
         self.type = component_type
@@ -46,7 +47,7 @@ class DetectComponent(BaseCore):
 
     @property
     def type_id(self) -> int | None:
-        if isinstance(self.type, type) and issubclass(self.type, Components):
+        if isinstance(self.type, type) and issubclass(self.type, (Components, Component)):
             return self.type.TYPE
         return None
 
@@ -54,7 +55,7 @@ class DetectComponent(BaseCore):
 def detect_component(
     cls: classmethod = None,
     custom_id: str = None,
-    component_type: type[Components] = None,
+    component_type: type[Components | Component] = None,
     checks=None,
 ):
     """A decorator that transforms a function into a :class:`.DetectComponent`

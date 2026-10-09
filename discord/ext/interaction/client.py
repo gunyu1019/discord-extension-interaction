@@ -849,7 +849,7 @@ class ClientBase:
         -------
             Returns a `ComponentsContext` that satisfies the custom_id.
         """
-        future = self.loop.create_future()
+        future = asyncio.get_running_loop().create_future()
         if check is None:
 
             def _check(_: ComponentsContext):
@@ -888,7 +888,7 @@ class ClientBase:
         -------
             Returns a :class:`ComponentContext` that satisfies the condition on `check`.
         """
-        future = self.loop.create_future()
+        future = asyncio.get_running_loop().create_future()
         if check is None:
 
             def _check(_: ComponentsContext):
