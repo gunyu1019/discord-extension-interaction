@@ -563,9 +563,9 @@ class DetectComponent(BaseCore):
 
     @property
     def type_id(self) -> int | None:
-        if isinstance(self.type, Components):
+        if isinstance(self.type, type) and issubclass(self.type, Components):
             return self.type.TYPE
-        return
+        return None
 
 
 def detect_component(
