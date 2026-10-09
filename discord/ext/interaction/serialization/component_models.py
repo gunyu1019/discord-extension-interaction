@@ -9,12 +9,14 @@ from ..domain.text_display import TextDisplay
 from ..domain.thumbnail import Thumbnail
 from ..domain.user_select import UserSelect
 from ..domain.role_select import RoleSelect
+from ..domain.mentionable_select import MentionableSelect
+from ..domain.channel_select import ChannelSelect
 from .components import ComponentRegistry
 
 
 _registry = ComponentRegistry()
 for _model in (Section, TextDisplay, Thumbnail, MediaGallery, File, Separator, Container,
-               UserSelect, RoleSelect):
+               UserSelect, RoleSelect, MentionableSelect, ChannelSelect):
     _registry.register(_model)
 
 

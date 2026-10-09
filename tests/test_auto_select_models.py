@@ -9,6 +9,7 @@ from discord.ext.interaction.parser import handle_message_parameter
 
 @pytest.mark.parametrize("model,component_type", [
     (interaction.UserSelect, 5), (interaction.RoleSelect, 6),
+    (interaction.MentionableSelect, 7), (interaction.ChannelSelect, 8),
 ])
 def test_auto_select_message_round_trip(model, component_type):
     select = model("pick", placeholder="Choose", min_values=1, max_values=2)
