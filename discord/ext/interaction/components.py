@@ -30,6 +30,7 @@ from .legacy_components.base import Components
 from .legacy_components.button import Button
 from .legacy_components.select_option import SelectOption
 from .legacy_components.selection import Selection
+from .legacy_components.text_input import TextInput
 
 
 class ActionRow(Components):
@@ -158,105 +159,6 @@ class Label(Components):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-
-class TextInput(Components):
-    """Represents a TextInput.
-
-    Notes
-    -----
-    Text inputs are an interactive component that render on modals.
-
-    Attributes
-    ----------
-    custom_id: str
-        The custom_id of text input. This is not visible to the user; max 100 characters.
-    style : Union[:class:`discord.TextStyle`, int]
-        The style of the text input.
-    label: str
-        The label of text input. This is visible to the user; max 45 characters
-    placeholder : Optional[str]
-        The placeholder of the text input.
-    min_length : Optional[int]
-        Minimum input length for a text input; min 0, max 4000
-    max_length: Optional[int]
-        Maximum input length for a text input; min 1, max 4000
-    required: Optional[bool]
-        Whether this input text is required to be filled (defaults to ``true``)
-    value: Optional[str]
-        Pre-filled value for this component; max 4000 characters
-    """
-
-    TYPE = 4
-
-    def __init__(
-        self,
-        custom_id: str,
-        style: int,
-        label: str | None = None,
-        min_length: int | None = None,
-        max_length: int | None = None,
-        required: bool = False,
-        value: str | None = None,
-        placeholder: str | None = None,
-    ):
-        super().__init__(components_type=discord.ComponentType.text_input)
-
-        self.custom_id = custom_id
-        self.style = style
-        self.label = label
-        self.placeholder = placeholder
-        self.min_length = min_length
-        self.max_length = max_length
-        self.required = required
-        self.value = value
-
-    def __eq__(self, other):
-        return self.custom_id == other.custom_id and super().__eq__(other)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def to_dict(self) -> dict:
-        base = {
-            "type": 4,
-            "custom_id": self.custom_id,
-            "style": self.style,
-            "required": self.required,
-        }
-        if self.label is not None:
-            base["label"] = self.label
-        if self.placeholder is not None:
-            base["placeholder"] = self.placeholder
-        if self.min_length is not None:
-            base["min_length"] = self.min_length
-        if self.max_length is not None:
-            base["max_length"] = self.max_length
-        if self.value is not None:
-            base["value"] = self.value
-
-        return base
-
-    @classmethod
-    def from_dict(cls, payload: dict):
-        custom_id = payload["custom_id"]
-        style = payload.get("style")
-        label = payload.get("label")
-        placeholder = payload.get("placeholder")
-        min_length = payload.get("min_length")
-        max_length = payload.get("max_length")
-        required = payload.get("required", False)
-        value = payload.get("value")
-        return cls(
-            custom_id=custom_id,
-            style=style,
-            label=label,
-            placeholder=placeholder,
-            min_length=min_length,
-            max_length=max_length,
-            required=required,
-            value=value,
-        )
 
 
 def from_payload(
