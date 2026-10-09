@@ -30,6 +30,7 @@ from discord.state import ConnectionState
 from discord.utils import MISSING
 
 from .commands import CommandOptionChoice
+from .domain.component import Component
 from .application.component_validation import validate_modal_components
 from .components import (
     ActionRow,
@@ -354,7 +355,9 @@ class ModalPossible(InteractionContext):
                 "custom_id": custom_id,
                 "title": title,
                 "components": [
-                    i.to_all_dict() if isinstance(i, (ActionRow, Label)) else i.to_dict()
+                    i.to_payload() if isinstance(i, Component)
+                    else i.to_all_dict() if isinstance(i, (ActionRow, Label))
+                    else i.to_dict()
                     for i in components
                 ],
             },

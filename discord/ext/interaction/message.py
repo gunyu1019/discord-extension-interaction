@@ -90,6 +90,7 @@ class Message(OriginMessage):
         suppress_embeds: bool = False,
         silent: bool = False,
         poll: Optional[Poll] = None,
+        components: list = MISSING,
     ):
         channel = MessageTransferable(state=self._state, channel=self.channel)
         return await channel.send(
@@ -100,7 +101,7 @@ class Message(OriginMessage):
             file=file,
             files=files,
             allowed_mentions=allowed_mentions,
-            # components=components,
+            components=components,
             reference=reference,
             mention_author=mention_author,
             stickers=stickers,
