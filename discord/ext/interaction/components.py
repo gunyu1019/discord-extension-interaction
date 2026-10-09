@@ -27,8 +27,8 @@ import discord
 
 from .core import BaseCore
 from .legacy_components.base import Components
+from .legacy_components.button import Button
 from .legacy_components.select_option import SelectOption
-from .utils import get_enum
 
 
 class ActionRow(Components):
@@ -154,95 +154,6 @@ class Label(Components):
             and self.label == other.label
             and super().__eq__(other)
         )
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-
-class Button(Components):
-    """Represents a Button.
-
-    Attributes
-    ----------
-    style : Union[:class:`discord.ButtonStyle`, int]
-        The style of the button.
-    label : Optional[str]
-        The label of the button.
-    emoji : Optional[Union[:class:`discord.PartialEmoji`, str, dict]]
-        The emoji of the button, if available.
-        If ``emoji`` attributes is used as a dict, key requires an id, name, and animation.
-    custom_id: Optional[str]
-        The custom_id of button. This is not visible to the user; max 100 characters.
-    url: Optional[str]
-        The URl of button for link-style(5).
-    disabled: Optional[bool]
-        Whether the button is disabled. This default is ``false``
-    """
-
-    TYPE = 2
-
-    def __init__(
-        self,
-        style: int | discord.ButtonStyle,
-        label: str = None,
-        emoji: discord.PartialEmoji | str | dict = None,
-        custom_id: str = None,
-        url: str = None,
-        disabled: bool = None,
-    ):
-        super().__init__(components_type=discord.ComponentType.button)
-
-        # Accepting a button's style as an int will be disabled.
-        if isinstance(style, int):
-            style = get_enum(discord.ButtonStyle, style)
-        self.style = style
-        self.label = label
-        self.emoji = emoji
-        self.custom_id = custom_id
-        self.url = url
-        self.disabled = disabled
-
-    def to_dict(self) -> dict:
-        base = {"type": 2, "style": int(self.style)}
-
-        if self.label is not None:
-            base["label"] = self.label
-        if self.emoji is not None and isinstance(self.emoji, discord.PartialEmoji):
-            base["emoji"] = self.emoji.to_dict()
-        elif self.emoji is not None and isinstance(self.emoji, str):
-            base["emoji"] = {"name": self.emoji}
-        elif self.emoji is not None:
-            base["emoji"] = self.emoji
-
-        if 0 < int(self.style) < 5 and self.custom_id is not None:
-            base["custom_id"] = self.custom_id
-        if int(self.style) == 5 and self.url is not None:
-            base["url"] = self.url
-
-        if self.disabled is not None:
-            base["disabled"] = self.disabled
-
-        return base
-
-    @classmethod
-    def from_dict(cls, payload: dict):
-        style = get_enum(discord.ButtonStyle, payload["style"])
-        label = payload.get("label")
-        emoji = payload.get("emoji")
-        custom_id = payload.get("custom_id")
-        url = payload.get("url")
-        disabled = payload.get("disabled", False)
-        return cls(
-            style=style,
-            label=label,
-            emoji=emoji,
-            custom_id=custom_id,
-            url=url,
-            disabled=disabled,
-        )
-
-    def __eq__(self, other):
-        return self.custom_id == other.custom_id and super().__eq__(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
