@@ -98,7 +98,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
     - [x] **5-d-c2:** TextInput 분리와 공개 import 동일성을 검증한다.
   - [ ] **5-d-d:** ActionRow와 Label을 각 모듈로 분리하고 파서를 연결한다.
     - [x] **5-d-d1:** ActionRow 분리와 중첩 파싱 회귀를 확인한다.
-    - [ ] **5-d-d2:** Label 분리와 모달 파싱 회귀를 확인한다.
+    - [x] **5-d-d2:** Label 분리와 모달 파싱 회귀를 확인한다.
     - [ ] **5-d-d3:** 레거시 유형 파서를 facade에서 분리한다.
 - [ ] **5-e 구조 검증:** 메시지/모달별 허용 위치, 개수, 필수 필드를 검증한다.
 - [ ] **5-f 호환 facade:** 기존 공개 생성자와 `to_dict`의 동작을 결정된 정책에 맞게 연결한다.
