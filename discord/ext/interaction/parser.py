@@ -31,7 +31,10 @@ from collections.abc import Sequence
 
 
 from .components import ActionRow, Label, Button, Selection
-from .application.component_validation import validate_legacy_message_components
+from .application.component_validation import (
+    validate_legacy_message_components,
+    validate_v2_message_fields,
+)
 from .domain.component import Component
 
 if TYPE_CHECKING:
@@ -107,6 +110,17 @@ def _component_flags(flags, components):
     return MessageFlags._from_value(value | 32768)
 
 
+def _check_v2_fields(components, *, content, embed, embeds, poll, stickers=MISSING):
+    if _uses_components_v2(components):
+        validate_v2_message_fields(
+            content=content is not MISSING and content is not None,
+            embeds=(embed is not MISSING and embed is not None)
+            or (embeds is not MISSING and embeds is not None and len(embeds) > 0),
+            poll=poll is not MISSING and poll is not None,
+            stickers=stickers is not MISSING and stickers is not None and len(stickers) > 0,
+        )
+
+
 def handle_message_parameter(
     content: str | None = MISSING,
     *,
@@ -132,6 +146,10 @@ def handle_message_parameter(
     poll: Optional[Poll] = MISSING,
     components: list[ActionRow | Button | Selection] = MISSING,
 ) -> MultipartParameters:
+    _check_v2_fields(
+        components, content=content, embed=embed, embeds=embeds,
+        poll=poll, stickers=stickers,
+    )
     result = origin_handle_message_parameter(
         content=content,
         username=username,
@@ -181,6 +199,7 @@ def handle_interaction_message_parameter(
     poll: Poll = MISSING,
     components: list[ActionRow | Button | Selection] = MISSING,
 ) -> MultipartParameters:
+    _check_v2_fields(components, content=content, embed=embed, embeds=embeds, poll=poll)
     result = interaction_message_response_params(
         type=interaction_type,
         content=content,

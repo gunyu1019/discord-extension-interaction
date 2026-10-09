@@ -70,3 +70,15 @@ def validate_modal_components(components) -> None:
             validate_modal_container(container)
             children.extend(container.components)
     _validate_unique_custom_ids(children)
+
+
+def validate_v2_message_fields(*, content: bool, embeds: bool, poll: bool, stickers: bool) -> None:
+    """Reject message fields disabled by IS_COMPONENTS_V2."""
+    disabled = [
+        name for name, present in (
+            ("content", content), ("embeds", embeds),
+            ("poll", poll), ("stickers", stickers),
+        ) if present
+    ]
+    if disabled:
+        raise ValueError("Components V2 cannot include " + ", ".join(disabled))

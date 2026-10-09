@@ -1,6 +1,7 @@
 """New component models activate the IS_COMPONENTS_V2 message flag."""
 
 import discord
+import pytest
 
 from discord.ext import interaction
 from discord.ext.interaction.parser import (
@@ -31,3 +32,27 @@ def test_legacy_message_does_not_add_v2_flag():
     button = interaction.Button(style=1, label="Go", custom_id="go")
     params = handle_message_parameter(components=[button])
     assert params.payload.get("flags", 0) & 32768 == 0
+
+
+@pytest.mark.parametrize(
+    "keyword",
+    [
+        {"content": "old content"},
+        {"embed": discord.Embed(title="old embed")},
+        {"embeds": [discord.Embed(title="old embed")]},
+        {"poll": object()},
+        {"stickers": [123]},
+    ],
+)
+def test_v2_rejects_disabled_legacy_message_fields(keyword):
+    with pytest.raises(ValueError, match="Components V2"):
+        handle_message_parameter(components=[interaction.TextDisplay("New")], **keyword)
+
+
+def test_v2_interaction_callback_rejects_content():
+    with pytest.raises(ValueError, match="content"):
+        handle_interaction_message_parameter(
+            interaction_type=4,
+            content="old content",
+            components=[interaction.TextDisplay("New")],
+        )
