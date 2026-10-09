@@ -19,6 +19,8 @@ def validate_message_action_row(row) -> None:
             })
         return
     if len(types) == 1 and types[0] in (3, 5, 6, 7, 8):
+        if types[0] == 3:
+            validate_string_select_payload(children[0].to_dict(), in_modal=False)
         return
     raise ValueError("message ActionRow requires buttons or one select menu")
 
@@ -45,6 +47,32 @@ def validate_button_payload(payload: dict) -> None:
         raise ValueError("Button style has invalid custom_id, url, or sku_id fields")
 
 
+def validate_string_select_payload(payload: dict, *, in_modal: bool) -> None:
+    """Check String Select options and selection bounds."""
+    options = payload.get("options", [])
+    if not 1 <= len(options) <= 25:
+        raise ValueError("String Select requires 1 to 25 options")
+    for option in options:
+        if not all(isinstance(option.get(field), str) and 1 <= len(option[field]) <= 100
+                   for field in ("label", "value")):
+            raise ValueError("String Select option label and value require 1 to 100 characters")
+        description = option.get("description")
+        if description is not None and (not isinstance(description, str) or len(description) > 100):
+            raise ValueError("String Select option description exceeds 100 characters")
+    minimum = payload.get("min_values", 1)
+    maximum = payload.get("max_values", 1)
+    if (type(minimum) is not int or type(maximum) is not int
+            or not 0 <= minimum <= maximum <= 25):
+        raise ValueError("String Select min_values/max_values are invalid")
+    if sum(option.get("default", False) is True for option in options) > maximum:
+        raise ValueError("String Select defaults exceed max_values")
+    if in_modal:
+        if payload.get("disabled"):
+            raise ValueError("String Select cannot be disabled in a modal")
+        if payload.get("required", True) and minimum == 0:
+            raise ValueError("required String Select needs min_values >= 1")
+
+
 def validate_modal_container(container) -> None:
     """Check the child of a modal Label or legacy ActionRow."""
     component_type = getattr(container, "TYPE", None)
@@ -56,6 +84,8 @@ def validate_modal_container(container) -> None:
             raise ValueError("modal Label description exceeds 100 characters")
         if getattr(container.component, "TYPE", None) not in (3, 4, 5, 6, 7, 8, 19, 21, 22, 23):
             raise ValueError("modal Label requires one modal input component")
+        if getattr(container.component, "TYPE", None) == 3:
+            validate_string_select_payload(container.component.to_dict(), in_modal=True)
     elif component_type == 1:
         children = container.components
         if children is None or len(children) != 1 or getattr(children[0], "TYPE", None) != 4:
@@ -158,6 +188,8 @@ def validate_v2_component_layout(payloads: list[dict]) -> None:
 
         if component_type == 2:
             validate_button_payload(payload)
+        elif component_type == 3:
+            validate_string_select_payload(payload, in_modal=False)
 
         if component_type == 1:
             children = payload.get("components", [])
