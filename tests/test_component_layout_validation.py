@@ -30,6 +30,21 @@ def test_message_action_row_accepts_buttons_or_one_select():
 
 
 @pytest.mark.parametrize(
+    "component",
+    [
+        _button(7),
+        interaction.Selection("pick", [interaction.SelectOption("A", "a")]),
+    ],
+)
+def test_legacy_single_component_is_wrapped_without_mutation(component):
+    supplied = [component]
+    payload = handle_message_parameter(content="hello", components=supplied).payload
+    assert payload["components"][0]["type"] == 1
+    assert payload["components"][0]["components"][0]["type"] == component.TYPE
+    assert supplied == [component]
+
+
+@pytest.mark.parametrize(
     "children",
     [
         [],

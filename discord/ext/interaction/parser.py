@@ -54,6 +54,12 @@ def _apply_components(result, components):
     if components is MISSING:
         return result
 
+    if components is not None:
+        components = [
+            ActionRow([component]) if isinstance(component, (Button, Selection)) else component
+            for component in components
+        ]
+
     for component in components or ():
         if isinstance(component, ActionRow):
             validate_message_action_row(component)
