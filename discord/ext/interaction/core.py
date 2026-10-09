@@ -118,6 +118,8 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
         cls: classmethod = None,
         checks=None,
         options: list[CommandOption] | None = None,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
     ):
         if options is None:
             options = []
@@ -132,6 +134,8 @@ class SubCommandGroup(BaseCore, ApplicationSubcommandGroup):
                 description=description,
                 checks=checks,
                 options=options,
+                name_localizations=name_localizations,
+                description_localizations=description_localizations,
                 top_parents=self.parents,
                 parents=self,
             )
@@ -206,6 +210,8 @@ class Command(BaseCommand, SlashCommand):
         cls: classmethod = None,
         checks=None,
         options: list[CommandOption] = None,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
     ):
         if options is None:
             options = []
@@ -220,6 +226,8 @@ class Command(BaseCommand, SlashCommand):
                 description=description,
                 checks=checks,
                 options=options,
+                name_localizations=name_localizations,
+                description_localizations=description_localizations,
                 top_parents=self,
                 parents=self,
             )
@@ -234,6 +242,8 @@ class Command(BaseCommand, SlashCommand):
         description: str = "No description.",
         cls: classmethod = None,
         options: list = None,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
     ):
         if options is None:
             options = []
@@ -243,7 +253,10 @@ class Command(BaseCommand, SlashCommand):
 
         def decorator(func):
             new_cls = cls(
-                func, name=name, description=description, options=options, parents=self
+                func, name=name, description=description, options=options,
+                name_localizations=name_localizations,
+                description_localizations=description_localizations,
+                parents=self,
             )
             return new_cls
 
@@ -276,6 +289,8 @@ def command(
     checks=None,
     options: list[CommandOption] = None,
     sync_command: bool = None,
+    name_localizations: dict[str, str] | None = None,
+    description_localizations: dict[str, str] | None = None,
 ):
     if options is None:
         options = []
@@ -291,6 +306,8 @@ def command(
             checks=checks,
             options=options,
             sync_command=sync_command,
+            name_localizations=name_localizations,
+            description_localizations=description_localizations,
         )
 
     return decorator
@@ -301,12 +318,16 @@ def user(
     cls: classmethod = None,
     checks=None,
     sync_command: bool = None,
+    name_localizations: dict[str, str] | None = None,
 ):
     if cls is None:
         cls = MemberCommand
 
     def decorator(func):
-        return cls(func, name=name, checks=checks, sync_command=sync_command)
+        return cls(
+            func, name=name, checks=checks, sync_command=sync_command,
+            name_localizations=name_localizations,
+        )
 
     return decorator
 
@@ -316,12 +337,16 @@ def context(
     cls: classmethod = None,
     checks=None,
     sync_command: bool = None,
+    name_localizations: dict[str, str] | None = None,
 ):
     if cls is None:
         cls = ContextMenuCommand
 
     def decorator(func):
-        return cls(func, name=name, checks=checks, sync_command=sync_command)
+        return cls(
+            func, name=name, checks=checks, sync_command=sync_command,
+            name_localizations=name_localizations,
+        )
 
     return decorator
 

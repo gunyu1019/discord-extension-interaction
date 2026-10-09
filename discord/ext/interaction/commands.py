@@ -706,6 +706,8 @@ def option(
     max_length: int = None,
     required: bool = False,
     autocomplete: bool = False,
+    name_localizations: dict[str, str] | None = None,
+    description_localizations: dict[str, str] | None = None,
 ):
     options = CommandOption(
         name=name,
@@ -720,6 +722,8 @@ def option(
         max_length=max_length,
         required=required,
         autocomplete=autocomplete,
+        name_localizations=name_localizations,
+        description_localizations=description_localizations,
     )
 
     def decorator(func):
