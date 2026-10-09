@@ -23,6 +23,7 @@ SOFTWARE.
 from __future__ import annotations
 
 from discord.http import handle_message_parameters as origin_handle_message_parameter
+from discord.flags import MessageFlags
 from discord.webhook.async_ import interaction_message_response_params, interaction_response_params  # noqa
 from discord.utils import MISSING, _from_json, _to_json
 from typing import TYPE_CHECKING
@@ -31,6 +32,7 @@ from collections.abc import Sequence
 
 from .components import ActionRow, Label, Button, Selection
 from .application.component_validation import validate_legacy_message_components
+from .domain.component import Component
 
 if TYPE_CHECKING:
     from discord import Attachment, MessageFlags
@@ -60,12 +62,16 @@ def _apply_components(result, components):
             for component in components
         ]
 
-    if components is not None:
+    if components is not None and not _uses_components_v2(components):
         validate_legacy_message_components(components)
 
     serialized = (
         [
-            i.to_all_dict() if isinstance(i, (ActionRow, Label)) else i.to_dict()
+            (
+                i.to_payload() if isinstance(i, Component)
+                else i.to_all_dict() if isinstance(i, (ActionRow, Label))
+                else i.to_dict()
+            )
             for i in components
         ]
         if components is not None
@@ -86,6 +92,19 @@ def _apply_components(result, components):
         part["value"] = _to_json(body)
         break
     return result
+
+
+def _uses_components_v2(components) -> bool:
+    return components is not MISSING and components is not None and any(
+        isinstance(component, Component) for component in components
+    )
+
+
+def _component_flags(flags, components):
+    if not _uses_components_v2(components):
+        return flags
+    value = 0 if flags is MISSING else flags.value
+    return MessageFlags._from_value(value | 32768)
 
 
 def handle_message_parameter(
@@ -119,7 +138,7 @@ def handle_message_parameter(
         avatar_url=avatar_url,
         tts=tts,
         nonce=nonce,
-        flags=flags,
+        flags=_component_flags(flags, components),
         file=file,
         files=files,
         embed=embed,
@@ -166,7 +185,7 @@ def handle_interaction_message_parameter(
         type=interaction_type,
         content=content,
         tts=tts,
-        flags=flags,
+        flags=_component_flags(flags, components),
         file=file,
         files=files,
         embed=embed,
