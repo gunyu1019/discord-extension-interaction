@@ -1,9 +1,11 @@
 """Auto-select interactions expose raw IDs and resolved Discord objects."""
 
 import discord
+from types import SimpleNamespace
 
 from discord.ext import interaction
 from discord.ext.interaction import interaction as interaction_module
+from discord.ext.interaction.serialization.resolved_selects import resolve_select_values
 
 
 def test_user_select_values_resolve_users(monkeypatch, offline_client, user_payload):
@@ -34,3 +36,18 @@ def test_string_select_values_remain_strings(monkeypatch, offline_client, user_p
     }
     context = interaction.ComponentsContext(payload, offline_client)
     assert context.resolved_values == ["red"]
+
+
+def test_role_mentionable_and_channel_select_resolve_entities(offline_client, user_payload):
+    context = SimpleNamespace(
+        _resolved={
+            "users": {user_payload["id"]: user_payload},
+            "roles": {"600": {"id": "600", "name": "admin"}},
+            "channels": {"700": {"id": "700", "guild_id": "300", "type": 0, "name": "general"}},
+        },
+        _state=offline_client._connection,
+        guild_id="300", guild=None, client=offline_client,
+    )
+    assert isinstance(resolve_select_values(context, 6, ["600"])[0], discord.Role)
+    assert isinstance(resolve_select_values(context, 7, [user_payload["id"]])[0], discord.User)
+    assert isinstance(resolve_select_values(context, 8, ["700"])[0], discord.TextChannel)

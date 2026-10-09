@@ -4,6 +4,7 @@ import pytest
 
 from discord.ext import interaction
 from discord.ext.interaction.components import from_payload
+from discord.ext.interaction.application.component_validation import validate_modal_components
 from discord.ext.interaction.parser import handle_message_parameter
 
 
@@ -24,3 +25,14 @@ def test_auto_select_message_round_trip(model, component_type):
 def test_auto_select_modal_label_serializes_child():
     label = interaction.Label(interaction.UserSelect("user"), label="Choose user")
     assert label.to_all_dict()["component"]["type"] == 5
+
+
+@pytest.mark.parametrize("model", [
+    interaction.UserSelect, interaction.RoleSelect,
+    interaction.MentionableSelect, interaction.ChannelSelect,
+])
+def test_auto_select_modal_rejects_disabled_and_required_zero_minimum(model):
+    with pytest.raises(ValueError, match="disabled"):
+        validate_modal_components([interaction.Label(model("pick", disabled=True), label="Pick")])
+    with pytest.raises(ValueError, match="required"):
+        validate_modal_components([interaction.Label(model("pick", min_values=0), label="Pick")])

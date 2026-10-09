@@ -73,6 +73,14 @@ def validate_string_select_payload(payload: dict, *, in_modal: bool) -> None:
             raise ValueError("required String Select needs min_values >= 1")
 
 
+def validate_auto_select_payload(payload: dict, *, in_modal: bool) -> None:
+    """Check fields that differ between message and modal auto-selects."""
+    if in_modal and payload.get("disabled"):
+        raise ValueError("auto-select cannot be disabled in a modal")
+    if in_modal and payload.get("required", True) and payload.get("min_values", 1) == 0:
+        raise ValueError("required auto-select needs min_values >= 1")
+
+
 def validate_modal_container(container) -> None:
     """Check the child of a modal Label or legacy ActionRow."""
     component_type = getattr(container, "TYPE", None)
@@ -86,6 +94,8 @@ def validate_modal_container(container) -> None:
             raise ValueError("modal Label requires one modal input component")
         if getattr(container.component, "TYPE", None) == 3:
             validate_string_select_payload(container.component.to_dict(), in_modal=True)
+        elif getattr(container.component, "TYPE", None) in (5, 6, 7, 8):
+            validate_auto_select_payload(container.component.to_payload(), in_modal=True)
     elif component_type == 1:
         children = container.components
         if children is None or len(children) != 1 or getattr(children[0], "TYPE", None) != 4:
