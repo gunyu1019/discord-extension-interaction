@@ -22,7 +22,11 @@ extras_require = {
 setup(
     name='Discord-Extension-Interaction',
     version=version,
-    packages=['discord.ext.interaction', 'discord.ext.interaction.serialization'],
+    packages=[
+        'discord.ext.interaction',
+        'discord.ext.interaction.serialization',
+        'discord.ext.interaction.transport',
+    ],
     url='https://github.com/gunyu1019/discord-extension-interaction',
     license='MIT',
     author='gunyu1019',

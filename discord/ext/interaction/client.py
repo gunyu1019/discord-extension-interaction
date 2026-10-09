@@ -49,6 +49,7 @@ from .interaction import (
     ModalSubmitContext,
 )
 from .message import Message
+from .transport.command_api import get_global_commands_with_localizations
 from .utils import async_all
 
 if TYPE_CHECKING:
@@ -301,7 +302,9 @@ class ClientBase:
         self,
     ) -> dict[ApplicationCommandType, dict[str, command_types]]:
         """Fetch and update all application commands registered in discord to discord bot."""
-        data = await self.http.get_global_commands(await self._application_id())
+        data = await get_global_commands_with_localizations(
+            self.http, await self._application_id()
+        )
         result = self._empty_command_map()
         for x in data:
             _x = from_payload(x)
