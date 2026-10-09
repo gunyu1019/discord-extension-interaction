@@ -129,7 +129,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
   - [x] **6-e1:** 수신 컴포넌트를 V2 모델과 중첩 레이아웃으로 복원한다.
   - [x] **6-e2:** 모달 응답과 Message.send의 V2 경로를 연결한다.
   - [x] **6-e3:** 메시지·인터랙션 전송과 수정 경로를 검증한다.
-- [ ] **6-f 파일 연결:** `attachment://` 참조와 multipart 첨부 파일을 함께 처리한다.
+- [x] **6-f 파일 연결:** `attachment://` 참조와 multipart 첨부 파일을 함께 처리한다.
 - [ ] **6-g 왕복 검증:** 중첩 레이아웃, 미디어, 플래그 및 레거시 공존을 테스트한다.
 
 ## 7. 버튼과 선택 메뉴

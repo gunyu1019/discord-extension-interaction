@@ -151,3 +151,21 @@ def validate_v2_component_layout(payloads: list[dict]) -> None:
 
     for payload in payloads:
         visit(payload, {1, 9, 10, 12, 13, 14, 17})
+
+
+def validate_attachment_references(payloads: list[dict], filenames: set[str]) -> None:
+    """Require every attachment:// media URL to name an attached file."""
+    def visit(value) -> None:
+        if isinstance(value, dict):
+            url = value.get("url")
+            if isinstance(url, str) and url.startswith("attachment://"):
+                filename = url[len("attachment://"):]
+                if not filename or filename not in filenames:
+                    raise ValueError(f"missing file for attachment reference: {url}")
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(payloads)

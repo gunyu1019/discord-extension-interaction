@@ -35,6 +35,7 @@ from .application.component_validation import (
     validate_legacy_message_components,
     validate_v2_component_count,
     validate_v2_component_layout,
+    validate_attachment_references,
     validate_v2_message_fields,
 )
 from .domain.component import Component
@@ -87,6 +88,7 @@ def _apply_components(result, components):
     )
     if components is not None and _uses_components_v2(components):
         validate_v2_component_layout(serialized)
+        validate_attachment_references(serialized, _attachment_filenames(result))
 
     if result.payload is not None:
         result.payload["components"] = serialized
@@ -108,6 +110,25 @@ def _uses_components_v2(components) -> bool:
     return components is not MISSING and components is not None and any(
         isinstance(component, Component) for component in components
     )
+
+
+def _attachment_filenames(result) -> set[str]:
+    filenames = {
+        file.filename for file in result.files or () if getattr(file, "filename", None)
+    }
+    payload = result.payload
+    if payload is None:
+        for part in result.multipart or ():
+            if part.get("name") == "payload_json":
+                payload = _from_json(part["value"])
+                break
+    if isinstance(payload, dict):
+        data = payload.get("data", payload)
+        filenames.update(
+            entry["filename"] for entry in data.get("attachments", ())
+            if isinstance(entry, dict) and entry.get("filename")
+        )
+    return filenames
 
 def _component_flags(flags, components):
     if not _uses_components_v2(components):
