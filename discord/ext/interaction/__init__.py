@@ -72,6 +72,7 @@ from .components import (
 )
 from .domain.text_display import TextDisplay
 from .domain.separator import Separator
+from .domain.section import Section
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext,
