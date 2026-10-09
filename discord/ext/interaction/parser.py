@@ -30,6 +30,7 @@ from collections.abc import Sequence
 
 
 from .components import ActionRow, Label, Button, Selection
+from .application.component_validation import validate_message_action_row
 
 if TYPE_CHECKING:
     from discord import Attachment, MessageFlags
@@ -52,6 +53,10 @@ def _apply_components(result, components):
     """
     if components is MISSING:
         return result
+
+    for component in components or ():
+        if isinstance(component, ActionRow):
+            validate_message_action_row(component)
 
     serialized = (
         [

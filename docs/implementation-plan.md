@@ -101,6 +101,9 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
     - [x] **5-d-d2:** Label 분리와 모달 파싱 회귀를 확인한다.
     - [x] **5-d-d3:** 레거시 유형 파서를 facade에서 분리한다.
 - [ ] **5-e 구조 검증:** 메시지/모달별 허용 위치, 개수, 필수 필드를 검증한다.
+  - [x] **5-e-a:** 메시지 ActionRow의 버튼·선택 메뉴 배치를 전송 전에 검증한다.
+  - [ ] **5-e-b:** 모달 Label과 기존 ActionRow의 자식 규칙을 검증한다.
+  - [ ] **5-e-c:** 최상위 배치와 custom_id 중복을 검증한다.
 - [ ] **5-f 호환 facade:** 기존 공개 생성자와 `to_dict`의 동작을 결정된 정책에 맞게 연결한다.
 - [ ] **5-g 왕복 검증:** 기존 유형과 알 수 없는 유형의 직렬화·역직렬화 테스트를 추가한다.
 
