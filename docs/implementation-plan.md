@@ -77,7 +77,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 ## 4. 인터랙션과 응답의 공통 구조
 
 - [x] **4-a 공통 데이터:** 원본 payload와 공통 메타데이터를 보존하는 도메인 모델을 만든다.
-- [ ] **4-b resolved 해석:** 사용자·멤버·역할·채널·메시지·첨부 파일을 공통 resolver에서 해석한다.
+- [x] **4-b resolved 해석:** 사용자·멤버·역할·채널·메시지·첨부 파일을 공통 resolver에서 해석한다.
 - [ ] **4-c 디스패처:** Gateway 이벤트 처리와 명령/컴포넌트/모달 실행을 분리한다.
 - [ ] **4-d 응답 상태:** 초기 응답, 지연, 원본 수정, 후속 응답의 상태 전이를 정의한다.
 - [ ] **4-e 응답 전송:** callback과 webhook 요청 생성 로직을 전송 어댑터로 모은다.

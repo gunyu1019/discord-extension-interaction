@@ -26,7 +26,6 @@ import logging
 from collections.abc import Sequence
 
 import discord
-from discord.channel import _channel_factory
 from discord.state import ConnectionState
 from discord.utils import MISSING
 
@@ -46,6 +45,7 @@ from .http import InteractionHTTPClient, InteractionData
 from .parser import handle_message_parameter
 from .message import Message
 from .serialization.resolved import resolve_attachment, resolve_mentionable
+from .serialization.resolved_objects import resolve_target
 from .utils import get_as_snowflake, channel_types, get_enum
 
 log = logging.getLogger()
@@ -374,71 +374,7 @@ class BaseApplicationContext(ModalPossible):
     def target(self, target_type, target_id: int = None):
         if target_id is None:
             target_id = self.target_id
-
-        if target_type == "message" and "messages" in self._resolved:
-            resolved = self._resolved.get("messages", {})
-            data = Message(
-                state=self._state,
-                channel=self.channel,
-                data=resolved.get(str(target_id)),
-            )
-            return data
-        elif (
-            target_type == "members"
-            and "members" in self._resolved
-            and self.guild_id is not None
-        ):
-            resolved = self._resolved.get("members", {})
-            member_data = resolved.get(str(target_id), {})
-
-            # USER DATA INJECT!
-            user_resolved = self._resolved.get("users", {})
-            user_data = user_resolved.get(str(target_id), {})
-            member_data["user"] = user_data
-
-            data = discord.Member(data=member_data, state=self._state, guild=self.guild)
-            return data
-        elif target_type == "users" and "users" in self._resolved:
-            resolved = self._resolved.get("users", {})
-            data = discord.User(
-                data=resolved.get(str(target_id), {}), state=self._state
-            )
-            return data
-        elif (
-            target_type == "roles"
-            and "roles" in self._resolved
-            and self.guild is not None
-        ):
-            resolved = self._resolved.get("roles", {})
-            data = discord.Role(
-                data=resolved.get(str(target_id), {}),
-                state=self._state,
-                guild=self.guild,
-            )
-            return data
-        elif target_type == "channels" and "channels" in self._resolved:
-            resolved = self._resolved.get("channels", {})
-            data = resolved.get(str(target_id))
-            if data is None:
-                return
-
-            factory, ch_type = _channel_factory(data["type"])
-            if factory is None:
-                raise discord.InvalidData(
-                    "Unknown channel type {type} for channel ID {id}.".format_map(data)
-                )
-
-            if ch_type in (discord.ChannelType.group, discord.ChannelType.private):
-                channel = factory(me=self.client.user, data=data, state=self._state)
-            else:
-                if "position" not in data:
-                    data["position"] = None
-
-                guild_id = int(data.get("guild_id") or self.guild_id)
-                guild = self.client.get_guild(guild_id) or discord.Object(id=guild_id)
-                channel = factory(guild=guild, state=self._state, data=data)
-
-            return channel
+        return resolve_target(self, target_type, target_id)
 
 
 class SubcommandContext(BaseApplicationContext):
