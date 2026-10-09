@@ -30,6 +30,7 @@ import discord
 from .enums import ApplicationCommandType, ApplicationContextType, ApplicationIntegrationType
 from .errors import InvalidArgument
 from .utils import get_enum
+from .serialization.command_metadata import to_register_fields
 
 if TYPE_CHECKING:
     from discord import ChannelType
@@ -520,15 +521,7 @@ class ApplicationCommand:
             "type": self.type.value,
             "description": self.description,
         }
-        if self.default_member_permissions is not None:
-            data["default_member_permissions"] = self.default_member_permissions
-
-        if len(self.contexts) > 0:
-            data["contexts"] = [int(context) for context in self.contexts]
-        if len(self.integration_types) > 0:
-            data["integration_types"] = [
-                int(integration_type) for integration_type in self.integration_types
-            ]
+        data.update(to_register_fields(self))
         return data
 
     @property

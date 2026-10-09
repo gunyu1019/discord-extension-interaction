@@ -52,6 +52,7 @@ def test_null_context_list_becomes_empty():
 
 def test_to_register_dict_emits_int_lists_and_round_trips():
     reg = from_payload(FULL).to_register_dict()
+    assert reg["nsfw"] is True
     assert reg["integration_types"] == [0, 1]
     assert reg["contexts"] == [0, 1, 2]
     assert all(type(x) is int for x in reg["contexts"] + reg["integration_types"])
@@ -64,6 +65,35 @@ def test_to_register_dict_tolerates_raw_int_constructor_args():
     reg = cmd.to_register_dict()
     assert reg["contexts"] == [0]
     assert reg["integration_types"] == [1]
+
+
+def test_command_metadata_registration_fields_and_round_trip():
+    command = ApplicationCommand(
+        name="restricted",
+        description="restricted command",
+        default_member_permissions="0",
+        nsfw=True,
+        integration_types=[ApplicationIntegrationType.GUILD_INSTALL],
+        contexts=[ApplicationContextType.GUILD],
+    )
+    fields = command.to_register_dict()
+
+    assert fields["default_member_permissions"] == "0"
+    assert fields["nsfw"] is True
+    assert fields["integration_types"] == [0]
+    assert fields["contexts"] == [0]
+
+    received = from_payload({**MINIMAL, **fields})
+    assert received.default_member_permissions == "0"
+    assert received.nsfw is True
+    assert received.integration_types == [ApplicationIntegrationType.GUILD_INSTALL]
+    assert received.contexts == [ApplicationContextType.GUILD]
+
+
+def test_command_metadata_default_is_not_nsfw():
+    fields = ApplicationCommand(name="public", description="safe").to_register_dict()
+    assert "nsfw" not in fields
+    assert "default_member_permissions" not in fields
 
 
 def test_equality_ignores_server_assigned_version():
