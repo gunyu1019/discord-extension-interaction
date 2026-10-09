@@ -96,6 +96,9 @@ def validate_modal_container(container) -> None:
             validate_string_select_payload(container.component.to_dict(), in_modal=True)
         elif getattr(container.component, "TYPE", None) in (5, 6, 7, 8):
             validate_auto_select_payload(container.component.to_payload(), in_modal=True)
+        elif getattr(container.component, "TYPE", None) == 21:
+            if container.component.options is None:
+                raise ValueError("modal Radio Group requires options")
     elif component_type == 1:
         children = container.components
         if children is None or len(children) != 1 or getattr(children[0], "TYPE", None) != 4:

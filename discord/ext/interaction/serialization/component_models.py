@@ -12,12 +12,14 @@ from ..domain.role_select import RoleSelect
 from ..domain.mentionable_select import MentionableSelect
 from ..domain.channel_select import ChannelSelect
 from ..domain.file_upload import FileUpload
+from ..domain.radio_group import RadioGroup
 from .components import ComponentRegistry
 
 
 _registry = ComponentRegistry()
 for _model in (Section, TextDisplay, Thumbnail, MediaGallery, File, Separator, Container,
-               UserSelect, RoleSelect, MentionableSelect, ChannelSelect, FileUpload):
+               UserSelect, RoleSelect, MentionableSelect, ChannelSelect, FileUpload,
+               RadioGroup):
     _registry.register(_model)
 
 

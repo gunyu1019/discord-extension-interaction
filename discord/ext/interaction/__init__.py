@@ -84,6 +84,7 @@ from .domain.mentionable_select import MentionableSelect
 from .domain.channel_select import ChannelSelect
 from .domain.select_default_value import SelectDefaultValue
 from .domain.file_upload import FileUpload
+from .domain.radio_group import RadioGroup, RadioGroupOption
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext,
