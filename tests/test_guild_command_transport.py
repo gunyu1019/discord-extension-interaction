@@ -3,6 +3,9 @@
 import asyncio
 
 from discord.ext.interaction.transport.command_api import (
+    create_guild_command,
+    delete_guild_command,
+    edit_guild_command,
     get_guild_command,
     get_guild_commands_with_localizations,
 )
@@ -35,3 +38,30 @@ def test_guild_command_get_uses_guild_endpoint():
     result = asyncio.run(get_guild_command(StubHTTP(), 200, 300, 400))
     assert result == {"id": "400"}
     assert calls == [(200, 300, 400)]
+
+
+def test_guild_command_writes_use_guild_endpoints():
+    calls = []
+
+    class StubHTTP:
+        async def upsert_guild_command(self, *args):
+            calls.append(("create", args))
+            return {"id": "400"}
+
+        async def edit_guild_command(self, *args):
+            calls.append(("edit", args))
+            return {"id": "400"}
+
+        async def delete_guild_command(self, *args):
+            calls.append(("delete", args))
+
+    http = StubHTTP()
+    payload = {"name": "hello", "type": 1, "description": "hi"}
+    assert asyncio.run(create_guild_command(http, 200, 300, payload)) == {"id": "400"}
+    assert asyncio.run(edit_guild_command(http, 200, 300, 400, payload)) == {"id": "400"}
+    assert asyncio.run(delete_guild_command(http, 200, 300, 400)) is None
+    assert calls == [
+        ("create", (200, 300, payload)),
+        ("edit", (200, 300, 400, payload)),
+        ("delete", (200, 300, 400)),
+    ]
