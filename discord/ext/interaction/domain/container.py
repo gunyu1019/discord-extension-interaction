@@ -4,6 +4,7 @@ from typing import Any
 
 from .component import Component
 from .section import Section
+from .media_gallery import MediaGallery
 from .separator import Separator
 from .text_display import TextDisplay
 from .unknown_component import UnknownComponent
@@ -13,6 +14,7 @@ _KNOWN_CHILDREN = {
     Section.TYPE: Section,
     TextDisplay.TYPE: TextDisplay,
     Separator.TYPE: Separator,
+    MediaGallery.TYPE: MediaGallery,
 }
 
 
