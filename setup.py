@@ -25,6 +25,7 @@ setup(
     packages=[
         'discord.ext.interaction',
         'discord.ext.interaction.application',
+        'discord.ext.interaction.domain',
         'discord.ext.interaction.serialization',
         'discord.ext.interaction.transport',
     ],
