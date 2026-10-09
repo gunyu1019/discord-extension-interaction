@@ -35,7 +35,7 @@ async def modal(ctx: interaction.ApplicationContext):
 
 
 @client.listen()
-async def on_modal(ctx: interaction.ModalContext):
+async def on_modal(ctx: interaction.ModalSubmitContext):
     await ctx.send(
         f"Short Text: {ctx.components[0].value}\n"
         f"Long Text: {ctx.components[1].value}"

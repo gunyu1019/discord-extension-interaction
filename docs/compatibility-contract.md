@@ -3,7 +3,7 @@
 현재 `setup.py`의 설치 계약은 Python 3.10 이상과 `discord.py>=2.7.1,<3`이다.
 `requirements.txt`도 같은 런타임 의존성 범위를 가진다. 이 작업에서는 이미 출시된
 버전의 최소 Python 버전이나 `discord.py` 범위를 임의로 변경하지 않는다. README에
-남아 있는 Python 3.9 및 `discord.py` 2.3 표기는 1-f에서 메타데이터에 맞춘다.
+README에 남아 있던 Python 3.9 및 `discord.py` 2.3 표기는 1-f에서 메타데이터에 맞췄다.
 
 ## 유지할 기존 공개 사용법
 

@@ -40,7 +40,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
       검증: 사용자·역할·첨부 파일 및 누락 데이터 테스트.
 - [x] **1-e 관리 메서드:** setup hook 제거와 ID 기준 명령 캐시 조회를 고친다.
       검증: 추가/제거 및 캐시 적중 테스트.
-- [ ] **1-f 예제 정합성:** README의 버전 요구사항과 오래된 공개 이름을 실제 코드에 맞춘다.
+- [x] **1-f 예제 정합성:** README의 버전 요구사항과 오래된 공개 이름을 실제 코드에 맞춘다.
       검증: 예제 import와 문서 코드 블록 검사.
 
 ## 2. 명령 정의와 범위

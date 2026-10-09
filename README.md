@@ -14,31 +14,31 @@ Based on discord.ext.commands, compatible with existing frames.
 <table>
     <thead>
         <tr>
-            <th>Moudle Name</th>
-            <th>Version</th>
-            <th>Tested</th>
+            <th>Module</th>
+            <th>Supported version</th>
+            <th>Local test</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td><a href="https://github.com/Rapptz/discord.py">discord.py</a></td>
-            <td>v2.3.0</td>
-            <td>✔️</td>
+            <td>&gt;=2.7.1,&lt;3</td>
+            <td>2.7.1</td>
         </tr>
         <tr>
             <td><a href="https://github.com/Pycord-Development/pycord">Pycord</a></td>
-            <td>v2.4.1</td>
-            <td>❌</td>
+            <td>Not supported</td>
+            <td>—</td>
         </tr>
     </tbody>
 </table>
 
-* Plans to support py-cord, but `discord-extension-interaction` is not supported now.
+The package uses `discord.py`; Pycord is outside the supported dependency range.
 
 # Installing
-**Python 3.9 or higher is required.**<br/>
+**Python 3.10 or higher is required.** The project CI runs on Python 3.10–3.13.<br/>
 
-To install the library without full voice support, you can just run the following command:
+Install the library and its `discord.py` dependency with:
 ```commandline
 # Linux/macOS
 python3 -m pip install -U discord-extension-interaction
@@ -47,7 +47,8 @@ python3 -m pip install -U discord-extension-interaction
 py -3 -m pip install -U discord-extension-interaction
 ```
 
-To install the library with discord.py
+The `[discordpy]` extra is retained for existing install commands. `discord.py` is
+already a required dependency.
 ```commandline
 # Linux/macOS
 python3 -m pip install -U discord-extension-interaction[discordpy]
@@ -69,13 +70,12 @@ from discord.ext import interaction
 from discord import Intents
 
 intents = Intents.default()
-bot = interaction.Client(global_sync_command=True, intents = intents)
+bot = interaction.Client(global_sync_command=True, intents=intents)
 
 
 @interaction.command(description="This is ping")
 async def ping(ctx: interaction.ApplicationContext):
     await ctx.send("pong!")
-    return
 
 bot.add_interaction(ping)
 bot.run("TOKEN")
