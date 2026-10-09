@@ -29,3 +29,44 @@ def validate_modal_container(container) -> None:
         children = container.components
         if children is None or len(children) != 1 or getattr(children[0], "TYPE", None) != 4:
             raise ValueError("modal ActionRow requires exactly one TextInput")
+
+
+def _validate_unique_custom_ids(components) -> None:
+    seen = set()
+    for component in components:
+        custom_id = getattr(component, "custom_id", None)
+        if custom_id is None:
+            continue
+        if not isinstance(custom_id, str) or not 1 <= len(custom_id) <= 100:
+            raise ValueError("component custom_id must contain 1 to 100 characters")
+        if custom_id in seen:
+            raise ValueError(f"duplicate component custom_id: {custom_id}")
+        seen.add(custom_id)
+
+
+def validate_legacy_message_components(components) -> None:
+    """Validate top-level rows and interaction IDs in a legacy message."""
+    if len(components) > 5:
+        raise ValueError("legacy message accepts at most 5 ActionRows")
+    children = []
+    for row in components:
+        if getattr(row, "TYPE", None) != 1:
+            raise ValueError("legacy message requires top-level ActionRows")
+        validate_message_action_row(row)
+        children.extend(row.components)
+    _validate_unique_custom_ids(children)
+
+
+def validate_modal_components(components) -> None:
+    """Validate modal container placement and interaction IDs."""
+    if not 1 <= len(components) <= 5:
+        raise ValueError("modal requires 1 to 5 top-level components")
+    children = []
+    for container in components:
+        component_type = getattr(container, "TYPE", None)
+        if component_type not in (1, 18, 10):
+            raise ValueError("modal requires top-level Labels, Text Displays, or legacy ActionRows")
+        if component_type in (1, 18):
+            validate_modal_container(container)
+            children.extend(container.components)
+    _validate_unique_custom_ids(children)

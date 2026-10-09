@@ -30,7 +30,7 @@ from discord.state import ConnectionState
 from discord.utils import MISSING
 
 from .commands import CommandOptionChoice
-from .application.component_validation import validate_modal_container
+from .application.component_validation import validate_modal_components
 from .components import (
     ActionRow,
     Button,
@@ -347,8 +347,7 @@ class ModalPossible(InteractionContext):
             A list of component included in the modal.
             Text inputs / selects wrapped in an Action Row or a Label are used.
         """
-        for component in components:
-            validate_modal_container(component)
+        validate_modal_components(components)
         payload = {
             "type": 9,
             "data": {

@@ -5,7 +5,10 @@ import asyncio
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.application.component_validation import validate_modal_container
+from discord.ext.interaction.application.component_validation import (
+    validate_modal_components,
+    validate_modal_container,
+)
 from discord.ext.interaction.parser import handle_message_parameter
 
 
@@ -44,6 +47,29 @@ def test_legacy_single_component_is_wrapped_without_mutation(component):
     assert supplied == [component]
 
 
+def test_message_rejects_duplicate_custom_ids_across_rows():
+    with pytest.raises(ValueError, match="duplicate.*custom_id"):
+        handle_message_parameter(
+            content="hello",
+            components=[interaction.ActionRow([_button(1)]), _button(1)],
+        )
+
+
+def test_legacy_message_rejects_more_than_five_rows():
+    with pytest.raises(ValueError, match="at most 5"):
+        handle_message_parameter(content="hello", components=[_button(i) for i in range(6)])
+
+
+@pytest.mark.parametrize(
+    "component",
+    [interaction.Label(interaction.TextInput(custom_id="x", style=1), label="X"),
+     interaction.TextInput(custom_id="x", style=1)],
+)
+def test_message_rejects_modal_only_top_level_components(component):
+    with pytest.raises(ValueError, match="top-level ActionRows"):
+        handle_message_parameter(content="hello", components=[component])
+
+
 @pytest.mark.parametrize(
     "children",
     [
@@ -79,6 +105,16 @@ def test_modal_accepts_label_and_legacy_text_input_row():
 def test_modal_rejects_invalid_container(container):
     with pytest.raises(ValueError, match="modal"):
         validate_modal_container(container)
+
+
+def test_modal_rejects_duplicate_custom_ids_and_message_components():
+    with pytest.raises(ValueError, match="duplicate.*custom_id"):
+        validate_modal_components([
+            interaction.Label(interaction.TextInput(custom_id="x", style=1), label="One"),
+            interaction.ActionRow([interaction.TextInput(custom_id="x", style=1)]),
+        ])
+    with pytest.raises(ValueError, match="top-level"):
+        validate_modal_components([_button(1)])
 
 
 def test_invalid_modal_does_not_consume_response(offline_client, user_payload):
