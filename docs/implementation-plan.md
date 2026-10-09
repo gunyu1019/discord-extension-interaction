@@ -135,6 +135,8 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 ## 7. 버튼과 선택 메뉴
 
 - [ ] **7-a 버튼 스타일:** 일반·링크·프리미엄 스타일의 custom_id/url/sku_id 규칙을 구현한다.
+  - [x] **7-a1:** Premium 스타일의 sku_id 생성과 직렬화·역직렬화를 추가한다.
+  - [ ] **7-a2:** 스타일별 필수·금지 필드를 검증한다.
 - [ ] **7-b String Select:** 옵션, 기본값, 모달 required 및 선택 결과를 정리한다.
 - [ ] **7-c 자동 선택:** User/Role/Mentionable/Channel Select를 독립 모델로 구현한다.
 - [ ] **7-d 기본 선택:** default_values와 Channel Select의 channel_types를 지원한다.

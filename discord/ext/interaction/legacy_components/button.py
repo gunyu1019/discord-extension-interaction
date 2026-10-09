@@ -19,6 +19,7 @@ class Button(Components):
         custom_id: str = None,
         url: str = None,
         disabled: bool = None,
+        sku_id: int | str = None,
     ):
         super().__init__(components_type=discord.ComponentType.button)
 
@@ -30,6 +31,7 @@ class Button(Components):
         self.emoji = emoji
         self.custom_id = custom_id
         self.url = url
+        self.sku_id = sku_id
         self.disabled = disabled
 
     def to_dict(self) -> dict:
@@ -48,6 +50,8 @@ class Button(Components):
             base["custom_id"] = self.custom_id
         if int(self.style) == 5 and self.url is not None:
             base["url"] = self.url
+        if int(self.style) == 6 and self.sku_id is not None:
+            base["sku_id"] = str(self.sku_id)
 
         if self.disabled is not None:
             base["disabled"] = self.disabled
@@ -61,6 +65,7 @@ class Button(Components):
         emoji = payload.get("emoji")
         custom_id = payload.get("custom_id")
         url = payload.get("url")
+        sku_id = payload.get("sku_id")
         disabled = payload.get("disabled", False)
         return cls(
             style=style,
@@ -68,6 +73,7 @@ class Button(Components):
             emoji=emoji,
             custom_id=custom_id,
             url=url,
+            sku_id=sku_id,
             disabled=disabled,
         )
 
