@@ -117,6 +117,17 @@ def test_modal_rejects_duplicate_custom_ids_and_message_components():
         validate_modal_components([_button(1)])
 
 
+def test_modal_label_length_and_top_level_count_boundaries():
+    input = interaction.TextInput(custom_id="name", style=1)
+    validate_modal_components([interaction.Label(input, label="L" * 45, description="D" * 100)])
+    with pytest.raises(ValueError, match="1 to 45"):
+        validate_modal_components([interaction.Label(input, label="L" * 46)])
+    with pytest.raises(ValueError, match="100"):
+        validate_modal_components([interaction.Label(input, label="L", description="D" * 101)])
+    with pytest.raises(ValueError, match="1 to 5"):
+        validate_modal_components([interaction.TextDisplay("Hint")] * 6)
+
+
 def test_invalid_modal_does_not_consume_response(offline_client, user_payload):
     payload = {
         "id": "40", "application_id": "20", "type": 2, "token": "tk",

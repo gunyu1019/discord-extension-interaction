@@ -153,7 +153,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 
 ## 8. 모달 입력
 
-- [ ] **8-a Label 규칙:** Label 자식 유형과 모달 내 배치 및 길이 제한을 검증한다.
+- [x] **8-a Label 규칙:** Label 자식 유형과 모달 내 배치 및 길이 제한을 검증한다.
 - [ ] **8-b File Upload:** 업로드 개수·형식 필터와 제출 결과의 첨부 파일을 지원한다.
 - [ ] **8-c Radio Group:** 옵션 모델, 기본 선택, 제출 value를 지원한다.
 - [ ] **8-d Checkbox Group:** 옵션, min/max, 제출 values를 지원한다.
