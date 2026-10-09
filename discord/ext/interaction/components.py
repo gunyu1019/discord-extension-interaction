@@ -22,8 +22,6 @@ SOFTWARE.
 """
 
 import inspect
-from typing import Any
-import discord
 
 from .core import BaseCore
 from .legacy_components.base import Components
@@ -33,25 +31,7 @@ from .legacy_components.button import Button
 from .legacy_components.select_option import SelectOption
 from .legacy_components.selection import Selection
 from .legacy_components.text_input import TextInput
-
-
-def from_payload(
-    payload: list[dict[str, Any]],
-) -> list[ActionRow | Button | Selection | TextInput | Label]:
-    components = []
-
-    for i in payload:
-        if i.get("type") == 1:
-            components.append(ActionRow.from_payload(i))
-        elif i.get("type") == 2:
-            components.append(Button.from_dict(i))
-        elif i.get("type") == 3:
-            components.append(Selection.from_dict(i))
-        elif i.get("type") == 4:
-            components.append(TextInput.from_dict(i))
-        elif i.get("type") == 18:
-            components.append(Label.from_payload(i))
-    return components
+from .legacy_components.parsing import from_payload
 
 
 # For Decorator

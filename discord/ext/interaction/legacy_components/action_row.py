@@ -27,8 +27,7 @@ class ActionRow(Components):
 
     @classmethod
     def from_payload(cls, payload: dict):
-        # The facade parser is retained until the remaining legacy models move.
-        from ..components import from_payload
+        from .parsing import from_payload
 
         components = from_payload(payload.get("components"))
         return cls(components=components)

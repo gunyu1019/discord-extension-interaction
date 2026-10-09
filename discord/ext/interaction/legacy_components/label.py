@@ -53,8 +53,7 @@ class Label(Components):
 
     @classmethod
     def from_payload(cls, payload: dict):
-        # The facade parser is retained until the remaining legacy models move.
-        from ..components import from_payload
+        from .parsing import from_payload
 
         child = from_payload([payload["component"]]) if payload.get("component") else []
         return cls(
