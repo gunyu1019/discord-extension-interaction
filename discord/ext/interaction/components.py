@@ -27,53 +27,11 @@ import discord
 
 from .core import BaseCore
 from .legacy_components.base import Components
+from .legacy_components.action_row import ActionRow
 from .legacy_components.button import Button
 from .legacy_components.select_option import SelectOption
 from .legacy_components.selection import Selection
 from .legacy_components.text_input import TextInput
-
-
-class ActionRow(Components):
-    """Represents an Action Row.
-
-    An Action Row is a non-interactive container component for other types of components.
-    This can contain up to five other Components.
-    And, It cannot contain an Action Row.
-
-    Attributes
-    ----------
-    components : list[Components]
-        Contains up to five Components.
-    """
-
-    TYPE = 1
-
-    def __init__(self, components: list[Components] = None):
-        super().__init__(components_type=discord.ComponentType.action_row)
-
-        self.components: list = components
-
-    def to_dict(self) -> dict:
-        return {"type": 1, "components": self.components}
-
-    def to_all_dict(self) -> dict:
-        return {"type": 1, "components": [i.to_dict() for i in self.components]}
-
-    @classmethod
-    def from_dict(cls, payload: dict):
-        components = payload.get("components")
-        return cls(components=components)
-
-    @classmethod
-    def from_payload(cls, payload: dict):
-        components = from_payload(payload.get("components"))
-        return cls(components=components)
-
-    def __eq__(self, other):
-        return self.components == other.components and super().__eq__(other)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
 
 class Label(Components):
