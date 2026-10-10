@@ -15,3 +15,18 @@
 - [ ] 완료 시 앱/길드, 실행 날짜, 각 항목 결과와 Discord 응답 오류를 기록한다.
 
 이 항목은 앱 자격 증명과 테스트 guild가 준비되어야 실행할 수 있다.
+
+## 명령 REST 점검
+
+저장소의 Git 제외 파일 `.env`에 `DISCORD_TEST_BOT_TOKEN`,
+`DISCORD_TEST_APPLICATION_ID`, `DISCORD_TEST_GUILD_ID`를 설정한다.
+기존 `DISCORD_GUILD_ID`도 읽는다. 비밀 값은 출력하거나 커밋하지 않는다.
+
+```powershell
+.venv\Scripts\python.exe examples\live_smoke_commands.py
+.venv\Scripts\python.exe examples\live_smoke_commands.py --crud
+```
+
+첫 명령은 전역·테스트 guild의 명령 목록만 읽는다. `--crud`는 각 범위에 고유 이름의
+CHAT_INPUT, USER, MESSAGE 명령을 만들고 조회한 다음 CHAT_INPUT을 수정한다. 마지막에는
+이번 실행에서 생성한 ID만 삭제한다. 다른 명령을 정리하거나 전체 동기화를 실행하지 않는다.
