@@ -62,6 +62,10 @@ from .message import Message
 from .transport.command_api import (
     get_global_commands_with_localizations,
     get_guild_commands_with_localizations,
+    create_guild_command,
+    edit_guild_command,
+    delete_guild_command,
+    get_guild_command,
 )
 from .transport.command_sync_api import CommandSyncAPI
 from .utils import async_all
@@ -157,10 +161,20 @@ class ClientBase:
         command: ApplicationCommand
             Application Command to register with discord bot.
         """
+        if isinstance(command.scope, GuildScope):
+            await self.fetch_guild_commands(command.scope.guild_id)
+            existing = self._remote_command_registry.get(
+                command.scope, command.type, command.name,
+            )
+            if existing is not None:
+                raise CommandRegistrationError(command.name)
+            return await create_guild_command(
+                self.http, await self._application_id(), command.scope.guild_id,
+                command.to_register_dict(),
+            )
         command_ids = await self._fetch_command_cached()
         if command.name in command_ids[command.type]:
             raise CommandRegistrationError(command.name)
-
         return await self.http.upsert_global_command(
             await self._application_id(), payload=command.to_register_dict()
         )
@@ -168,12 +182,18 @@ class ClientBase:
     async def _find_command(
         self, command: ApplicationCommand, command_id: int
     ) -> int | None:
-        if command_id is None and command.id is None:
-            command_ids = await self._fetch_command_cached()
-            if command.name not in command_ids[command.type]:
+        if command_id is None and not command.id:
+            if isinstance(command.scope, GuildScope):
+                await self.fetch_guild_commands(command.scope.guild_id)
+                found = self._remote_command_registry.get(
+                    command.scope, command.type, command.name,
+                )
+            else:
+                command_ids = await self._fetch_command_cached()
+                found = command_ids[command.type].get(command.name)
+            if found is None:
                 raise CommandNotFound(f'Command "{command.name}" is not found')
-
-            command_id = command_ids[command.type][command.name].id
+            command_id = found.id
         return command_id
 
     async def edit_command(
@@ -189,6 +209,11 @@ class ClientBase:
             Edit application command's id
         """
         command_id = await self._find_command(command, command_id)
+        if isinstance(command.scope, GuildScope):
+            return await edit_guild_command(
+                self.http, await self._application_id(), command.scope.guild_id,
+                int(command_id or command.id), command.to_register_dict(),
+            )
         return await self.http.edit_global_command(
             await self._application_id(),
             command_id=command_id or command.id,
@@ -206,6 +231,11 @@ class ClientBase:
             Delete application command's id
         """
         command_id = await self._find_command(command, command_id)
+        if isinstance(command.scope, GuildScope):
+            return await delete_guild_command(
+                self.http, await self._application_id(), command.scope.guild_id,
+                int(command_id or command.id),
+            )
         return await self.http.delete_global_command(
             await self._application_id(), command_id=command_id or command.id
         )
@@ -351,6 +381,7 @@ class ClientBase:
         command_id: int,
         use_cached: bool = False,
         command_type: ApplicationCommandType = None,
+        scope: GlobalScope | GuildScope | None = None,
     ) -> command_types:
         """Fetches and updates the application commands specified in the discord to the client.
 
@@ -370,6 +401,19 @@ class ClientBase:
         """
         if command_type is None:
             command_type = ApplicationCommandType.CHAT_INPUT
+
+        if isinstance(scope, GuildScope):
+            if use_cached:
+                for candidate in self._remote_command_registry.for_scope(scope).values():
+                    if str(candidate.id) == str(command_id):
+                        return candidate
+            data = await get_guild_command(
+                self.http, await self._application_id(), scope.guild_id, command_id,
+            )
+            result = from_payload({**data, "guild_id": str(scope.guild_id)})
+            if use_cached:
+                self._remote_command_registry.upsert(result)
+            return result
 
         if use_cached:
             cached_command_list = await self._fetch_command_cached()

@@ -30,6 +30,11 @@ class CommandRegistry:
         self._commands[key] = command
         return key
 
+    def upsert(self, command) -> CommandKey:
+        key = CommandKey.from_command(command)
+        self._commands[key] = command
+        return key
+
     def get(
         self, scope: CommandScope, command_type: ApplicationCommandType,
         name: str, *, fallback_global: bool = False,
