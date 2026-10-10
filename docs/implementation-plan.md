@@ -168,6 +168,8 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 
 - [ ] **9-a HTTP 수신:** Gateway와 같은 디스패처로 보내는 HTTP 어댑터를 추가한다.
 - [ ] **9-b 서명과 PING:** Ed25519 검증, 유효하지 않은 요청 거부, PING/PONG을 구현한다.
+  - [x] **9-b1:** Ed25519 검증기를 별도 전송 모듈에 구현하고 정상·변조 서명을 검증한다.
+  - [ ] **9-b2:** HTTP 엔드포인트의 401 거부와 PING/PONG을 검증한다.
 - [ ] **9-c 응답 방식:** HTTP inline 응답과 callback 요청의 유효한 사용 경로를 정리한다.
 - [ ] **9-d Activity:** PRIMARY_ENTRY_POINT 명령과 LAUNCH_ACTIVITY 응답을 지원한다.
 - [ ] **9-e 명령 권한:** 별도 인증 요구사항을 가진 서버별 명령 권한 API를 분리한다.

@@ -15,6 +15,7 @@ install_requires = [
 
 extras_require = {
     'discordpy': ['discord.py>=2.7.1,<3'],
+    'http': ['PyNaCl>=1.5,<2'],
     'test': ['pytest>=7', 'pytest-cov'],
     'lint': ['pycodestyle', 'black'],
 }
