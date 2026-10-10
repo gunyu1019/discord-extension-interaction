@@ -40,8 +40,11 @@ class Section(Component):
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "Section":
         children = [
-            TextDisplay.from_payload(item) if item["type"] == 10
-            else UnknownComponent.from_payload(item)
+            (
+                TextDisplay.from_payload(item)
+                if item["type"] == 10
+                else UnknownComponent.from_payload(item)
+            )
             for item in payload["components"]
         ]
         return cls(

@@ -24,19 +24,28 @@ class FileUpload(Component):
         super().__init__(id=id)
         if not isinstance(custom_id, str) or not 1 <= len(custom_id) <= 100:
             raise ValueError("File Upload custom_id requires 1 to 100 characters")
-        if (type(min_values) is not int or type(max_values) is not int
-                or not 0 <= min_values <= max_values <= 10):
-            raise ValueError("File Upload min_values/max_values must be between 0 and 10")
+        if (
+            type(min_values) is not int
+            or type(max_values) is not int
+            or not 0 <= min_values <= max_values <= 10
+        ):
+            raise ValueError(
+                "File Upload min_values/max_values must be between 0 and 10"
+            )
         if type(required) is not bool or (required and min_values == 0):
             raise ValueError("required File Upload needs min_values >= 1")
         if file_types is not None and (
-            len(file_types) > 10 or any(
-                not isinstance(item, str) or item not in ("image", "video", "audio")
+            len(file_types) > 10
+            or any(
+                not isinstance(item, str)
+                or item not in ("image", "video", "audio")
                 and not (item.startswith(".") and len(item) > 1)
                 for item in file_types
             )
         ):
-            raise ValueError("File Upload file_types must be media categories or extensions")
+            raise ValueError(
+                "File Upload file_types must be media categories or extensions"
+            )
         self.custom_id = custom_id
         self.min_values = min_values
         self.max_values = max_values

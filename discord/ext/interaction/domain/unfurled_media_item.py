@@ -20,5 +20,7 @@ class UnfurledMediaItem:
     def from_payload(cls, payload: dict[str, Any]) -> "UnfurledMediaItem":
         return cls(
             payload["url"],
-            response_fields={key: value for key, value in payload.items() if key != "url"},
+            response_fields={
+                key: value for key, value in payload.items() if key != "url"
+            },
         )

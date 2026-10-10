@@ -11,8 +11,12 @@ class Checkbox(Component):
     TYPE = 23
 
     def __init__(
-        self, custom_id: str, *, default: bool | None = None,
-        value: bool | None = None, id: int | None = None,
+        self,
+        custom_id: str,
+        *,
+        default: bool | None = None,
+        value: bool | None = None,
+        id: int | None = None,
     ):
         super().__init__(id=id)
         if not isinstance(custom_id, str) or not 1 <= len(custom_id) <= 100:
@@ -34,6 +38,8 @@ class Checkbox(Component):
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "Checkbox":
         return cls(
-            payload["custom_id"], default=payload.get("default"),
-            value=payload.get("value"), id=payload.get("id"),
+            payload["custom_id"],
+            default=payload.get("default"),
+            value=payload.get("value"),
+            id=payload.get("id"),
         )

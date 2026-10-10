@@ -57,7 +57,10 @@ class MediaGallery(Component):
         self.items = list(items)
 
     def to_payload(self) -> dict[str, Any]:
-        return {**self._base_payload(), "items": [item.to_payload() for item in self.items]}
+        return {
+            **self._base_payload(),
+            "items": [item.to_payload() for item in self.items],
+        }
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "MediaGallery":

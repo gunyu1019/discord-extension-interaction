@@ -12,5 +12,7 @@ class SyncCommand:
     delete: bool = True
 
     def __post_init__(self):
-        if any(type(value) is not bool for value in (self.create, self.edit, self.delete)):
+        if any(
+            type(value) is not bool for value in (self.create, self.edit, self.delete)
+        ):
             raise TypeError("SyncCommand create, edit and delete must be booleans")

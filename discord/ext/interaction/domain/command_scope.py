@@ -23,7 +23,8 @@ CommandScope = GlobalScope | GuildScope
 
 
 def resolve_scope(
-    scope: CommandScope | None, guild_id: int | str | None,
+    scope: CommandScope | None,
+    guild_id: int | str | None,
 ) -> CommandScope:
     """Keep legacy ``guild_id`` and the new ``scope`` declaration consistent."""
     if scope is not None and not isinstance(scope, (GlobalScope, GuildScope)):

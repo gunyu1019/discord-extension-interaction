@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,7 +28,11 @@ from typing import TYPE_CHECKING
 
 import discord
 
-from .enums import ApplicationCommandType, ApplicationContextType, ApplicationIntegrationType
+from .enums import (
+    ApplicationCommandType,
+    ApplicationContextType,
+    ApplicationIntegrationType,
+)
 from .domain.command_scope import CommandScope, GuildScope, resolve_scope
 from .errors import InvalidArgument
 from .utils import get_enum
@@ -37,8 +42,12 @@ from .serialization.localizations import add_localizations, read_localizations
 if TYPE_CHECKING:
     from discord import ChannelType
     from discord.types.command import ApplicationCommand as OriginApplicationCommand
-    from discord.types.command import ApplicationCommandOptionChoice as OriginApplicationCommandOptionChoice
-    from discord.types.command import ApplicationCommandOption as OriginApplicationCommandOption
+    from discord.types.command import (
+        ApplicationCommandOptionChoice as OriginApplicationCommandOptionChoice,
+    )
+    from discord.types.command import (
+        ApplicationCommandOption as OriginApplicationCommandOption,
+    )
     from typing import Type, Union, Optional
 
 log = logging.getLogger(__name__)
@@ -294,9 +303,7 @@ class CommandOption:
             data["min_length"] = self.min_length
         if self.max_length is not None:
             data["max_length"] = self.max_length
-        add_localizations(
-            data, self.name_localizations, self.description_localizations
-        )
+        add_localizations(data, self.name_localizations, self.description_localizations)
         return data
 
     def __eq__(self, other: "CommandOption"):
@@ -423,9 +430,7 @@ class ApplicationSubcommand:
             "type": self._get_type_id,
             "options": [opt.to_dict() for opt in self.options],
         }
-        add_localizations(
-            data, self.name_localizations, self.description_localizations
-        )
+        add_localizations(data, self.name_localizations, self.description_localizations)
         return data
 
     def __eq__(self, other):
@@ -480,9 +485,7 @@ class ApplicationSubcommandGroup:
             "type": self._get_type_id,
             "options": [opt.to_dict() for opt in self.options],
         }
-        add_localizations(
-            data, self.name_localizations, self.description_localizations
-        )
+        add_localizations(data, self.name_localizations, self.description_localizations)
         return data
 
     def __eq__(self, other):
@@ -548,7 +551,9 @@ class ApplicationCommand:
         self.default_member_permissions: str | None = default_member_permissions
 
         self.nsfw: bool = nsfw
-        self.integration_types: list[int | ApplicationIntegrationType] = integration_types or []
+        self.integration_types: list[int | ApplicationIntegrationType] = (
+            integration_types or []
+        )
         self.contexts: list[int | ApplicationContextType] = contexts or []
         self.name_localizations = dict(name_localizations or {})
         self.description_localizations = dict(description_localizations or {})
@@ -575,8 +580,7 @@ class ApplicationCommand:
             for x in (data.get("integration_types") or [])
         ]
         new_cls.contexts = [
-            get_enum(ApplicationContextType, x)
-            for x in (data.get("contexts") or [])
+            get_enum(ApplicationContextType, x) for x in (data.get("contexts") or [])
         ]
         new_cls.name_localizations = read_localizations(data, "name_localizations")
         new_cls.description_localizations = read_localizations(
@@ -592,9 +596,7 @@ class ApplicationCommand:
             "description": self.description,
         }
         data.update(to_register_fields(self))
-        add_localizations(
-            data, self.name_localizations, self.description_localizations
-        )
+        add_localizations(data, self.name_localizations, self.description_localizations)
         return data
 
     @property
@@ -636,7 +638,7 @@ class SlashCommand(ApplicationCommand):
         options: list[
             CommandOption | ApplicationSubcommandGroup | ApplicationSubcommand
         ] = None,
-        **kwargs
+        **kwargs,
     ):
         if options is None:
             options = []
@@ -694,6 +696,7 @@ def from_payload(data: OriginApplicationCommand) -> command_types:
         _result = ContextMenu.from_payload(data)
     elif data["type"] == ApplicationCommandType.PRIMARY_ENTRY_POINT:
         from .domain.activity_command import ActivityCommand
+
         _result = ActivityCommand.from_payload(data)
     else:
         _result = ApplicationCommand.from_payload(data)

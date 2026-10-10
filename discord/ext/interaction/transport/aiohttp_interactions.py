@@ -14,8 +14,11 @@ class AiohttpInteractionAdapter:
     """Verify HTTP interactions and route them through the Gateway dispatcher."""
 
     def __init__(
-        self, client, public_key: str,
-        *, inline_handler: Callable[[object], Awaitable[dict]] | None = None,
+        self,
+        client,
+        public_key: str,
+        *,
+        inline_handler: Callable[[object], Awaitable[dict]] | None = None,
     ):
         self.client = client
         self.verifier = InteractionSignatureVerifier(public_key)
@@ -25,7 +28,8 @@ class AiohttpInteractionAdapter:
         body = await request.read()
         if not self.verifier.verify(
             request.headers.get("X-Signature-Ed25519"),
-            request.headers.get("X-Signature-Timestamp"), body,
+            request.headers.get("X-Signature-Timestamp"),
+            body,
         ):
             raise web.HTTPUnauthorized(text="invalid request signature")
         try:
@@ -44,7 +48,9 @@ class AiohttpInteractionAdapter:
             if context is None:
                 raise web.HTTPBadRequest(text="unsupported interaction type")
             try:
-                response = await asyncio.wait_for(self.inline_handler(context), timeout=2.5)
+                response = await asyncio.wait_for(
+                    self.inline_handler(context), timeout=2.5
+                )
                 validate_inline_response(payload["type"], response)
             except (ValueError, asyncio.TimeoutError) as error:
                 raise web.HTTPInternalServerError(text=str(error)) from error

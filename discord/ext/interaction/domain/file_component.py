@@ -21,7 +21,9 @@ class File(Component):
         id: int | None = None,
     ):
         super().__init__(id=id)
-        if not isinstance(file, UnfurledMediaItem) or not file.url.startswith("attachment://"):
+        if not isinstance(file, UnfurledMediaItem) or not file.url.startswith(
+            "attachment://"
+        ):
             raise ValueError("File requires an attachment:// media reference")
         if type(spoiler) is not bool:
             raise ValueError("File spoiler must be a boolean")

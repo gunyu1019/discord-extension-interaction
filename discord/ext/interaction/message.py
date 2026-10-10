@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -64,7 +65,7 @@ class Message(OriginMessage):
         *,
         state: ConnectionState,
         channel: TextChannel | DMChannel | GroupChannel,
-        data: dict[str, Any]
+        data: dict[str, Any],
     ):
         if "message_reference" in data and "channel_id" not in data.get(
             "message_reference", {}
@@ -119,7 +120,7 @@ class Message(OriginMessage):
         attachments: Sequence[Attachment | File] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
         components: list[ActionRow | Button | Selection | Component] = MISSING,
-        stickers: list[Sticker] = MISSING
+        stickers: list[Sticker] = MISSING,
     ):
         message = MessageEditable(self.channel, self.id)
         return await message.edit(
@@ -166,7 +167,7 @@ class MessageTransferable:
         reference: Message | MessageReference | PartialMessage = None,
         mention_author: bool = None,
         stickers: list[Sticker | int] = MISSING,
-        suppress_embeds: bool = False
+        suppress_embeds: bool = False,
     ):
         if reference is not None:
             try:
@@ -234,7 +235,7 @@ class MessageEditable:
         attachments: Sequence[Attachment | File] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
         components: list[ActionRow | Button | Selection | Component] = MISSING,
-        stickers: list[Sticker] = MISSING
+        stickers: list[Sticker] = MISSING,
     ):
         if attachment is not MISSING:
             if attachment is not MISSING and attachments is not MISSING:

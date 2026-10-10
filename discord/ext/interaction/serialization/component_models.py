@@ -17,11 +17,24 @@ from ..domain.checkbox_group import CheckboxGroup
 from ..domain.checkbox import Checkbox
 from .components import ComponentRegistry
 
-
 _registry = ComponentRegistry()
-for _model in (Section, TextDisplay, Thumbnail, MediaGallery, File, Separator, Container,
-               UserSelect, RoleSelect, MentionableSelect, ChannelSelect, FileUpload,
-               RadioGroup, CheckboxGroup, Checkbox):
+for _model in (
+    Section,
+    TextDisplay,
+    Thumbnail,
+    MediaGallery,
+    File,
+    Separator,
+    Container,
+    UserSelect,
+    RoleSelect,
+    MentionableSelect,
+    ChannelSelect,
+    FileUpload,
+    RadioGroup,
+    CheckboxGroup,
+    Checkbox,
+):
     _registry.register(_model)
 
 

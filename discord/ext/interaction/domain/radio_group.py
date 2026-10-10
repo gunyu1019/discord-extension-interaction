@@ -16,8 +16,13 @@ class RadioGroup(Component):
     TYPE = 21
 
     def __init__(
-        self, custom_id: str, options: list[RadioGroupOption] | None = None, *,
-        required: bool = True, value: str | None = None, id: int | None = None,
+        self,
+        custom_id: str,
+        options: list[RadioGroupOption] | None = None,
+        *,
+        required: bool = True,
+        value: str | None = None,
+        id: int | None = None,
     ):
         super().__init__(id=id)
         if not isinstance(custom_id, str) or not 1 <= len(custom_id) <= 100:
@@ -27,7 +32,9 @@ class RadioGroup(Component):
             or not all(isinstance(option, RadioGroupOption) for option in options)
             or sum(option.default is True for option in options) > 1
         ):
-            raise ValueError("Radio Group requires 2 to 10 options and at most one default")
+            raise ValueError(
+                "Radio Group requires 2 to 10 options and at most one default"
+            )
         if type(required) is not bool:
             raise ValueError("Radio Group required must be a boolean")
         self.custom_id = custom_id
@@ -48,7 +55,8 @@ class RadioGroup(Component):
             payload["custom_id"],
             options=(
                 [RadioGroupOption.from_payload(option) for option in payload["options"]]
-                if "options" in payload else None
+                if "options" in payload
+                else None
             ),
             required=payload.get("required", True),
             value=payload.get("value"),

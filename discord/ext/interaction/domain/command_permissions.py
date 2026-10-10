@@ -24,12 +24,17 @@ class CommandPermission:
             raise ValueError("permission must be a boolean")
 
     def to_payload(self) -> dict:
-        return {"id": str(self.id), "type": int(self.type), "permission": self.permission}
+        return {
+            "id": str(self.id),
+            "type": int(self.type),
+            "permission": self.permission,
+        }
 
     @classmethod
     def from_payload(cls, payload: dict) -> "CommandPermission":
         return cls(
-            id=int(payload["id"]), type=CommandPermissionType(payload["type"]),
+            id=int(payload["id"]),
+            type=CommandPermissionType(payload["type"]),
             permission=payload["permission"],
         )
 
@@ -44,8 +49,11 @@ class GuildCommandPermissions:
     @classmethod
     def from_payload(cls, payload: dict) -> "GuildCommandPermissions":
         return cls(
-            id=int(payload["id"]), application_id=int(payload["application_id"]),
+            id=int(payload["id"]),
+            application_id=int(payload["application_id"]),
             guild_id=int(payload["guild_id"]),
-            permissions=tuple(CommandPermission.from_payload(item)
-                              for item in payload.get("permissions", [])),
+            permissions=tuple(
+                CommandPermission.from_payload(item)
+                for item in payload.get("permissions", [])
+            ),
         )

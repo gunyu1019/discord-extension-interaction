@@ -7,7 +7,11 @@ class ChoiceGroupOption:
     """Value, label, optional description and default selection."""
 
     def __init__(
-        self, value: str, label: str, *, description: str | None = None,
+        self,
+        value: str,
+        label: str,
+        *,
+        description: str | None = None,
         default: bool | None = None,
     ):
         if not isinstance(value, str) or not 1 <= len(value) <= 100:
@@ -36,6 +40,8 @@ class ChoiceGroupOption:
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "ChoiceGroupOption":
         return cls(
-            payload["value"], payload["label"],
-            description=payload.get("description"), default=payload.get("default"),
+            payload["value"],
+            payload["label"],
+            description=payload.get("description"),
+            default=payload.get("default"),
         )

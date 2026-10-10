@@ -11,7 +11,10 @@ class ActivityBinding:
     def __init__(self, command: ActivityCommand, callback=None):
         if not isinstance(command, ActivityCommand):
             raise TypeError("command must be an ActivityCommand")
-        if command.handler is ActivityHandler.APP_HANDLER and not inspect.iscoroutinefunction(callback):
+        if (
+            command.handler is ActivityHandler.APP_HANDLER
+            and not inspect.iscoroutinefunction(callback)
+        ):
             raise TypeError("APP_HANDLER requires an async callback")
         self.command = command
         self._callback = callback

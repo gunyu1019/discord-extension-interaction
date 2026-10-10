@@ -1,7 +1,6 @@
 import discord
 from discord.ext import interaction
 
-
 intents = discord.Intents.default()
 client = interaction.Client(global_sync_command=True, intents=intents)
 

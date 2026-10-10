@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -106,7 +107,9 @@ class ClientBase:
         self._sync_policies = SyncPolicyStore()
         self._completed_sync_scopes: set[GlobalScope | GuildScope] = set()
         self._sync_policy_lock = asyncio.Lock()
-        self._interactions: dict[ApplicationCommandType, dict[str, decorator_command_types]] = {
+        self._interactions: dict[
+            ApplicationCommandType, dict[str, decorator_command_types]
+        ] = {
             ApplicationCommandType.CHAT_INPUT: dict(),
             ApplicationCommandType.USER: dict(),
             ApplicationCommandType.MESSAGE: dict(),
@@ -164,12 +167,16 @@ class ClientBase:
         if isinstance(command.scope, GuildScope):
             await self.fetch_guild_commands(command.scope.guild_id)
             existing = self._remote_command_registry.get(
-                command.scope, command.type, command.name,
+                command.scope,
+                command.type,
+                command.name,
             )
             if existing is not None:
                 raise CommandRegistrationError(command.name)
             return await create_guild_command(
-                self.http, await self._application_id(), command.scope.guild_id,
+                self.http,
+                await self._application_id(),
+                command.scope.guild_id,
                 command.to_register_dict(),
             )
         command_ids = await self._fetch_command_cached()
@@ -186,7 +193,9 @@ class ClientBase:
             if isinstance(command.scope, GuildScope):
                 await self.fetch_guild_commands(command.scope.guild_id)
                 found = self._remote_command_registry.get(
-                    command.scope, command.type, command.name,
+                    command.scope,
+                    command.type,
+                    command.name,
                 )
             else:
                 command_ids = await self._fetch_command_cached()
@@ -211,8 +220,11 @@ class ClientBase:
         command_id = await self._find_command(command, command_id)
         if isinstance(command.scope, GuildScope):
             return await edit_guild_command(
-                self.http, await self._application_id(), command.scope.guild_id,
-                int(command_id or command.id), command.to_register_dict(),
+                self.http,
+                await self._application_id(),
+                command.scope.guild_id,
+                int(command_id or command.id),
+                command.to_register_dict(),
             )
         return await self.http.edit_global_command(
             await self._application_id(),
@@ -233,7 +245,9 @@ class ClientBase:
         command_id = await self._find_command(command, command_id)
         if isinstance(command.scope, GuildScope):
             return await delete_guild_command(
-                self.http, await self._application_id(), command.scope.guild_id,
+                self.http,
+                await self._application_id(),
+                command.scope.guild_id,
                 int(command_id or command.id),
             )
         return await self.http.delete_global_command(
@@ -370,7 +384,9 @@ class ClientBase:
         """Fetch a guild's commands using complete localization dictionaries."""
         scope = GuildScope(guild_id)
         data = await get_guild_commands_with_localizations(
-            self.http, await self._application_id(), guild_id,
+            self.http,
+            await self._application_id(),
+            guild_id,
         )
         parsed = [from_payload({**item, "guild_id": str(guild_id)}) for item in data]
         self._remote_command_registry.replace_scope(scope, parsed)
@@ -404,11 +420,16 @@ class ClientBase:
 
         if isinstance(scope, GuildScope):
             if use_cached:
-                for candidate in self._remote_command_registry.for_scope(scope).values():
+                for candidate in self._remote_command_registry.for_scope(
+                    scope
+                ).values():
                     if str(candidate.id) == str(command_id):
                         return candidate
             data = await get_guild_command(
-                self.http, await self._application_id(), scope.guild_id, command_id,
+                self.http,
+                await self._application_id(),
+                scope.guild_id,
+                command_id,
             )
             result = from_payload({**data, "guild_id": str(scope.guild_id)})
             if use_cached:
@@ -601,7 +622,11 @@ class ClientBase:
                     continue
                 result = await self.apply_sync_commands(scope, policy)
                 if result.failures:
-                    log.error("command synchronization failed for %s: %s", scope, result.failures)
+                    log.error(
+                        "command synchronization failed for %s: %s",
+                        scope,
+                        result.failures,
+                    )
                 else:
                     self._completed_sync_scopes.add(scope)
 
@@ -688,7 +713,10 @@ class ClientBase:
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if self._command_registry.get(command.scope, command.type, command.name) is not None:
+        if (
+            self._command_registry.get(command.scope, command.type, command.name)
+            is not None
+        ):
             raise CommandRegistrationError(command.name)
 
         if _parent is not None:
@@ -717,7 +745,11 @@ class ClientBase:
         return
 
     def add_activity_command(
-        self, command: ActivityCommand, callback=None, *, sync_command: bool = False,
+        self,
+        command: ActivityCommand,
+        callback=None,
+        *,
+        sync_command: bool = False,
     ) -> ActivityBinding:
         """Register an Activity entry point and optional app-owned callback."""
         binding = ActivityBinding(command, callback)
@@ -728,7 +760,9 @@ class ClientBase:
         """Get all interaction command included Application Command, User Command and Context Menu Command"""
         return self._command_registry.all()
 
-    def set_sync_command(self, scope: GlobalScope | GuildScope, policy: SyncCommand) -> None:
+    def set_sync_command(
+        self, scope: GlobalScope | GuildScope, policy: SyncCommand
+    ) -> None:
         """Set a runtime-only synchronization policy for one command scope."""
         self._sync_policies.set(scope, policy)
         self._completed_sync_scopes.discard(scope)
@@ -748,7 +782,9 @@ class ClientBase:
         return plan_sync(scope, self._command_registry, self._remote_command_registry)
 
     async def apply_sync_commands(
-        self, scope: GlobalScope | GuildScope, policy: SyncCommand | None = None,
+        self,
+        scope: GlobalScope | GuildScope,
+        policy: SyncCommand | None = None,
     ) -> SyncResult:
         """Apply an explicitly supplied or configured policy to one scope."""
         active_policy = policy or self._sync_policies.get(scope)
@@ -786,7 +822,10 @@ class ClientBase:
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if self._command_registry.get(command.scope, command.type, command.name) is None:
+        if (
+            self._command_registry.get(command.scope, command.type, command.name)
+            is None
+        ):
             raise CommandNotFound(f'Command "{command.name}" is not found')
 
         self._command_registry.remove(command)
@@ -864,7 +903,8 @@ class ClientBase:
 
     def _interaction_dispatcher(self) -> InteractionDispatcher:
         return InteractionDispatcher(
-            self, self._connection.dispatch,
+            self,
+            self._connection.dispatch,
             {
                 2: ApplicationContext,
                 3: ComponentsContext,
@@ -883,9 +923,16 @@ class ClientBase:
     async def process_interaction(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
         command_type = ApplicationCommandType(ctx.application_type)
-        scope = GuildScope(int(ctx.guild_id)) if getattr(ctx, "guild_id", None) else GlobalScope()
+        scope = (
+            GuildScope(int(ctx.guild_id))
+            if getattr(ctx, "guild_id", None)
+            else GlobalScope()
+        )
         command = self._command_registry.get(
-            scope, command_type, ctx.name, fallback_global=True,
+            scope,
+            command_type,
+            ctx.name,
+            fallback_global=True,
         ) or self._interactions[command_type].get(ctx.name)
         if command is None:
             return

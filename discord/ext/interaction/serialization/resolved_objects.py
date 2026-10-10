@@ -56,8 +56,8 @@ def resolve_target(context, target_type: str, target_id: int | str | None):
         channel_guild_id = channel_data.get("guild_id") or guild_id
         if channel_guild_id is None:
             return None
-        channel_guild = context.client.get_guild(int(channel_guild_id)) or discord.Object(
-            id=int(channel_guild_id)
-        )
+        channel_guild = context.client.get_guild(
+            int(channel_guild_id)
+        ) or discord.Object(id=int(channel_guild_id))
         return factory(guild=channel_guild, state=context._state, data=channel_data)
     return None

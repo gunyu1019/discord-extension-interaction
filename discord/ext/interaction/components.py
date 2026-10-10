@@ -38,7 +38,11 @@ from .domain.component import Component
 # For Decorator
 class DetectComponent(BaseCore):
     def __init__(
-        self, func, custom_id, component_type: type[Components | Component] = None, checks=None
+        self,
+        func,
+        custom_id,
+        component_type: type[Components | Component] = None,
+        checks=None,
     ):
         self.custom_id = custom_id
         self.type = component_type
@@ -47,7 +51,9 @@ class DetectComponent(BaseCore):
 
     @property
     def type_id(self) -> int | None:
-        if isinstance(self.type, type) and issubclass(self.type, (Components, Component)):
+        if isinstance(self.type, type) and issubclass(
+            self.type, (Components, Component)
+        ):
             return self.type.TYPE
         return None
 

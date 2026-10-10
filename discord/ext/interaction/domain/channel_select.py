@@ -18,7 +18,9 @@ class ChannelSelect(AutoSelect):
         if channel_types is not None and not all(
             type(value) is int and value >= 0 for value in normalized
         ):
-            raise ValueError("Channel Select channel_types must be nonnegative integers")
+            raise ValueError(
+                "Channel Select channel_types must be nonnegative integers"
+            )
         self.channel_types = normalized if channel_types is not None else None
 
     def to_payload(self) -> dict[str, Any]:
@@ -38,8 +40,12 @@ class ChannelSelect(AutoSelect):
             required=payload.get("required"),
             disabled=payload.get("disabled"),
             default_values=(
-                [SelectDefaultValue.from_payload(item) for item in payload["default_values"]]
-                if "default_values" in payload else None
+                [
+                    SelectDefaultValue.from_payload(item)
+                    for item in payload["default_values"]
+                ]
+                if "default_values" in payload
+                else None
             ),
             values=payload.get("values"),
             id=payload.get("id"),

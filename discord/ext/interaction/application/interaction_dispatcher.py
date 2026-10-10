@@ -16,7 +16,10 @@ class InteractionDispatcher:
     }
 
     def __init__(
-        self, client, dispatch: Callable, context_types: Mapping[int, type],
+        self,
+        client,
+        dispatch: Callable,
+        context_types: Mapping[int, type],
     ):
         self.client = client
         self.dispatch = dispatch
@@ -35,7 +38,10 @@ class InteractionDispatcher:
             scope = GuildScope(int(guild_id)) if guild_id else GlobalScope()
             registry = getattr(self.client, "_command_registry", None)
             registered = registry and registry.get(
-                scope, command_type, context.name, fallback_global=True,
+                scope,
+                command_type,
+                context.name,
+                fallback_global=True,
             )
             if not registered and not self.client._interactions.get(command_type):
                 return context

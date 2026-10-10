@@ -255,7 +255,10 @@ class Command(BaseCommand, SlashCommand):
 
         def decorator(func):
             new_cls = cls(
-                func, name=name, description=description, options=options,
+                func,
+                name=name,
+                description=description,
+                options=options,
                 name_localizations=name_localizations,
                 description_localizations=description_localizations,
                 parents=self,
@@ -342,7 +345,10 @@ def user(
 
     def decorator(func):
         return cls(
-            func, name=name, checks=checks, sync_command=sync_command,
+            func,
+            name=name,
+            checks=checks,
+            sync_command=sync_command,
             name_localizations=name_localizations,
             default_member_permissions=default_member_permissions,
             nsfw=nsfw,
@@ -371,7 +377,10 @@ def context(
 
     def decorator(func):
         return cls(
-            func, name=name, checks=checks, sync_command=sync_command,
+            func,
+            name=name,
+            checks=checks,
+            sync_command=sync_command,
             name_localizations=name_localizations,
             default_member_permissions=default_member_permissions,
             nsfw=nsfw,

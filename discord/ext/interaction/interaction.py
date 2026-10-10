@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from __future__ import annotations
 
 import logging
@@ -182,7 +183,8 @@ class InteractionContext:
         """Respond with Discord's LAUNCH_ACTIVITY callback (type 12)."""
         self._response_state.ensure_initial_available()
         result = await self.http.post_initial_response(
-            payload={"type": 12}, data=self.data,
+            payload={"type": 12},
+            data=self.data,
         )
         self._response_state.responded()
         self.responded = True
@@ -358,7 +360,9 @@ class InteractionContext:
 
 
 class ModalPossible(InteractionContext):
-    async def modal(self, custom_id: str, title: str, components: list[Components | Component]):
+    async def modal(
+        self, custom_id: str, title: str, components: list[Components | Component]
+    ):
         """Respond to this interaction by sending a modal.
 
         Parameters
@@ -379,9 +383,15 @@ class ModalPossible(InteractionContext):
                 "custom_id": custom_id,
                 "title": title,
                 "components": [
-                    i.to_payload() if isinstance(i, Component)
-                    else i.to_all_dict() if isinstance(i, (ActionRow, Label))
-                    else i.to_dict()
+                    (
+                        i.to_payload()
+                        if isinstance(i, Component)
+                        else (
+                            i.to_all_dict()
+                            if isinstance(i, (ActionRow, Label))
+                            else i.to_dict()
+                        )
+                    )
                     for i in components
                 ],
             },
@@ -575,9 +585,15 @@ class ComponentsContext(ModalPossible):
 
         self.custom_id = data.get("custom_id")
         self.component_type = data.get("component_type")
-        self.values: list[str] = list(data.get("values", ())) if self.component_type in (3, 5, 6, 7, 8) else []
+        self.values: list[str] = (
+            list(data.get("values", ()))
+            if self.component_type in (3, 5, 6, 7, 8)
+            else []
+        )
         self._resolved = data.get("resolved", {})
-        self.resolved_values = resolve_select_values(self, self.component_type, self.values)
+        self.resolved_values = resolve_select_values(
+            self, self.component_type, self.values
+        )
 
         self.message = Message(
             state=self._state, channel=self.channel, data=payload.get("message", {})
@@ -748,15 +764,21 @@ class ModalSubmitContext(InteractionContext):
         self.components: list[Components | Component] = _components
         self._resolved = data.get("resolved", {})
         self.file_uploads = {
-            component.custom_id: [resolve_attachment(self, value) for value in component.values]
-            for component in _components if isinstance(component, FileUpload)
+            component.custom_id: [
+                resolve_attachment(self, value) for value in component.values
+            ]
+            for component in _components
+            if isinstance(component, FileUpload)
         }
 
     def get_component(self, custom_id: str) -> Components | Component | None:
         """Return a submitted modal input by its Discord ``custom_id``."""
         return next(
-            (component for component in self.components
-             if getattr(component, "custom_id", None) == custom_id),
+            (
+                component
+                for component in self.components
+                if getattr(component, "custom_id", None) == custom_id
+            ),
             None,
         )
 

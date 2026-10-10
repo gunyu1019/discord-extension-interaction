@@ -36,8 +36,12 @@ class CommandRegistry:
         return key
 
     def get(
-        self, scope: CommandScope, command_type: ApplicationCommandType,
-        name: str, *, fallback_global: bool = False,
+        self,
+        scope: CommandScope,
+        command_type: ApplicationCommandType,
+        name: str,
+        *,
+        fallback_global: bool = False,
     ):
         result = self._commands.get(CommandKey(scope, command_type, name))
         if result is None and fallback_global and not isinstance(scope, GlobalScope):
@@ -48,7 +52,9 @@ class CommandRegistry:
         del self._commands[CommandKey.from_command(command)]
 
     def for_scope(self, scope: CommandScope) -> dict[CommandKey, object]:
-        return {key: value for key, value in self._commands.items() if key.scope == scope}
+        return {
+            key: value for key, value in self._commands.items() if key.scope == scope
+        }
 
     def replace_scope(self, scope: CommandScope, commands) -> None:
         """Refresh one remote scope without discarding other guild caches."""

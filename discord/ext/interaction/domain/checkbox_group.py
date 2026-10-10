@@ -37,13 +37,25 @@ class CheckboxGroup(Component):
         if type(required) is not bool:
             raise ValueError("Checkbox Group required must be a boolean")
         minimum = 1 if min_values is None else min_values
-        maximum = (len(options) if options is not None else 10) if max_values is None else max_values
-        if (type(minimum) is not int or type(maximum) is not int
-                or not 0 <= minimum <= maximum <= 10
-                or options is not None and maximum > len(options)
-                or required and minimum == 0):
+        maximum = (
+            (len(options) if options is not None else 10)
+            if max_values is None
+            else max_values
+        )
+        if (
+            type(minimum) is not int
+            or type(maximum) is not int
+            or not 0 <= minimum <= maximum <= 10
+            or options is not None
+            and maximum > len(options)
+            or required
+            and minimum == 0
+        ):
             raise ValueError("Checkbox Group min_values/max_values are invalid")
-        if options is not None and sum(option.default is True for option in options) > maximum:
+        if (
+            options is not None
+            and sum(option.default is True for option in options) > maximum
+        ):
             raise ValueError("Checkbox Group defaults exceed max_values")
         self.custom_id = custom_id
         self.options = list(options) if options is not None else None
@@ -68,8 +80,12 @@ class CheckboxGroup(Component):
         return cls(
             payload["custom_id"],
             options=(
-                [CheckboxGroupOption.from_payload(option) for option in payload["options"]]
-                if "options" in payload else None
+                [
+                    CheckboxGroupOption.from_payload(option)
+                    for option in payload["options"]
+                ]
+                if "options" in payload
+                else None
             ),
             min_values=payload.get("min_values"),
             max_values=payload.get("max_values"),

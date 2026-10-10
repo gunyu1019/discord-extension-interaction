@@ -9,14 +9,16 @@ def validate_message_action_row(row) -> None:
     types = [getattr(child, "TYPE", None) for child in children]
     if all(component_type == 2 for component_type in types):
         for child in children:
-            validate_button_payload({
-                "style": int(child.style),
-                "custom_id": child.custom_id,
-                "url": child.url,
-                "sku_id": child.sku_id,
-                "label": child.label,
-                "emoji": child.emoji,
-            })
+            validate_button_payload(
+                {
+                    "style": int(child.style),
+                    "custom_id": child.custom_id,
+                    "url": child.url,
+                    "sku_id": child.sku_id,
+                    "label": child.label,
+                    "emoji": child.emoji,
+                }
+            )
         return
     if len(types) == 1 and types[0] in (3, 5, 6, 7, 8):
         if types[0] == 3:
@@ -32,14 +34,24 @@ def validate_button_payload(payload: dict) -> None:
     url = payload.get("url")
     sku_id = payload.get("sku_id")
     if style in (1, 2, 3, 4):
-        valid = isinstance(custom_id, str) and 1 <= len(custom_id) <= 100 and url is None and sku_id is None
+        valid = (
+            isinstance(custom_id, str)
+            and 1 <= len(custom_id) <= 100
+            and url is None
+            and sku_id is None
+        )
     elif style == 5:
-        valid = isinstance(url, str) and bool(url) and custom_id is None and sku_id is None
+        valid = (
+            isinstance(url, str) and bool(url) and custom_id is None and sku_id is None
+        )
     elif style == 6:
         valid = (
-            str(sku_id).isdigit() and int(sku_id) > 0
-            and custom_id is None and url is None
-            and payload.get("label") is None and payload.get("emoji") is None
+            str(sku_id).isdigit()
+            and int(sku_id) > 0
+            and custom_id is None
+            and url is None
+            and payload.get("label") is None
+            and payload.get("emoji") is None
         )
     else:
         valid = False
@@ -53,16 +65,25 @@ def validate_string_select_payload(payload: dict, *, in_modal: bool) -> None:
     if not 1 <= len(options) <= 25:
         raise ValueError("String Select requires 1 to 25 options")
     for option in options:
-        if not all(isinstance(option.get(field), str) and 1 <= len(option[field]) <= 100
-                   for field in ("label", "value")):
-            raise ValueError("String Select option label and value require 1 to 100 characters")
+        if not all(
+            isinstance(option.get(field), str) and 1 <= len(option[field]) <= 100
+            for field in ("label", "value")
+        ):
+            raise ValueError(
+                "String Select option label and value require 1 to 100 characters"
+            )
         description = option.get("description")
-        if description is not None and (not isinstance(description, str) or len(description) > 100):
+        if description is not None and (
+            not isinstance(description, str) or len(description) > 100
+        ):
             raise ValueError("String Select option description exceeds 100 characters")
     minimum = payload.get("min_values", 1)
     maximum = payload.get("max_values", 1)
-    if (type(minimum) is not int or type(maximum) is not int
-            or not 0 <= minimum <= maximum <= 25):
+    if (
+        type(minimum) is not int
+        or type(maximum) is not int
+        or not 0 <= minimum <= maximum <= 25
+    ):
         raise ValueError("String Select min_values/max_values are invalid")
     if sum(option.get("default", False) is True for option in options) > maximum:
         raise ValueError("String Select defaults exceed max_values")
@@ -90,12 +111,25 @@ def validate_modal_container(container) -> None:
             raise ValueError("modal Label requires a label of 1 to 45 characters")
         if container.description is not None and len(container.description) > 100:
             raise ValueError("modal Label description exceeds 100 characters")
-        if getattr(container.component, "TYPE", None) not in (3, 4, 5, 6, 7, 8, 19, 21, 22, 23):
+        if getattr(container.component, "TYPE", None) not in (
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            19,
+            21,
+            22,
+            23,
+        ):
             raise ValueError("modal Label requires one modal input component")
         if getattr(container.component, "TYPE", None) == 3:
             validate_string_select_payload(container.component.to_dict(), in_modal=True)
         elif getattr(container.component, "TYPE", None) in (5, 6, 7, 8):
-            validate_auto_select_payload(container.component.to_payload(), in_modal=True)
+            validate_auto_select_payload(
+                container.component.to_payload(), in_modal=True
+            )
         elif getattr(container.component, "TYPE", None) == 21:
             if container.component.options is None:
                 raise ValueError("modal Radio Group requires options")
@@ -104,7 +138,11 @@ def validate_modal_container(container) -> None:
                 raise ValueError("modal Checkbox Group requires options")
     elif component_type == 1:
         children = container.components
-        if children is None or len(children) != 1 or getattr(children[0], "TYPE", None) != 4:
+        if (
+            children is None
+            or len(children) != 1
+            or getattr(children[0], "TYPE", None) != 4
+        ):
             raise ValueError("modal ActionRow requires exactly one TextInput")
 
 
@@ -142,20 +180,28 @@ def validate_modal_components(components) -> None:
     for container in components:
         component_type = getattr(container, "TYPE", None)
         if component_type not in (1, 18, 10):
-            raise ValueError("modal requires top-level Labels, Text Displays, or legacy ActionRows")
+            raise ValueError(
+                "modal requires top-level Labels, Text Displays, or legacy ActionRows"
+            )
         if component_type in (1, 18):
             validate_modal_container(container)
             children.extend(container.components)
     _validate_unique_custom_ids(children)
 
 
-def validate_v2_message_fields(*, content: bool, embeds: bool, poll: bool, stickers: bool) -> None:
+def validate_v2_message_fields(
+    *, content: bool, embeds: bool, poll: bool, stickers: bool
+) -> None:
     """Reject message fields disabled by IS_COMPONENTS_V2."""
     disabled = [
-        name for name, present in (
-            ("content", content), ("embeds", embeds),
-            ("poll", poll), ("stickers", stickers),
-        ) if present
+        name
+        for name, present in (
+            ("content", content),
+            ("embeds", embeds),
+            ("poll", poll),
+            ("stickers", stickers),
+        )
+        if present
     ]
     if disabled:
         raise ValueError("Components V2 cannot include " + ", ".join(disabled))
@@ -184,7 +230,9 @@ def validate_v2_component_layout(payloads: list[dict]) -> None:
     def visit(payload: dict, allowed: set[int]) -> None:
         component_type = payload.get("type")
         if component_type not in allowed:
-            raise ValueError(f"component type {component_type} is invalid in this V2 position")
+            raise ValueError(
+                f"component type {component_type} is invalid in this V2 position"
+            )
 
         component_id = payload.get("id")
         if component_id not in (None, 0):
@@ -210,10 +258,14 @@ def validate_v2_component_layout(payloads: list[dict]) -> None:
         if component_type == 1:
             children = payload.get("components", [])
             child_types = [child.get("type") for child in children]
-            if not (1 <= len(children) <= 5 and (
-                all(item == 2 for item in child_types)
-                or len(children) == 1 and child_types[0] in (3, 5, 6, 7, 8)
-            )):
+            if not (
+                1 <= len(children) <= 5
+                and (
+                    all(item == 2 for item in child_types)
+                    or len(children) == 1
+                    and child_types[0] in (3, 5, 6, 7, 8)
+                )
+            ):
                 raise ValueError("V2 ActionRow requires buttons or one select menu")
             for child in children:
                 visit(child, {2, 3, 5, 6, 7, 8})
@@ -237,11 +289,12 @@ def validate_v2_component_layout(payloads: list[dict]) -> None:
 
 def validate_attachment_references(payloads: list[dict], filenames: set[str]) -> None:
     """Require every attachment:// media URL to name an attached file."""
+
     def visit(value) -> None:
         if isinstance(value, dict):
             url = value.get("url")
             if isinstance(url, str) and url.startswith("attachment://"):
-                filename = url[len("attachment://"):]
+                filename = url[len("attachment://") :]
                 if not filename or filename not in filenames:
                     raise ValueError(f"missing file for attachment reference: {url}")
             for child in value.values():

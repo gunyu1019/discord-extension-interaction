@@ -15,7 +15,10 @@ class ActivityCommand(ApplicationCommand):
     """A global Activity entry point with an explicit handler strategy."""
 
     def __init__(
-        self, name: str, description: str, *,
+        self,
+        name: str,
+        description: str,
+        *,
         handler: ActivityHandler | int = ActivityHandler.DISCORD_LAUNCH_ACTIVITY,
         **kwargs,
     ):
@@ -24,13 +27,16 @@ class ActivityCommand(ApplicationCommand):
         if not isinstance(name, str) or not 1 <= len(name) <= 32:
             raise ValueError("Activity command name requires 1 to 32 characters")
         if not isinstance(description, str) or not 1 <= len(description) <= 100:
-            raise ValueError("Activity command description requires 1 to 100 characters")
+            raise ValueError(
+                "Activity command description requires 1 to 100 characters"
+            )
         try:
             self.handler = ActivityHandler(handler)
         except ValueError as error:
             raise ValueError("invalid Activity command handler") from error
         super().__init__(
-            name=name, description=description,
+            name=name,
+            description=description,
             command_type=ApplicationCommandType.PRIMARY_ENTRY_POINT,
             **kwargs,
         )

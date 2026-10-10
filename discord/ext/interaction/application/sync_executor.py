@@ -33,7 +33,9 @@ class SyncResult:
 
 
 async def apply_sync_plan(
-    plan: SyncPlan, policy: SyncCommand, transport,
+    plan: SyncPlan,
+    policy: SyncCommand,
+    transport,
 ) -> SyncResult:
     """Continue after individual API failures and report each attempted action."""
     results = []

@@ -20,11 +20,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from __future__ import annotations
 
 from discord.http import handle_message_parameters as origin_handle_message_parameter
 from discord.flags import MessageFlags
-from discord.webhook.async_ import interaction_message_response_params, interaction_response_params  # noqa
+from discord.webhook.async_ import (
+    interaction_message_response_params,
+    interaction_response_params,
+)  # noqa
 from discord.utils import MISSING, _from_json, _to_json
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
@@ -65,7 +69,11 @@ def _apply_components(result, components):
 
     if components is not None:
         components = [
-            ActionRow([component]) if isinstance(component, (Button, Selection)) else component
+            (
+                ActionRow([component])
+                if isinstance(component, (Button, Selection))
+                else component
+            )
             for component in components
         ]
 
@@ -81,9 +89,13 @@ def _apply_components(result, components):
     serialized = (
         [
             (
-                i.to_payload() if isinstance(i, Component)
-                else i.to_all_dict() if isinstance(i, (ActionRow, Label))
-                else i.to_dict()
+                i.to_payload()
+                if isinstance(i, Component)
+                else (
+                    i.to_all_dict()
+                    if isinstance(i, (ActionRow, Label))
+                    else i.to_dict()
+                )
             )
             for i in components
         ]
@@ -103,7 +115,11 @@ def _apply_components(result, components):
             continue
         body = _from_json(part["value"])
         # interaction callbacks wrap the message in {"type": ..., "data": {...}}
-        target = body["data"] if isinstance(body.get("data"), dict) and "type" in body else body
+        target = (
+            body["data"]
+            if isinstance(body.get("data"), dict) and "type" in body
+            else body
+        )
         target["components"] = serialized
         part["value"] = _to_json(body)
         break
@@ -111,8 +127,10 @@ def _apply_components(result, components):
 
 
 def _uses_components_v2(components) -> bool:
-    return components is not MISSING and components is not None and any(
-        isinstance(component, Component) for component in components
+    return (
+        components is not MISSING
+        and components is not None
+        and any(isinstance(component, Component) for component in components)
     )
 
 
@@ -129,10 +147,12 @@ def _attachment_filenames(result) -> set[str]:
     if isinstance(payload, dict):
         data = payload.get("data", payload)
         filenames.update(
-            entry["filename"] for entry in data.get("attachments", ())
+            entry["filename"]
+            for entry in data.get("attachments", ())
             if isinstance(entry, dict) and entry.get("filename")
         )
     return filenames
+
 
 def _component_flags(flags, components):
     if not _uses_components_v2(components):
@@ -148,7 +168,9 @@ def _check_v2_fields(components, *, content, embed, embeds, poll, stickers=MISSI
             embeds=(embed is not MISSING and embed is not None)
             or (embeds is not MISSING and embeds is not None and len(embeds) > 0),
             poll=poll is not MISSING and poll is not None,
-            stickers=stickers is not MISSING and stickers is not None and len(stickers) > 0,
+            stickers=stickers is not MISSING
+            and stickers is not None
+            and len(stickers) > 0,
         )
 
 
@@ -178,8 +200,12 @@ def handle_message_parameter(
     components: list[ActionRow | Button | Selection] = MISSING,
 ) -> MultipartParameters:
     _check_v2_fields(
-        components, content=content, embed=embed, embeds=embeds,
-        poll=poll, stickers=stickers,
+        components,
+        content=content,
+        embed=embed,
+        embeds=embeds,
+        poll=poll,
+        stickers=stickers,
     )
     result = origin_handle_message_parameter(
         content=content,
@@ -208,8 +234,7 @@ def handle_message_parameter(
 
 
 def handle_interaction_response_parameter(
-        interaction_type: int,
-        data: Optional[Dict[str, Any]] = None
+    interaction_type: int, data: Optional[Dict[str, Any]] = None
 ) -> MultipartParameters:
     return interaction_response_params(type=interaction_type, data=data)
 

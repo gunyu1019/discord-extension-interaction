@@ -33,14 +33,18 @@ class SyncPlan:
 
 
 def plan_sync(
-    scope: CommandScope, local: CommandRegistry, remote: CommandRegistry,
+    scope: CommandScope,
+    local: CommandRegistry,
+    remote: CommandRegistry,
 ) -> SyncPlan:
     """Compare complete declared payloads within exactly one scope."""
     local_commands = local.for_scope(scope)
     remote_commands = remote.for_scope(scope)
     items = []
-    for key in sorted(local_commands.keys() | remote_commands.keys(),
-                      key=lambda candidate: (int(candidate.type), candidate.name)):
+    for key in sorted(
+        local_commands.keys() | remote_commands.keys(),
+        key=lambda candidate: (int(candidate.type), candidate.name),
+    ):
         local_command = local_commands.get(key)
         remote_command = remote_commands.get(key)
         if local_command is None:

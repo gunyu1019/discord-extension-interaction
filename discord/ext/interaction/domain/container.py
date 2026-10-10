@@ -10,7 +10,6 @@ from .separator import Separator
 from .text_display import TextDisplay
 from .unknown_component import UnknownComponent
 
-
 _KNOWN_CHILDREN = {
     Section.TYPE: Section,
     TextDisplay.TYPE: TextDisplay,
@@ -34,7 +33,9 @@ class Container(Component):
         id: int | None = None,
     ):
         super().__init__(id=id)
-        if not components or not all(isinstance(item, Component) for item in components):
+        if not components or not all(
+            isinstance(item, Component) for item in components
+        ):
             raise ValueError("Container requires component model children")
         if accent_color is not None and (
             type(accent_color) is not int or not 0 <= accent_color <= 0xFFFFFF
