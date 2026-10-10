@@ -256,9 +256,14 @@ class InteractionContext:
                 await self.http.post_initial_response(
                     payload={"type": 4, "data": params.payload}, data=self.data
                 )
+                # The callback has consumed the one initial response even if
+                # fetching its message subsequently fails.
+                self._response_state.responded()
+                self.responded = True
                 resp = await self.http.get_initial_response(data=self.data)
-            self._response_state.responded()
-            self.responded = True
+            if not self.responded:
+                self._response_state.responded()
+                self.responded = True
         else:
             resp = await self.http.post_followup(
                 payload=params.payload,
@@ -330,6 +335,8 @@ class InteractionContext:
         ret = Message(state=self._state, channel=self.channel, data=resp)
         if self.deferred:
             self.deferred = False
+            self._response_state.responded()
+            self.responded = True
         return ret
 
     async def delete(self, message_id="@original"):
