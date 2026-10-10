@@ -6,8 +6,8 @@
 - [ ] 테스트 앱의 전역·서버별 CHAT_INPUT, USER, MESSAGE 명령을 생성·수정·삭제한다.
 - [ ] 동일한 이름의 전역·서버 명령과 다른 명령 유형을 각각 호출한다.
 - [ ] V2 Text Display, Section, Container, Media Gallery, File 및 첨부 참조가 표시된다.
-- [ ] Button과 네 종류의 자동 Select를 눌러 `custom_id`, values, resolved 객체를 확인한다.
-- [ ] Modal의 String Select, Text Input, File Upload, Radio Group, Checkbox Group, Checkbox 제출값을 확인한다.
+- [x] Button과 네 종류의 자동 Select를 눌러 `custom_id`, values, resolved 객체를 확인한다.
+- [x] Modal의 String Select, Text Input, File Upload, Radio Group, Checkbox Group, Checkbox 제출값을 확인한다.
 - [ ] HTTP 엔드포인트에서 유효 서명 PING은 200/PONG, 잘못된 서명은 401을 반환한다.
 - [ ] HTTP callback 202와 inline 200 응답을 실제 Discord 클라이언트에서 확인한다.
 - [ ] Activity 앱이 있다면 APP_HANDLER와 LAUNCH_ACTIVITY 응답을 확인한다.
@@ -74,3 +74,10 @@ Checkbox Group, Checkbox를 사용하고 두 번째 버튼은 String Select를 �
 ```
 
 이 도구는 테스트 명령을 등록하거나 다른 메시지를 삭제하지 않는다.
+
+2026-10-11 실행에서는 네 자동 선택 메뉴 모두 `values=1`, `resolved=1`로 수신했고
+ephemeral 응답을 전송했다. 두 버튼에서 각 모달이 열렸으며 String Select 값 제출도
+해석했다. 다섯 입력 모달은 텍스트, File Upload, Radio Group, Checkbox Group,
+Checkbox의 제출값을 검사했고 업로드 파일 한 개가 첨부 객체로 해석됐다. 사용자가
+실제 Discord 클라이언트에서 모든 조작을 완료했다고 확인했다. 두 임시 메시지는
+검증 후 삭제했다.

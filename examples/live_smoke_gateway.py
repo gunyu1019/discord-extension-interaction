@@ -104,18 +104,35 @@ async def run(duration: int) -> None:
 
     async def on_modal(ctx):
         if ctx.custom_id == "codex_smoke_inputs":
-            expected = (
-                "smoke_note",
-                "smoke_file",
-                "smoke_radio",
-                "smoke_checks",
-                "smoke_accept",
+            note = ctx.get_component("smoke_note")
+            files = ctx.get_component("smoke_file")
+            radio = ctx.get_component("smoke_radio")
+            checks = ctx.get_component("smoke_checks")
+            accept = ctx.get_component("smoke_accept")
+            uploaded = ctx.file_uploads.get("smoke_file", [])
+            if not (
+                note
+                and note.value
+                and files
+                and files.values
+                and len(uploaded) == len(files.values)
+                and radio
+                and radio.value in ("a", "b")
+                and checks
+                and checks.values
+                and accept
+                and type(accept.value) is bool
+            ):
+                raise AssertionError("modal submitted values were not fully resolved")
+            await ctx.send(
+                "All five modal values were parsed and the file resolved.", hidden=True
             )
-            if not all(ctx.get_component(name) is not None for name in expected):
-                raise AssertionError("modal input missing after submission")
-            await ctx.send("All five modal inputs were parsed.", hidden=True)
             state["seen"].add(ctx.custom_id)
-            print("five modal inputs parsed", flush=True)
+            print(
+                "five modal values parsed; uploaded files resolved:",
+                len(uploaded),
+                flush=True,
+            )
         elif ctx.custom_id == "codex_smoke_select_inputs":
             selected = ctx.get_component("smoke_string")
             if selected is None or not selected.values:
