@@ -46,7 +46,6 @@ from .application.command_registry import CommandRegistry
 from .application.sync_policy_store import SyncPolicyStore
 from .application.sync_planner import plan_sync, SyncPlan
 from .application.sync_executor import apply_sync_plan, SyncResult
-from .application.legacy_sync_request import LegacySyncRequest
 from .domain.activity_command import ActivityCommand
 from .domain.command_scope import GlobalScope, GuildScope
 from .domain.sync_command import SyncCommand
@@ -463,6 +462,8 @@ class ClientBase:
 
     async def _sync_command(self, command: command_types):
         await self.wait_until_ready()
+        if self._sync_policies.get(command.scope) is not None:
+            return
         fetch_data = await self._fetch_command_cached()
         if command.name in fetch_data[command.type].keys():
             command_id = fetch_data[command.type][command.name].id
@@ -478,6 +479,8 @@ class ClientBase:
 
     async def _sync_command_popping(self, command: command_types):
         await self.wait_until_ready()
+        if self._sync_policies.get(command.scope) is not None:
+            return
         fetch_data = await self._fetch_command_cached()
         if command.name in fetch_data[command.type].keys():
             command_id = fetch_data[command.type][command.name].id
@@ -587,18 +590,18 @@ class ClientBase:
         if len(self.__sync_command_before_ready_register) != 0:
             log.info(
                 f"Register registered commands before bot is ready. List: "
-                f"{', '.join([x.command.name for x in self.__sync_command_before_ready_register])}"
+                f"{', '.join([x.name for x in self.__sync_command_before_ready_register])}"
             )
         while len(self.__sync_command_before_ready_register) != 0:
-            request = self.__sync_command_before_ready_register.pop()
-            if not request.explicit and self._sync_policies.get(request.command.scope):
+            command = self.__sync_command_before_ready_register.pop()
+            if self._sync_policies.get(command.scope) is not None:
                 continue
-            await self._sync_command(command=request.command)
+            await self._sync_command(command=command)
         while len(self.__sync_command_before_ready_popping) != 0:
-            request = self.__sync_command_before_ready_popping.pop()
-            if not request.explicit and self._sync_policies.get(request.command.scope):
+            command = self.__sync_command_before_ready_popping.pop()
+            if self._sync_policies.get(command.scope) is not None:
                 continue
-            await self._sync_command_popping(command=request.command)
+            await self._sync_command_popping(command=command)
 
         if self.global_sync_command and self._sync_policies.get(GlobalScope()) is None:
             log.info(
@@ -715,13 +718,14 @@ class ClientBase:
             If a command synchronization request is made before the Discord Bot is ready,
             it will wait and synchronize the command when it is ready.
         """
-        explicit_sync = sync_command is not None
         if sync_command is None:
             sync_command = (
                 self.global_sync_command
                 and isinstance(command.scope, GlobalScope)
                 and self._sync_policies.get(command.scope) is None
             )
+        if self._sync_policies.get(command.scope) is not None:
+            sync_command = False
 
         if (
             self._command_registry.get(command.scope, command.type, command.name)
@@ -751,9 +755,7 @@ class ClientBase:
                     self._sync_command, "sync_command", command=command
                 )
             else:
-                self.__sync_command_before_ready_register.append(
-                    LegacySyncRequest(command, explicit_sync)
-                )
+                self.__sync_command_before_ready_register.append(command)
         return
 
     def add_activity_command(
@@ -836,13 +838,14 @@ class ClientBase:
             If a command synchronization request is made before the Discord Bot is ready,
             it will wait and synchronize the command when it is ready.
         """
-        explicit_sync = sync_command is not None
         if sync_command is None:
             sync_command = (
                 self.global_sync_command
                 and isinstance(command.scope, GlobalScope)
                 and self._sync_policies.get(command.scope) is None
             )
+        if self._sync_policies.get(command.scope) is not None:
+            sync_command = False
 
         if (
             self._command_registry.get(command.scope, command.type, command.name)
@@ -860,9 +863,7 @@ class ClientBase:
                     self._sync_command_popping, "sync_command", command=command
                 )
             else:
-                self.__sync_command_before_ready_popping.append(
-                    LegacySyncRequest(command, explicit_sync)
-                )
+                self.__sync_command_before_ready_popping.append(command)
 
     def add_interaction_cog(self, interaction_cog: T):
         """Add a "cog" to the bot.
