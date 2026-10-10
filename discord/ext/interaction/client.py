@@ -100,6 +100,8 @@ class ClientBase:
         self._command_registry = CommandRegistry()
         self._remote_command_registry = CommandRegistry()
         self._sync_policies = SyncPolicyStore()
+        self._completed_sync_scopes: set[GlobalScope | GuildScope] = set()
+        self._sync_policy_lock = asyncio.Lock()
         self._interactions: dict[ApplicationCommandType, dict[str, decorator_command_types]] = {
             ApplicationCommandType.CHAT_INPUT: dict(),
             ApplicationCommandType.USER: dict(),
@@ -545,6 +547,20 @@ class ClientBase:
                 for cmd in list(popping_data[cmd_type].values()):
                     await self.delete_command(cmd)
 
+        await self._sync_configured_policies()
+
+    async def _sync_configured_policies(self) -> None:
+        """Run each configured scope once; failed scopes can retry on reconnect."""
+        async with self._sync_policy_lock:
+            for scope, policy in self._sync_policies.items():
+                if scope in self._completed_sync_scopes:
+                    continue
+                result = await self.apply_sync_commands(scope, policy)
+                if result.failures:
+                    log.error("command synchronization failed for %s: %s", scope, result.failures)
+                else:
+                    self._completed_sync_scopes.add(scope)
+
     def add_detect_component(self, detect_component: DetectComponent, _parent=None):
         """Register for the detect_component event.
 
@@ -671,6 +687,7 @@ class ClientBase:
     def set_sync_command(self, scope: GlobalScope | GuildScope, policy: SyncCommand) -> None:
         """Set a runtime-only synchronization policy for one command scope."""
         self._sync_policies.set(scope, policy)
+        self._completed_sync_scopes.discard(scope)
 
     def get_sync_command(self, scope: GlobalScope | GuildScope) -> SyncCommand | None:
         """Return the explicit policy, or None when automatic sync is disabled."""
