@@ -43,6 +43,8 @@ from .application.interaction_dispatcher import InteractionDispatcher
 from .application.activity_binding import ActivityBinding
 from .application.command_registry import CommandRegistry
 from .application.sync_policy_store import SyncPolicyStore
+from .application.sync_planner import plan_sync, SyncPlan
+from .application.sync_executor import apply_sync_plan, SyncResult
 from .domain.activity_command import ActivityCommand
 from .domain.command_scope import GlobalScope, GuildScope
 from .domain.sync_command import SyncCommand
@@ -61,6 +63,7 @@ from .transport.command_api import (
     get_global_commands_with_localizations,
     get_guild_commands_with_localizations,
 )
+from .transport.command_sync_api import CommandSyncAPI
 from .utils import async_all
 
 if TYPE_CHECKING:
@@ -672,6 +675,27 @@ class ClientBase:
     def get_sync_command(self, scope: GlobalScope | GuildScope) -> SyncCommand | None:
         """Return the explicit policy, or None when automatic sync is disabled."""
         return self._sync_policies.get(scope)
+
+    async def plan_sync_commands(self, scope: GlobalScope | GuildScope) -> SyncPlan:
+        """Fetch remote declarations and preview one scope's exact changes."""
+        if isinstance(scope, GlobalScope):
+            await self.fetch_commands()
+        elif isinstance(scope, GuildScope):
+            await self.fetch_guild_commands(scope.guild_id)
+        else:
+            raise TypeError("scope must be GlobalScope or GuildScope")
+        return plan_sync(scope, self._command_registry, self._remote_command_registry)
+
+    async def apply_sync_commands(
+        self, scope: GlobalScope | GuildScope, policy: SyncCommand | None = None,
+    ) -> SyncResult:
+        """Apply an explicitly supplied or configured policy to one scope."""
+        active_policy = policy or self._sync_policies.get(scope)
+        if active_policy is None:
+            raise ValueError("SyncCommand policy is required to apply a sync plan")
+        plan = await self.plan_sync_commands(scope)
+        transport = CommandSyncAPI(self.http, await self._application_id())
+        return await apply_sync_plan(plan, active_policy, transport)
 
     def delete_interaction(self, command: command_types, sync_command: bool = None):
         """Remove interaction command from discord bot
