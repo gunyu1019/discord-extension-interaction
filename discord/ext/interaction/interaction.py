@@ -33,6 +33,7 @@ from .commands import CommandOptionChoice
 from .domain.component import Component
 from .domain.file_upload import FileUpload
 from .application.component_validation import validate_modal_components
+from .application.response_state import ResponseState
 from .components import (
     ActionRow,
     Button,
@@ -115,6 +116,7 @@ class InteractionContext:
 
         self.deferred = False
         self.responded = False
+        self._response_state = ResponseState()
 
         self.data = InteractionData(
             token=self.token, id=self.id, application_id=self.application
@@ -165,14 +167,14 @@ class InteractionContext:
         hidden: bool
             Indicates whether to hide delayed messages.
         """
-        if self.deferred:
-            raise AlreadyDeferred
+        self._response_state.ensure_initial_available()
 
         base = {"type": 5}
         if hidden:
             base["data"] = {"flags": discord.MessageFlags(ephemeral=True).value}
 
         await self.http.post_initial_response(payload=base, data=self.data)
+        self._response_state.deferred()
         self.deferred = True
         return
 
@@ -250,10 +252,12 @@ class InteractionContext:
                 )
                 self.deferred = False
             else:
+                self._response_state.ensure_initial_available()
                 await self.http.post_initial_response(
                     payload={"type": 4, "data": params.payload}, data=self.data
                 )
                 resp = await self.http.get_initial_response(data=self.data)
+            self._response_state.responded()
             self.responded = True
         else:
             resp = await self.http.post_followup(
@@ -351,6 +355,7 @@ class ModalPossible(InteractionContext):
             Text inputs / selects wrapped in an Action Row or a Label are used.
         """
         validate_modal_components(components)
+        self._response_state.ensure_initial_available()
         payload = {
             "type": 9,
             "data": {
@@ -365,6 +370,7 @@ class ModalPossible(InteractionContext):
             },
         }
         result = await self.http.post_initial_response(data=self.data, payload=payload)
+        self._response_state.responded()
         self.responded = True
         return result
 
@@ -569,11 +575,13 @@ class ComponentsContext(ModalPossible):
         hidden: bool
             Indicates whether to hide delayed messages.
         """
+        self._response_state.ensure_initial_available()
         base = {"type": 6}
         if hidden:
             base["data"] = {"flags": discord.MessageFlags(ephemeral=True).value}
 
         await self.http.post_initial_response(payload=base, data=self.data)
+        self._response_state.deferred()
         self.deferred = True
         return
 
@@ -651,9 +659,11 @@ class ComponentsContext(ModalPossible):
                 )
                 self.deferred = False
             else:
+                self._response_state.ensure_initial_available()
                 await self.http.post_initial_response(
                     payload={"type": 7, "data": params.payload}, data=self.data
                 )
+            self._response_state.responded()
             self.responded = True
         else:
             await self.http.post_followup(
@@ -679,12 +689,15 @@ class AutocompleteContext(ApplicationContext):
         choices: list[CommandOptionChoice]
             choice items that users can choose from in application command option
         """
-        self.responded = True
+        self._response_state.ensure_initial_available()
         payload = {
             "type": 8,
             "data": {"choices": [choice.to_dict() for choice in choices]},
         }
-        return await self.http.post_initial_response(data=self.data, payload=payload)
+        result = await self.http.post_initial_response(data=self.data, payload=payload)
+        self._response_state.responded()
+        self.responded = True
+        return result
 
 
 class ModalSubmitContext(InteractionContext):
