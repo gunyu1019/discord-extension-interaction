@@ -39,6 +39,7 @@ from discord.state import ConnectionState
 
 from .commands import ApplicationCommand, from_payload, command_types
 from .application.command_comparison import same_command_declaration
+from .application.interaction_dispatcher import InteractionDispatcher
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
 from .enums import ApplicationCommandType
@@ -726,21 +727,18 @@ class ClientBase:
         return parser
 
     def _parse_interaction_create(self, data: dict) -> None:
-        state: ConnectionState = self._connection
-        interaction_type = data.get("type")
-        if interaction_type == 2:
-            result = ApplicationContext(data, self)
-            if len(self._interactions[ApplicationCommandType(result.application_type)]) != 0:
-                state.dispatch("interaction_command", result)
-        elif interaction_type == 3:
-            result = ComponentsContext(data, self)
-            state.dispatch("components", result)
-        elif interaction_type == 4:
-            result = AutocompleteContext(data, self)
-            state.dispatch("autocomplete", result)
-        elif interaction_type == 5:
-            result = ModalSubmitContext(data, self)
-            state.dispatch("modal", result)
+        self._interaction_dispatcher().route(data)
+
+    def _interaction_dispatcher(self) -> InteractionDispatcher:
+        return InteractionDispatcher(
+            self, self._connection.dispatch,
+            {
+                2: ApplicationContext,
+                3: ComponentsContext,
+                4: AutocompleteContext,
+                5: ModalSubmitContext,
+            },
+        )
 
     def _parse_message_create(self, data: dict) -> None:
         state: ConnectionState = self._connection
