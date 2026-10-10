@@ -33,6 +33,7 @@ from .commands import (
     ContextMenu,
 )
 from .enums import ApplicationContextType, ApplicationIntegrationType
+from .domain.command_scope import CommandScope
 from .utils import async_all
 
 
@@ -296,6 +297,7 @@ def command(
     nsfw: bool = False,
     integration_types: list[int | ApplicationIntegrationType] | None = None,
     contexts: list[int | ApplicationContextType] | None = None,
+    scope: CommandScope | None = None,
 ):
     if options is None:
         options = []
@@ -317,6 +319,7 @@ def command(
             nsfw=nsfw,
             integration_types=integration_types,
             contexts=contexts,
+            scope=scope,
         )
 
     return decorator
@@ -332,6 +335,7 @@ def user(
     nsfw: bool = False,
     integration_types: list[int | ApplicationIntegrationType] | None = None,
     contexts: list[int | ApplicationContextType] | None = None,
+    scope: CommandScope | None = None,
 ):
     if cls is None:
         cls = MemberCommand
@@ -344,6 +348,7 @@ def user(
             nsfw=nsfw,
             integration_types=integration_types,
             contexts=contexts,
+            scope=scope,
         )
 
     return decorator
@@ -359,6 +364,7 @@ def context(
     nsfw: bool = False,
     integration_types: list[int | ApplicationIntegrationType] | None = None,
     contexts: list[int | ApplicationContextType] | None = None,
+    scope: CommandScope | None = None,
 ):
     if cls is None:
         cls = ContextMenuCommand
@@ -371,6 +377,7 @@ def context(
             nsfw=nsfw,
             integration_types=integration_types,
             contexts=contexts,
+            scope=scope,
         )
 
     return decorator
