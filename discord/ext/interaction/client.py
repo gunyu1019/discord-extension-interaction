@@ -55,7 +55,10 @@ from .interaction import (
     ModalSubmitContext,
 )
 from .message import Message
-from .transport.command_api import get_global_commands_with_localizations
+from .transport.command_api import (
+    get_global_commands_with_localizations,
+    get_guild_commands_with_localizations,
+)
 from .utils import async_all
 
 if TYPE_CHECKING:
@@ -90,6 +93,7 @@ class ClientBase:
         # Command of Group feature
         self._interactions_of_group = []
         self._command_registry = CommandRegistry()
+        self._remote_command_registry = CommandRegistry()
         self._interactions: dict[ApplicationCommandType, dict[str, decorator_command_types]] = {
             ApplicationCommandType.CHAT_INPUT: dict(),
             ApplicationCommandType.USER: dict(),
@@ -315,11 +319,24 @@ class ClientBase:
             self.http, await self._application_id()
         )
         result = self._empty_command_map()
+        parsed = []
         for x in data:
             _x = from_payload(x)
             result[ApplicationCommandType(_x.type)][_x.name] = _x
+            parsed.append(_x)
+        self._remote_command_registry.replace_scope(GlobalScope(), parsed)
         self._fetch_interactions = result
         return result
+
+    async def fetch_guild_commands(self, guild_id: int):
+        """Fetch a guild's commands using complete localization dictionaries."""
+        scope = GuildScope(guild_id)
+        data = await get_guild_commands_with_localizations(
+            self.http, await self._application_id(), guild_id,
+        )
+        parsed = [from_payload({**item, "guild_id": str(guild_id)}) for item in data]
+        self._remote_command_registry.replace_scope(scope, parsed)
+        return self._remote_command_registry.for_scope(scope)
 
     async def fetch_command(
         self,

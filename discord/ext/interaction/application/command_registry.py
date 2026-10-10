@@ -45,5 +45,19 @@ class CommandRegistry:
     def for_scope(self, scope: CommandScope) -> dict[CommandKey, object]:
         return {key: value for key, value in self._commands.items() if key.scope == scope}
 
+    def replace_scope(self, scope: CommandScope, commands) -> None:
+        """Refresh one remote scope without discarding other guild caches."""
+        replacement = {
+            key: value for key, value in self._commands.items() if key.scope != scope
+        }
+        for command in commands:
+            if command.scope != scope:
+                raise ValueError("remote command scope does not match requested scope")
+            key = CommandKey.from_command(command)
+            if key in replacement:
+                raise ValueError(f"duplicate remote command: {key}")
+            replacement[key] = command
+        self._commands = replacement
+
     def all(self) -> list[object]:
         return list(self._commands.values())
