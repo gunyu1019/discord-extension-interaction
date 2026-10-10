@@ -60,3 +60,17 @@ Separator, Button, 네 종류의 자동 Select와 multipart 첨부 파일이 Dis
 응답에 유지됐다. File 컴포넌트는 응답에서 HTTPS CDN URL과 `name`·`size`를
 반환하고 일반 `attachments` 배열에는 나타나지 않았다. 이 차이로 드러난 수신 파서
 오류를 고쳐 재실행에 성공했다. 실제 Discord 클라이언트의 표시·클릭은 별도 확인이 필요하다.
+
+## Gateway 클라이언트 점검
+
+테스트 앱의 Interactions Endpoint URL이 비어 있을 때 아래 도구를 실행한다.
+봇이 테스트 채널에 V2 메시지를 올리고, 지정한 시간이 지나면 자동으로 삭제한다.
+메시지에서 두 버튼과 네 자동 선택 메뉴를 조작하면 각 제출을 해석해 사용자에게
+ephemeral 응답을 보낸다. 첫 버튼의 모달은 Text Input, File Upload, Radio Group,
+Checkbox Group, Checkbox를 사용하고 두 번째 버튼은 String Select를 사용한다.
+
+```powershell
+.venv\Scripts\python.exe -u examples\live_smoke_gateway.py --duration 300
+```
+
+이 도구는 테스트 명령을 등록하거나 다른 메시지를 삭제하지 않는다.
