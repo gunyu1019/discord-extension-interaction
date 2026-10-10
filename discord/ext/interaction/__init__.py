@@ -86,6 +86,7 @@ from .domain.select_default_value import SelectDefaultValue
 from .domain.file_upload import FileUpload
 from .domain.radio_group import RadioGroup, RadioGroupOption
 from .domain.checkbox_group import CheckboxGroup, CheckboxGroupOption
+from .domain.checkbox import Checkbox
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext,

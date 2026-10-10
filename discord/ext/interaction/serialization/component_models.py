@@ -14,13 +14,14 @@ from ..domain.channel_select import ChannelSelect
 from ..domain.file_upload import FileUpload
 from ..domain.radio_group import RadioGroup
 from ..domain.checkbox_group import CheckboxGroup
+from ..domain.checkbox import Checkbox
 from .components import ComponentRegistry
 
 
 _registry = ComponentRegistry()
 for _model in (Section, TextDisplay, Thumbnail, MediaGallery, File, Separator, Container,
                UserSelect, RoleSelect, MentionableSelect, ChannelSelect, FileUpload,
-               RadioGroup, CheckboxGroup):
+               RadioGroup, CheckboxGroup, Checkbox):
     _registry.register(_model)
 
 
