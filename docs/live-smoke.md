@@ -3,8 +3,8 @@
 오프라인 테스트가 통과해도 Discord 서버와 실제 클라이언트에서의 동작을 확인해야 한다.
 봇 토큰과 OAuth Bearer 토큰은 저장소 또는 이 문서에 기록하지 않는다.
 
-- [ ] 테스트 앱의 전역·서버별 CHAT_INPUT, USER, MESSAGE 명령을 생성·수정·삭제한다.
-- [ ] 동일한 이름의 전역·서버 명령과 다른 명령 유형을 각각 호출한다.
+- [x] 테스트 앱의 전역·서버별 CHAT_INPUT, USER, MESSAGE 명령을 생성·수정·삭제한다.
+- [x] 동일한 이름의 전역·서버 명령과 다른 명령 유형을 각각 호출한다.
 - [ ] V2 Text Display, Section, Container, Media Gallery, File 및 첨부 참조가 표시된다.
 - [x] Button과 네 종류의 자동 Select를 눌러 `custom_id`, values, resolved 객체를 확인한다.
 - [x] Modal의 String Select, Text Input, File Upload, Radio Group, Checkbox Group, Checkbox 제출값을 확인한다.
@@ -109,7 +109,11 @@ Checkbox의 제출값을 검사했고 업로드 파일 한 개가 첨부 객체�
 ```
 
 2026-10-11 실행에서 동명 CHAT_INPUT 명령을 전역과 테스트 guild에 함께 등록했다.
-Gateway 로그에는 guild 콜백 호출과 응답 요청 성공이 남았으나, 사용자는 명령이
-보이지 않거나 오류가 있었다고 보고했다. 실제 클라이언트 결과는 미확인으로
-기록하고 원인을 재점검한다. 생성한 두 명령을 각각 삭제한 뒤 전역 9개·테스트
-guild 0개로 원래 수량을 확인했다.
+Gateway 로그에서 guild 콜백 호출과 응답 요청 성공을 확인했고, 사용자가 첫 호출에서
+`guild callback` 표시를 확인했다. 두 번째 호출의 오류는 첫 성공 직후 검증기가
+임시 명령을 삭제한 뒤 재호출했기 때문이다. 생성한 두 명령을 각각 삭제한 뒤
+전역 9개·테스트 guild 0개로 원래 수량을 확인했다.
+
+테스트 앱의 Activity는 현재 비활성화되어 있어 Entry Point의 실서버 호출은
+검증하지 않았다. HTTP 공개 수신은 앱이 Gateway 수신 모드이고 공개 URL을 연결하지
+않아, 명령별 권한은 사용자 OAuth Bearer 토큰이 없어 미검증으로 기록한다.

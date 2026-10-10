@@ -17,7 +17,7 @@
 | 모달 Label 및 입력(19, 21–23) | 지원 | `FileUpload`, `RadioGroup`, `CheckboxGroup`, `Checkbox`; 제출값은 `ModalSubmitContext.get_component` |
 | Activity Entry Point(4) / 응답(12) | 지원 | `ActivityCommand`, `Client.add_activity_command`, `ctx.launch_activity`; Discord의 Activities 활성화 필요 |
 | 명령별 guild 권한 | 지원 | `CommandPermissionsAPI`; 사용자 OAuth Bearer 토큰과 별도 aiohttp session 필요 |
-| 실서버 상호 운용성 | 미검증 | 앱 자격 증명과 테스트 guild가 필요함 |
+| 실서버 상호 운용성 | 일부 검증 | 전역·guild 명령 CRUD, guild의 세 명령 유형 호출, V2 메시지 REST, Gateway 컴포넌트·모달 제출 통과; HTTP 공개 수신·Activity·OAuth 권한은 미검증 |
 
 공식 범위: [Interactions Overview](https://docs.discord.com/developers/interactions/overview),
 [Receiving and Responding](https://docs.discord.com/developers/interactions/receiving-and-responding),

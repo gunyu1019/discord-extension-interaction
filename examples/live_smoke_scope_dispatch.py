@@ -69,7 +69,11 @@ async def run(duration: int) -> None:
         for command in definitions:
             data = await bot.register_command(command)
             created.append((command, int(data["id"])))
-        print("Run /codex_smoke_scope in the test guild.", flush=True)
+        print("Run /codex_smoke_scope once in the test guild.", flush=True)
+        print(
+            "The temporary command is removed after its first successful guild call.",
+            flush=True,
+        )
         connect_task = asyncio.create_task(bot.connect(reconnect=True))
         finished_task = asyncio.create_task(finished.wait())
         done, _ = await asyncio.wait(
