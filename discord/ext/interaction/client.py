@@ -42,8 +42,10 @@ from .application.command_comparison import same_command_declaration
 from .application.interaction_dispatcher import InteractionDispatcher
 from .application.activity_binding import ActivityBinding
 from .application.command_registry import CommandRegistry
+from .application.sync_policy_store import SyncPolicyStore
 from .domain.activity_command import ActivityCommand
 from .domain.command_scope import GlobalScope, GuildScope
+from .domain.sync_command import SyncCommand
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
 from .enums import ApplicationCommandType
@@ -94,6 +96,7 @@ class ClientBase:
         self._interactions_of_group = []
         self._command_registry = CommandRegistry()
         self._remote_command_registry = CommandRegistry()
+        self._sync_policies = SyncPolicyStore()
         self._interactions: dict[ApplicationCommandType, dict[str, decorator_command_types]] = {
             ApplicationCommandType.CHAT_INPUT: dict(),
             ApplicationCommandType.USER: dict(),
@@ -661,6 +664,14 @@ class ClientBase:
     def get_interaction(self):
         """Get all interaction command included Application Command, User Command and Context Menu Command"""
         return self._command_registry.all()
+
+    def set_sync_command(self, scope: GlobalScope | GuildScope, policy: SyncCommand) -> None:
+        """Set a runtime-only synchronization policy for one command scope."""
+        self._sync_policies.set(scope, policy)
+
+    def get_sync_command(self, scope: GlobalScope | GuildScope) -> SyncCommand | None:
+        """Return the explicit policy, or None when automatic sync is disabled."""
+        return self._sync_policies.get(scope)
 
     def delete_interaction(self, command: command_types, sync_command: bool = None):
         """Remove interaction command from discord bot
