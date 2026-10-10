@@ -80,7 +80,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 - [x] **4-b resolved 해석:** 사용자·멤버·역할·채널·메시지·첨부 파일을 공통 resolver에서 해석한다.
 - [x] **4-c 디스패처:** Gateway 이벤트 처리와 명령/컴포넌트/모달 실행을 분리한다.
 - [x] **4-d 응답 상태:** 초기 응답, 지연, 원본 수정, 후속 응답의 상태 전이를 정의한다.
-- [ ] **4-e 응답 전송:** callback과 webhook 요청 생성 로직을 전송 어댑터로 모은다.
+- [x] **4-e 응답 전송:** callback과 webhook 요청 생성 로직을 전송 어댑터로 모은다.
 - [ ] **4-f 경계 검증:** 중복 초기 응답, 만료 토큰, 첨부 파일, 실패한 요청의 상태를 테스트한다.
 
 ## 5. 컴포넌트 공통 모델
