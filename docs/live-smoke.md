@@ -92,3 +92,8 @@ Checkbox의 제출값을 검사했고 업로드 파일 한 개가 첨부 객체�
 ```powershell
 .venv\Scripts\python.exe -u examples\live_smoke_command_dispatch.py --duration 300
 ```
+
+2026-10-11 실행에서 CHAT_INPUT(type 1), USER(type 2), MESSAGE(type 3) 호출이
+모두 Gateway 디스패처에 도달했고 각각 ephemeral 응답을 보냈다. 사용자가 세 명령의
+실행 완료를 확인했다. 도구가 임시 guild 명령 3개를 삭제했으며, 후속 목록 조회에서
+테스트 guild 명령이 0개임을 확인했다.

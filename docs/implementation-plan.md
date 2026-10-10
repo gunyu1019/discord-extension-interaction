@@ -194,9 +194,9 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
         - [x] **9-f2c2a:** 임시 Gateway 수신기와 자동 정리되는 테스트 메시지를 준비한다.
         - [x] **9-f2c2b:** 실제 클라이언트 조작 결과와 오류를 기록한다.
       - [ ] **9-f2c3:** 공개 HTTPS 엔드포인트의 서명 PING과 실제 HTTP 상호작용을 검증한다.
-    - [ ] **9-f2d:** 테스트 guild의 CHAT_INPUT·USER·MESSAGE 명령을 실제 클라이언트에서 호출한다.
+    - [x] **9-f2d:** 테스트 guild의 CHAT_INPUT·USER·MESSAGE 명령을 실제 클라이언트에서 호출한다.
       - [x] **9-f2d1:** 임시 명령을 고유 이름으로 등록하고 완료 후 ID 기준으로 정리하는 도구를 만든다.
-      - [ ] **9-f2d2:** 세 명령 유형의 실제 Gateway 디스패치와 응답 결과를 기록한다.
+      - [x] **9-f2d2:** 세 명령 유형의 실제 Gateway 디스패치와 응답 결과를 기록한다.
 - [x] **9-g 문서와 배포:** 사용 예제, 이전 안내, 지원 범위 표, CI 검증을 갱신한다.
   - [x] **9-g1:** Black 형식을 적용하고 pycodestyle의 E203 충돌을 해소한다.
   - [x] **9-g2:** 범위별 SyncCommand의 계획 조회와 명시적 적용 예시를 추가한다.
