@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING
 import discord
 
 from .enums import ApplicationCommandType, ApplicationContextType, ApplicationIntegrationType
+from .domain.command_scope import CommandScope, GuildScope, resolve_scope
 from .errors import InvalidArgument
 from .utils import get_enum
 from .serialization.command_metadata import to_register_fields
@@ -533,12 +534,16 @@ class ApplicationCommand:
         contexts: Optional[list[int | ApplicationContextType]] = None,
         name_localizations: dict[str, str] | None = None,
         description_localizations: dict[str, str] | None = None,
+        scope: CommandScope | None = None,
     ):
         self.id: int = 0  # default: None
         self.name: str = name
         self.type: ApplicationCommandType = command_type
         self.application_id: int = 0  # default: None
-        self.guild_id: int | None = guild_id
+        self.scope: CommandScope = resolve_scope(scope, guild_id)
+        self.guild_id: int | None = (
+            self.scope.guild_id if isinstance(self.scope, GuildScope) else None
+        )
         self.description: str | None = description
         self.default_member_permissions: str | None = default_member_permissions
 

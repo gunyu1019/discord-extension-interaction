@@ -45,7 +45,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 
 ## 2. 명령 정의와 범위
 
-- [ ] **2-a 범위 모델:** GlobalScope와 GuildScope를 도메인 값으로 정의하고 ID를 검증한다.
+- [x] **2-a 범위 모델:** GlobalScope와 GuildScope를 도메인 값으로 정의하고 ID를 검증한다.
 - [ ] **2-b 명령 키:** `(scope, type, name)`을 명령 식별자로 정해 로컬 레지스트리와 원격 목록에 적용한다.
 - [x] **2-c 명령 메타데이터:** NSFW, 기본 권한, 설치 유형, 실행 컨텍스트의 입력 모델을 정리한다.
 - [x] **2-d 현지화:** 명령·하위 명령·옵션·선택지의 이름/설명 현지화를 직렬화하고 역직렬화한다.
@@ -187,3 +187,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
    기존 인자의 연결 방식은 3-g에서 검증한다.
 4. 기존 메시지 API의 단일 Button·Selection은 전송 시 각각 ActionRow로 감싼다.
    사용자가 전달한 객체와 목록은 변경하지 않는다.
+5. 새 명령 범위는 `GlobalScope()`·`GuildScope(guild_id)` 및 `scope=`로 선언한다.
+   기존 `guild_id=` 인자는 유지하되 충돌하는 동시 지정은 거부한다.
+6. 새 `SyncCommand`는 범위별 메모리 정책이며 생략한 create/edit/delete는 모두 True다.
+   같은 범위의 기존 `global_sync_command`보다 새 정책을 우선한다.
