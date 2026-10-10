@@ -57,6 +57,12 @@ python3 -m pip install -U discord-extension-interaction[discordpy]
 py -3 -m pip install -U discord-extension-interaction[discordpy]
 ```
 
+For HTTP interaction webhooks, install the signing extra:
+
+```commandline
+python -m pip install -U 'discord-extension-interaction[http]'
+```
+
 To install the development version, do the following:
 ```bash
 $ git clone https://github.com/gunyu1019/discord-extension-interaction
@@ -82,3 +88,9 @@ bot.run("TOKEN")
 ```
 
 You can find more examples in the [examples](https://github.com/gunyu1019/discord-extension-interaction/tree/main/examples) directory.
+
+The current [Discord API support matrix](docs/current-support.md) and
+[new feature examples](docs/new-feature-examples.md) show Components V2, modal
+inputs, HTTP receiving, Activity commands, and command permissions. The
+[implementation plan](docs/implementation-plan.md) tracks remaining scope and
+command synchronization decisions.
