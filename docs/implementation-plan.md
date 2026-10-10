@@ -189,6 +189,9 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
     - [x] **9-f2a:** 비밀 값을 출력하지 않는 읽기 전용 사전 점검과 고유 이름의 명령 CRUD 도구를 만든다.
     - [x] **9-f2b:** 테스트 앱·길드의 REST 명령 점검을 실행하고 결과를 기록한다.
     - [ ] **9-f2c:** 실제 Discord 클라이언트의 컴포넌트·모달·HTTP 상호작용을 확인한다.
+      - [x] **9-f2c1:** V2 레이아웃·첨부 파일·버튼·자동 선택 메뉴의 실제 Discord REST 왕복을 검증한다.
+      - [ ] **9-f2c2:** 클라이언트에서 버튼·선택 메뉴·모달 제출과 응답을 검증한다.
+      - [ ] **9-f2c3:** 공개 HTTPS 엔드포인트의 서명 PING과 실제 HTTP 상호작용을 검증한다.
 - [x] **9-g 문서와 배포:** 사용 예제, 이전 안내, 지원 범위 표, CI 검증을 갱신한다.
   - [x] **9-g1:** Black 형식을 적용하고 pycodestyle의 E203 충돌을 해소한다.
   - [x] **9-g2:** 범위별 SyncCommand의 계획 조회와 명시적 적용 예시를 추가한다.

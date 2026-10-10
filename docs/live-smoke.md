@@ -41,3 +41,22 @@ MESSAGE 명령을 한 개씩 생성하고 목록 및 ID 조회를 확인했다. 
 
 Discord 클라이언트에서의 실제 명령 호출, 컴포넌트·모달 표시와 입력, 공개 HTTPS 수신은
 아직 수동 점검이 필요하다. 별도 OAuth Bearer 토큰이 없어 명령별 권한 점검은 보류했다.
+
+## V2 메시지 점검
+
+`.env`에 `DISCORD_TEST_CHANNEL_ID`를 추가한 뒤 아래를 실행한다. 기본 모드는
+테스트 메시지를 전송·조회한 다음 바로 삭제한다. 화면에서 확인할 때만 `--keep`을
+사용하고, 출력된 ID를 `--delete`로 정리한다. 삭제 명령은 봇이 작성한 smoke
+메시지만 허용한다.
+
+```powershell
+.venv\Scripts\python.exe examples\live_smoke_message.py
+.venv\Scripts\python.exe examples\live_smoke_message.py --keep
+.venv\Scripts\python.exe examples\live_smoke_message.py --delete MESSAGE_ID
+```
+
+2026-10-11 실행에서 Container, Section, Thumbnail, Media Gallery, File,
+Separator, Button, 네 종류의 자동 Select와 multipart 첨부 파일이 Discord 메시지
+응답에 유지됐다. File 컴포넌트는 응답에서 HTTPS CDN URL과 `name`·`size`를
+반환하고 일반 `attachments` 배열에는 나타나지 않았다. 이 차이로 드러난 수신 파서
+오류를 고쳐 재실행에 성공했다. 실제 Discord 클라이언트의 표시·클릭은 별도 확인이 필요하다.
