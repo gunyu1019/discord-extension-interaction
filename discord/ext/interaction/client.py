@@ -41,7 +41,9 @@ from .commands import ApplicationCommand, from_payload, command_types
 from .application.command_comparison import same_command_declaration
 from .application.interaction_dispatcher import InteractionDispatcher
 from .application.activity_binding import ActivityBinding
+from .application.command_registry import CommandRegistry
 from .domain.activity_command import ActivityCommand
+from .domain.command_scope import GlobalScope, GuildScope
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
 from .enums import ApplicationCommandType
@@ -87,6 +89,7 @@ class ClientBase:
 
         # Command of Group feature
         self._interactions_of_group = []
+        self._command_registry = CommandRegistry()
         self._interactions: dict[ApplicationCommandType, dict[str, decorator_command_types]] = {
             ApplicationCommandType.CHAT_INPUT: dict(),
             ApplicationCommandType.USER: dict(),
@@ -602,7 +605,7 @@ class ClientBase:
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name in self._interactions[command.type]:
+        if self._command_registry.get(command.scope, command.type, command.name) is not None:
             raise CommandRegistrationError(command.name)
 
         if _parent is not None:
@@ -617,7 +620,9 @@ class ClientBase:
 
         if command.type == ApplicationCommandType.CHAT_INPUT:
             command.set_signature_option()
-        self._interactions[command.type][command.name] = command
+        self._command_registry.add(command)
+        if isinstance(command.scope, GlobalScope):
+            self._interactions[command.type][command.name] = command
 
         if sync_command:
             if self.is_ready():
@@ -638,10 +643,7 @@ class ClientBase:
 
     def get_interaction(self):
         """Get all interaction command included Application Command, User Command and Context Menu Command"""
-        result = []
-        for commands in self._interactions.values():
-            result += commands.values()
-        return result
+        return self._command_registry.all()
 
     def delete_interaction(self, command: command_types, sync_command: bool = None):
         """Remove interaction command from discord bot
@@ -671,10 +673,12 @@ class ClientBase:
         if sync_command is None:
             sync_command = self.global_sync_command
 
-        if command.name not in self._interactions[command.type]:
+        if self._command_registry.get(command.scope, command.type, command.name) is None:
             raise CommandNotFound(f'Command "{command.name}" is not found')
 
-        self._interactions[command.type].pop(command.name)
+        self._command_registry.remove(command)
+        if isinstance(command.scope, GlobalScope):
+            self._interactions[command.type].pop(command.name, None)
 
         if sync_command:
             if self.is_ready():
@@ -765,9 +769,11 @@ class ClientBase:
     # Application Context
     async def process_interaction(self, ctx: ApplicationContext):
         _state: ConnectionState = self._connection
-        command = self._interactions[ApplicationCommandType(ctx.application_type)].get(
-            ctx.name
-        )
+        command_type = ApplicationCommandType(ctx.application_type)
+        scope = GuildScope(int(ctx.guild_id)) if getattr(ctx, "guild_id", None) else GlobalScope()
+        command = self._command_registry.get(
+            scope, command_type, ctx.name, fallback_global=True,
+        ) or self._interactions[command_type].get(ctx.name)
         if command is None:
             return
 

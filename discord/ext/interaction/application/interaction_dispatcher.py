@@ -2,6 +2,8 @@
 
 from collections.abc import Callable, Mapping
 
+from ..domain.command_scope import GlobalScope, GuildScope
+
 
 class InteractionDispatcher:
     """Build contexts and publish framework events for a received interaction."""
@@ -29,7 +31,13 @@ class InteractionDispatcher:
         context = context_type(payload, self.client)
         if interaction_type == 2 and publish:
             command_type = context.application_type
-            if not self.client._interactions.get(command_type):
+            guild_id = payload.get("guild_id")
+            scope = GuildScope(int(guild_id)) if guild_id else GlobalScope()
+            registry = getattr(self.client, "_command_registry", None)
+            registered = registry and registry.get(
+                scope, command_type, context.name, fallback_global=True,
+            )
+            if not registered and not self.client._interactions.get(command_type):
                 return context
         if publish:
             self.dispatch(self.EVENTS[interaction_type], context)
