@@ -5,7 +5,7 @@
 
 - [x] 테스트 앱의 전역·서버별 CHAT_INPUT, USER, MESSAGE 명령을 생성·수정·삭제한다.
 - [x] 동일한 이름의 전역·서버 명령과 다른 명령 유형을 각각 호출한다.
-- [ ] V2 Text Display, Section, Container, Media Gallery, File 및 첨부 참조가 표시된다.
+- [x] V2 Text Display, Section, Container, Media Gallery, File 및 첨부 참조가 표시된다.
 - [x] Button과 네 종류의 자동 Select를 눌러 `custom_id`, values, resolved 객체를 확인한다.
 - [x] Modal의 String Select, Text Input, File Upload, Radio Group, Checkbox Group, Checkbox 제출값을 확인한다.
 - [ ] HTTP 엔드포인트에서 유효 서명 PING은 200/PONG, 잘못된 서명은 401을 반환한다.
@@ -59,7 +59,8 @@ Discord 클라이언트에서의 실제 명령 호출, 컴포넌트·모달 표�
 Separator, Button, 네 종류의 자동 Select와 multipart 첨부 파일이 Discord 메시지
 응답에 유지됐다. File 컴포넌트는 응답에서 HTTPS CDN URL과 `name`·`size`를
 반환하고 일반 `attachments` 배열에는 나타나지 않았다. 이 차이로 드러난 수신 파서
-오류를 고쳐 재실행에 성공했다. 실제 Discord 클라이언트의 표시·클릭은 별도 확인이 필요하다.
+오류를 고쳐 재실행에 성공했다. 사용자가 실제 Discord 클라이언트에서 썸네일,
+갤러리 이미지, `smoke.txt` 파일 카드의 표시를 확인했다.
 
 ## Gateway 클라이언트 점검
 
