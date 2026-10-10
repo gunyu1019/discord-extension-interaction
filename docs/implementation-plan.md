@@ -75,7 +75,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 - [x] **3-f 수동 실행:** 범위별 계획 조회와 명시적 적용 API를 제공한다.
 - [ ] **3-g 기존 설정 연결:** `global_sync_command` 및 기존 개별 `sync_command` 인자의 의미를
       결정된 호환성 정책에 따라 새 정책으로 연결한다.
-- [ ] **3-h 안전성 검증:** 정책의 8가지 조합, 범위 분리, 부분 실패, 삭제 후보 목록을 테스트한다.
+- [x] **3-h 안전성 검증:** 정책의 8가지 조합, 범위 분리, 부분 실패, 삭제 후보 목록을 테스트한다.
 
 ## 4. 인터랙션과 응답의 공통 구조
 
