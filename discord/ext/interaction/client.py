@@ -40,6 +40,8 @@ from discord.state import ConnectionState
 from .commands import ApplicationCommand, from_payload, command_types
 from .application.command_comparison import same_command_declaration
 from .application.interaction_dispatcher import InteractionDispatcher
+from .application.activity_binding import ActivityBinding
+from .domain.activity_command import ActivityCommand
 from .components import DetectComponent
 from .core import SubCommand, SubCommandGroup, BaseCommand, decorator_command_types
 from .enums import ApplicationCommandType
@@ -506,6 +508,10 @@ class ClientBase:
             )
             popping_data = await self._fetch_command_cached()
             for cmd_type in ApplicationCommandType:
+                # Discord creates a default Activity entry point. Legacy global
+                # deletion must not remove it without an explicit policy.
+                if cmd_type is ApplicationCommandType.PRIMARY_ENTRY_POINT:
+                    continue
                 for already_cmd in self._interactions[cmd_type]:
                     if already_cmd in popping_data[cmd_type]:
                         del popping_data[cmd_type][already_cmd]
@@ -621,6 +627,14 @@ class ClientBase:
             else:
                 self.__sync_command_before_ready_register.append(command)
         return
+
+    def add_activity_command(
+        self, command: ActivityCommand, callback=None, *, sync_command: bool = False,
+    ) -> ActivityBinding:
+        """Register an Activity entry point and optional app-owned callback."""
+        binding = ActivityBinding(command, callback)
+        self.add_interaction(binding, sync_command=sync_command)
+        return binding
 
     def get_interaction(self):
         """Get all interaction command included Application Command, User Command and Context Menu Command"""

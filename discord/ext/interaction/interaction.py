@@ -178,6 +178,16 @@ class InteractionContext:
         self.deferred = True
         return
 
+    async def launch_activity(self):
+        """Respond with Discord's LAUNCH_ACTIVITY callback (type 12)."""
+        self._response_state.ensure_initial_available()
+        result = await self.http.post_initial_response(
+            payload={"type": 12}, data=self.data,
+        )
+        self._response_state.responded()
+        self.responded = True
+        return result
+
     async def send(
         self,
         content: str | None = MISSING,
