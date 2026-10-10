@@ -82,6 +82,40 @@ bot.add_activity_command(command, launch, sync_command=True)
 Activity가 Discord 앱에서 활성화되어 있어야 한다. Discord가 직접 실행하게 할 때는
 `ActivityHandler.DISCORD_LAUNCH_ACTIVITY`를 사용하고 콜백을 생략한다.
 
+## 범위별 명령 동기화
+
+```python
+from discord.ext import interaction
+
+bot = interaction.Client()
+guild = interaction.GuildScope(123456789)
+
+@interaction.command(name="hello", description="Greet", scope=guild)
+async def hello(ctx):
+    await ctx.send("Hello")
+
+bot.add_interaction(hello, sync_command=False)
+bot.set_sync_command(guild, interaction.SyncCommand(
+    create=True, edit=True, delete=False,
+))
+
+async def inspect_and_apply():
+    # 필요할 때 Discord 원격 목록을 읽고 변경 후보를 확인한다.
+    plan = await bot.plan_sync_commands(guild)
+    for item in plan.items:
+        print(item.key.name, item.operation.value)
+
+    # 등록된 정책을 명시적으로 적용한다.
+    result = await bot.apply_sync_commands(guild)
+    for failed in result.failures:
+        print(failed.item.key.name, failed.error)
+```
+
+전역은 `GlobalScope()`를 사용한다. 정책은 실행 중 메모리에만 저장된다.
+정책을 지정하지 않은 범위에는 새 자동 동기화를 적용하지 않는다. 정책을 해제할 때는
+`bot.remove_sync_command(guild)`를 호출한다. 생성·수정·삭제 기본값은 모두 `True`라서
+삭제를 원하지 않는 범위에서는 `delete=False`를 명시해야 한다.
+
 ## 명령별 서버 권한
 
 ```python

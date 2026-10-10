@@ -184,6 +184,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 - [ ] **9-f 실서버 점검:** 명령, V2, 선택 메뉴, 모달, 첨부 파일, HTTP 수신을 수동 smoke test한다.
 - [x] **9-g 문서와 배포:** 사용 예제, 이전 안내, 지원 범위 표, CI 검증을 갱신한다.
   - [x] **9-g1:** Black 형식을 적용하고 pycodestyle의 E203 충돌을 해소한다.
+  - [x] **9-g2:** 범위별 SyncCommand의 계획 조회와 명시적 적용 예시를 추가한다.
 
 ## 확정된 결정
 

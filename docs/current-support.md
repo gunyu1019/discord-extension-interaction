@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 전역 CHAT_INPUT, USER, MESSAGE 명령 | 지원 | 기존 `command`, `user`, `context` 데코레이터와 직접 명령 모델 |
 | 명령 현지화, 메타데이터, 서버별 REST CRUD | 지원 | 명령 모델과 `transport.command_api`; 범위별 로컬 레지스트리는 진행 중 |
-| 범위별 `SyncCommand` 자동 동기화 | 진행 중 | 정책 저장·우선순위 결정 대기; 정책 없는 범위는 자동 동기화하지 않음 |
+| 범위별 `SyncCommand` 자동 동기화 | 일부 | 정책·계획·적용·재연결 중복 방지 구현; 기존 개별 `sync_command=True`와의 우선순위 연결을 검증 중 |
 | Gateway 수신과 기본 응답 | 지원 | `Client`, 기존 Context 클래스; 초기·지연·후속 응답 상태 검증 |
 | HTTP outgoing webhook | 지원 | `AiohttpInteractionAdapter`, `[http]` extra, Ed25519 검증, PING/PONG, 202 callback 또는 inline JSON |
 | Legacy Action Row, Button, String Select, Text Input | 지원 | 기존 공개 클래스와 호출 유지; 단독 Button/Selection은 전송 시 Action Row로 감쌈 |
