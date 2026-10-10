@@ -99,6 +99,9 @@ def validate_modal_container(container) -> None:
         elif getattr(container.component, "TYPE", None) == 21:
             if container.component.options is None:
                 raise ValueError("modal Radio Group requires options")
+        elif getattr(container.component, "TYPE", None) == 22:
+            if container.component.options is None:
+                raise ValueError("modal Checkbox Group requires options")
     elif component_type == 1:
         children = container.components
         if children is None or len(children) != 1 or getattr(children[0], "TYPE", None) != 4:

@@ -27,7 +27,7 @@ def from_payload(
             components.append(TextInput.from_dict(item))
         elif item.get("type") == 18:
             components.append(Label.from_payload(item))
-        elif item.get("type") in (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17, 19, 21):
+        elif item.get("type") in (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17, 19, 21, 22):
             components.append(parse_component_model(item))
         else:
             components.append(UnknownComponent.from_payload(item))
