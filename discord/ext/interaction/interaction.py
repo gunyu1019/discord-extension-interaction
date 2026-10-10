@@ -721,3 +721,20 @@ class ModalSubmitContext(InteractionContext):
             component.custom_id: [resolve_attachment(self, value) for value in component.values]
             for component in _components if isinstance(component, FileUpload)
         }
+
+    def get_component(self, custom_id: str) -> Components | Component | None:
+        """Return a submitted modal input by its Discord ``custom_id``."""
+        return next(
+            (component for component in self.components
+             if getattr(component, "custom_id", None) == custom_id),
+            None,
+        )
+
+    def get_resolved_values(self, custom_id: str) -> list:
+        """Resolve a submitted Select Menu's IDs to Discord objects when available."""
+        component = self.get_component(custom_id)
+        if component is None:
+            raise KeyError(custom_id)
+        if getattr(component, "TYPE", None) not in (3, 5, 6, 7, 8):
+            raise TypeError(f"{custom_id} is not a Select Menu")
+        return resolve_select_values(self, component.TYPE, component.values)

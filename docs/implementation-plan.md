@@ -161,7 +161,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 - [x] **8-d Checkbox Group:** 옵션, min/max, 제출 values를 지원한다.
 - [x] **8-e Checkbox:** 기본값과 제출 boolean value를 지원한다.
 - [x] **8-f 모달 선택 메뉴:** 문자열·자동 선택 메뉴의 제출 결과를 보존한다.
-- [ ] **8-g 입력 접근:** custom_id로 입력을 찾는 API와 기존 components 목록을 함께 제공한다.
+- [x] **8-g 입력 접근:** custom_id로 입력을 찾는 API와 기존 components 목록을 함께 제공한다.
 - [ ] **8-h 검증:** 모든 입력 유형의 모달 생성·제출 왕복을 테스트한다.
 
 ## 9. 추가 수신 방식, 특수 명령, 통합 검증
