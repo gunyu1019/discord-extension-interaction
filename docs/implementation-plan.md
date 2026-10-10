@@ -183,7 +183,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
   - [x] **9-d1:** 전역 Activity 명령의 handler 필드와 원격 왕복을 구현한다.
   - [x] **9-d2:** 앱 처리형 Activity 콜백과 LAUNCH_ACTIVITY 응답을 연결한다.
 - [x] **9-e 명령 권한:** 별도 인증 요구사항을 가진 서버별 명령 권한 API를 분리한다.
-- [ ] **9-f 실서버 점검:** 명령, V2, 선택 메뉴, 모달, 첨부 파일, HTTP 수신을 수동 smoke test한다.
+- [ ] **9-f 실서버 점검:** 명령, V2, 선택 메뉴, 모달, 첨부 파일, HTTP 수신을 수동 smoke test한다. 공개 HTTP 수신은 테스트 환경이 없어 미검증으로 기록했다.
   - [x] **9-f1:** 서명된 aiohttp 요청을 실제 클라이언트 디스패처까지 오프라인 통합 검증한다.
   - [ ] **9-f2:** 테스트 앱·길드의 실서버 항목을 점검표에 따라 실행하고 결과를 기록한다.
     - [x] **9-f2a:** 비밀 값을 출력하지 않는 읽기 전용 사전 점검과 고유 이름의 명령 CRUD 도구를 만든다.
@@ -193,7 +193,7 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
       - [x] **9-f2c2:** 클라이언트에서 버튼·선택 메뉴·모달 제출과 응답을 검증한다.
         - [x] **9-f2c2a:** 임시 Gateway 수신기와 자동 정리되는 테스트 메시지를 준비한다.
         - [x] **9-f2c2b:** 실제 클라이언트 조작 결과와 오류를 기록한다.
-      - [ ] **9-f2c3:** 공개 HTTPS 엔드포인트의 서명 PING과 실제 HTTP 상호작용을 검증한다.
+      - [ ] **9-f2c3:** 공개 HTTPS 엔드포인트의 서명 PING과 실제 HTTP 상호작용을 검증한다. 테스트 앱은 Gateway 수신 모드이며 공개 URL이 없어 미검증이다.
     - [x] **9-f2d:** 테스트 guild의 CHAT_INPUT·USER·MESSAGE 명령을 실제 클라이언트에서 호출한다.
       - [x] **9-f2d1:** 임시 명령을 고유 이름으로 등록하고 완료 후 ID 기준으로 정리하는 도구를 만든다.
       - [x] **9-f2d2:** 세 명령 유형의 실제 Gateway 디스패치와 응답 결과를 기록한다.
@@ -217,3 +217,5 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
    기존 `guild_id=` 인자는 유지하되 충돌하는 동시 지정은 거부한다.
 6. 새 `SyncCommand`는 범위별 메모리 정책이며 생략한 create/edit/delete는 모두 True다.
    같은 범위의 기존 `global_sync_command`와 개별 `sync_command=True`보다 새 정책을 우선한다.
+7. 실서버 점검에서 공개 HTTP 수신과 OAuth 명령별 권한은 필요한 테스트 환경이 없어
+   미검증으로 기록한다. 테스트 앱의 Activity도 비활성화되어 Entry Point 호출은 보류한다.
