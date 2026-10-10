@@ -70,6 +70,8 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
 
 - [x] **3-a 정책 모델:** `SyncCommand(create, edit, delete)`를 불변 객체로 만들고 각 값의 의미를 고정한다.
 - [x] **3-b 정책 저장:** 전역·서버별 정책을 독립적으로 보관하고 필요한 직렬화/복원 경계를 정한다.
+  - [x] **3-b1:** 범위별 메모리 저장과 명시적 정책 조회를 구현한다.
+  - [x] **3-b2:** 정책 해제 API로 해당 범위의 자동 실행을 멈출 수 있게 한다.
 - [x] **3-c 계획 생성:** 로컬과 원격 명령을 비교해 Create/Edit/Delete/Unchanged 작업을 담는 SyncPlan을 만든다.
 - [x] **3-d 계획 적용:** 정책이 허용한 작업만 실행하고 적용 결과·실패를 구조화해 반환한다.
 - [x] **3-e 자동 실행:** 시작·재연결 시 중복 실행 없이 설정된 범위의 계획만 적용한다.

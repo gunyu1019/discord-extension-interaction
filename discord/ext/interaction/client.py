@@ -771,6 +771,11 @@ class ClientBase:
         """Return the explicit policy, or None when automatic sync is disabled."""
         return self._sync_policies.get(scope)
 
+    def remove_sync_command(self, scope: GlobalScope | GuildScope) -> None:
+        """Stop automatic sync for a scope that had an explicit policy."""
+        self._sync_policies.remove(scope)
+        self._completed_sync_scopes.discard(scope)
+
     async def plan_sync_commands(self, scope: GlobalScope | GuildScope) -> SyncPlan:
         """Fetch remote declarations and preview one scope's exact changes."""
         if isinstance(scope, GlobalScope):
