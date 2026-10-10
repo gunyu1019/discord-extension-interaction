@@ -88,6 +88,8 @@ from .domain.radio_group import RadioGroup, RadioGroupOption
 from .domain.checkbox_group import CheckboxGroup, CheckboxGroupOption
 from .domain.checkbox import Checkbox
 from .domain.activity_command import ActivityCommand, ActivityHandler
+from .domain.command_permissions import CommandPermission, CommandPermissionType, GuildCommandPermissions
+from .transport.command_permissions_api import CommandPermissionsAPI
 from .errors import InvalidArgument, AlreadyDeferred
 from .interaction import (
     InteractionContext,
