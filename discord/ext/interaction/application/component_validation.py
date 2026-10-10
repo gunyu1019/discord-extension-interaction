@@ -254,6 +254,10 @@ def validate_v2_component_layout(payloads: list[dict]) -> None:
             validate_button_payload(payload)
         elif component_type == 3:
             validate_string_select_payload(payload, in_modal=False)
+        elif component_type == 13 and not payload.get("file", {}).get(
+            "url", ""
+        ).startswith("attachment://"):
+            raise ValueError("File requires an attachment:// media reference")
 
         if component_type == 1:
             children = payload.get("components", [])

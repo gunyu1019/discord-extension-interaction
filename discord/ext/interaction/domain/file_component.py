@@ -19,10 +19,13 @@ class File(Component):
         name: str | None = None,
         size: int | None = None,
         id: int | None = None,
+        _received: bool = False,
     ):
         super().__init__(id=id)
-        if not isinstance(file, UnfurledMediaItem) or not file.url.startswith(
-            "attachment://"
+        if not isinstance(file, UnfurledMediaItem) or not (
+            file.url.startswith("attachment://")
+            or _received
+            and file.url.startswith("https://")
         ):
             raise ValueError("File requires an attachment:// media reference")
         if type(spoiler) is not bool:
@@ -52,4 +55,5 @@ class File(Component):
             name=payload.get("name"),
             size=payload.get("size"),
             id=payload.get("id"),
+            _received=True,
         )
