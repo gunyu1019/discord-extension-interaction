@@ -182,6 +182,8 @@ Components Overview, Component Reference, Using Message Components, Using Modal 
   - [x] **9-d2:** 앱 처리형 Activity 콜백과 LAUNCH_ACTIVITY 응답을 연결한다.
 - [x] **9-e 명령 권한:** 별도 인증 요구사항을 가진 서버별 명령 권한 API를 분리한다.
 - [ ] **9-f 실서버 점검:** 명령, V2, 선택 메뉴, 모달, 첨부 파일, HTTP 수신을 수동 smoke test한다.
+  - [x] **9-f1:** 서명된 aiohttp 요청을 실제 클라이언트 디스패처까지 오프라인 통합 검증한다.
+  - [ ] **9-f2:** 테스트 앱·길드의 실서버 항목을 점검표에 따라 실행하고 결과를 기록한다.
 - [x] **9-g 문서와 배포:** 사용 예제, 이전 안내, 지원 범위 표, CI 검증을 갱신한다.
   - [x] **9-g1:** Black 형식을 적용하고 pycodestyle의 E203 충돌을 해소한다.
   - [x] **9-g2:** 범위별 SyncCommand의 계획 조회와 명시적 적용 예시를 추가한다.
