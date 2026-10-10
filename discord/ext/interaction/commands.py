@@ -687,6 +687,9 @@ def from_payload(data: OriginApplicationCommand) -> command_types:
         _result = UserCommand.from_payload(data)
     elif data["type"] == ApplicationCommandType.MESSAGE:
         _result = ContextMenu.from_payload(data)
+    elif data["type"] == ApplicationCommandType.PRIMARY_ENTRY_POINT:
+        from .domain.activity_command import ActivityCommand
+        _result = ActivityCommand.from_payload(data)
     else:
         _result = ApplicationCommand.from_payload(data)
     return _result

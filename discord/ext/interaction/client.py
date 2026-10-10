@@ -89,6 +89,7 @@ class ClientBase:
             ApplicationCommandType.CHAT_INPUT: dict(),
             ApplicationCommandType.USER: dict(),
             ApplicationCommandType.MESSAGE: dict(),
+            ApplicationCommandType.PRIMARY_ENTRY_POINT: dict(),
         }
         self._fetch_interactions: (
             dict[ApplicationCommandType, dict[str, command_types]] | None
@@ -298,6 +299,7 @@ class ClientBase:
             ApplicationCommandType.CHAT_INPUT: {},
             ApplicationCommandType.USER: {},
             ApplicationCommandType.MESSAGE: {},
+            ApplicationCommandType.PRIMARY_ENTRY_POINT: {},
         }
 
     async def fetch_commands(
