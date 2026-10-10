@@ -4,7 +4,7 @@
 봇 토큰과 OAuth Bearer 토큰은 저장소 또는 이 문서에 기록하지 않는다.
 
 - [ ] 테스트 앱의 전역·서버별 CHAT_INPUT, USER, MESSAGE 명령을 생성·수정·삭제한다.
-- [x] 동일한 이름의 전역·서버 명령과 다른 명령 유형을 각각 호출한다.
+- [ ] 동일한 이름의 전역·서버 명령과 다른 명령 유형을 각각 호출한다.
 - [ ] V2 Text Display, Section, Container, Media Gallery, File 및 첨부 참조가 표시된다.
 - [x] Button과 네 종류의 자동 Select를 눌러 `custom_id`, values, resolved 객체를 확인한다.
 - [x] Modal의 String Select, Text Input, File Upload, Radio Group, Checkbox Group, Checkbox 제출값을 확인한다.
@@ -109,5 +109,7 @@ Checkbox의 제출값을 검사했고 업로드 파일 한 개가 첨부 객체�
 ```
 
 2026-10-11 실행에서 동명 CHAT_INPUT 명령을 전역과 테스트 guild에 함께 등록했다.
-테스트 guild에서 호출했을 때 guild 콜백만 실행됐고 응답이 전송됐다. 생성한
-두 명령을 각각 삭제한 뒤 전역 9개·테스트 guild 0개로 원래 수량을 확인했다.
+Gateway 로그에는 guild 콜백 호출과 응답 요청 성공이 남았으나, 사용자는 명령이
+보이지 않거나 오류가 있었다고 보고했다. 실제 클라이언트 결과는 미확인으로
+기록하고 원인을 재점검한다. 생성한 두 명령을 각각 삭제한 뒤 전역 9개·테스트
+guild 0개로 원래 수량을 확인했다.
