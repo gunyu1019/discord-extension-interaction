@@ -97,3 +97,13 @@ Checkbox의 제출값을 검사했고 업로드 파일 한 개가 첨부 객체�
 모두 Gateway 디스패처에 도달했고 각각 ephemeral 응답을 보냈다. 사용자가 세 명령의
 실행 완료를 확인했다. 도구가 임시 guild 명령 3개를 삭제했으며, 후속 목록 조회에서
 테스트 guild 명령이 0개임을 확인했다.
+
+## 전역·길드 동명 명령 우선순위
+
+아래 도구는 같은 `codex_smoke_scope` CHAT_INPUT 명령을 전역과 테스트 guild에
+각각 임시 등록한다. 테스트 guild에서 한 번 호출해 guild 콜백이 선택되는지
+확인하고, 생성한 두 명령을 각각의 ID로 삭제한다.
+
+```powershell
+.venv\Scripts\python.exe -u examples\live_smoke_scope_dispatch.py --duration 300
+```
