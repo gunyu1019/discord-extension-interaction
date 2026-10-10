@@ -63,3 +63,37 @@ def test_ping_requires_valid_signature_and_returns_json_pong():
 
     asyncio.run(run())
     assert received == []
+
+
+def test_inline_response_uses_context_without_publishing_gateway_event():
+    key = SigningKey.generate()
+    routed = []
+
+    class Dispatcher:
+        def route(self, payload, *, publish=True):
+            routed.append((payload["type"], publish))
+            return SimpleNamespace(name=payload["data"]["name"])
+
+    async def inline_handler(context):
+        return {"type": 4, "data": {"content": context.name}}
+
+    client = SimpleNamespace(_interaction_dispatcher=Dispatcher)
+    app = web.Application()
+    AiohttpInteractionAdapter(
+        client, key.verify_key.encode().hex(), inline_handler=inline_handler,
+    ).register(app)
+
+    async def run():
+        async with TestClient(TestServer(app)) as http:
+            body = b'{"type":2,"data":{"name":"hello"}}'
+            timestamp = "1700000000"
+            signature = key.sign(timestamp.encode() + body).signature.hex()
+            response = await http.post("/interactions", data=body, headers={
+                "X-Signature-Ed25519": signature,
+                "X-Signature-Timestamp": timestamp,
+            })
+            assert response.status == 200
+            assert await response.json() == {"type": 4, "data": {"content": "hello"}}
+
+    asyncio.run(run())
+    assert routed == [(2, False)]

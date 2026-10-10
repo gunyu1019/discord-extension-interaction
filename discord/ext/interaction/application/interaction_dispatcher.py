@@ -20,16 +20,17 @@ class InteractionDispatcher:
         self.dispatch = dispatch
         self.context_types = context_types
 
-    def route(self, payload: dict) -> object | None:
+    def route(self, payload: dict, *, publish: bool = True) -> object | None:
         """Return the parsed context, dispatching it when a handler is eligible."""
         interaction_type = payload.get("type")
         context_type = self.context_types.get(interaction_type)
         if context_type is None:
             return None
         context = context_type(payload, self.client)
-        if interaction_type == 2:
+        if interaction_type == 2 and publish:
             command_type = context.application_type
             if not self.client._interactions.get(command_type):
                 return context
-        self.dispatch(self.EVENTS[interaction_type], context)
+        if publish:
+            self.dispatch(self.EVENTS[interaction_type], context)
         return context
