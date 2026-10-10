@@ -81,3 +81,14 @@ ephemeral 응답을 전송했다. 두 버튼에서 각 모달이 열렸으며 St
 Checkbox의 제출값을 검사했고 업로드 파일 한 개가 첨부 객체로 해석됐다. 사용자가
 실제 Discord 클라이언트에서 모든 조작을 완료했다고 확인했다. 두 임시 메시지는
 검증 후 삭제했다.
+
+## Gateway 명령 호출 점검
+
+아래 도구는 테스트 guild에 `codex_smoke_chat`, `Codex Smoke User`,
+`Codex Smoke Message`를 임시 등록한다. 세 유형을 실제 Discord 클라이언트에서
+호출하면 각 콜백이 ephemeral 응답을 보내고, 세 호출이 끝나거나 시간이 만료되면
+이번 실행에서 생성한 명령 ID만 삭제한다.
+
+```powershell
+.venv\Scripts\python.exe -u examples\live_smoke_command_dispatch.py --duration 300
+```
