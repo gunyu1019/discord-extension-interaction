@@ -1,7 +1,7 @@
 """Command identity includes scope, type and name."""
 
 from discord.ext import interaction
-from discord.ext.interaction.application.command_registry import CommandRegistry
+from discord.ext.interaction.implementation.command_registry import CommandRegistry
 
 
 def test_registry_keeps_same_name_across_scopes_and_types():

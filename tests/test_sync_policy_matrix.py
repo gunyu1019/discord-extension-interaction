@@ -6,9 +6,9 @@ from itertools import product
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.application.command_registry import CommandRegistry
-from discord.ext.interaction.application.sync_executor import SyncOutcome, apply_sync_plan
-from discord.ext.interaction.application.sync_planner import plan_sync
+from discord.ext.interaction.implementation.command_registry import CommandRegistry
+from discord.ext.interaction.implementation.sync_executor import SyncOutcome, apply_sync_plan
+from discord.ext.interaction.implementation.sync_planner import plan_sync
 
 
 @pytest.mark.parametrize("create,edit,delete", list(product((False, True), repeat=3)))

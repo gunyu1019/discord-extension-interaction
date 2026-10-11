@@ -2,7 +2,7 @@
 
 import asyncio
 
-from discord.ext.interaction.enums import ApplicationCommandType
+from discord.ext.interaction.models.enums import ApplicationCommandType
 
 
 def test_fetch_commands_requests_complete_localizations(offline_client):

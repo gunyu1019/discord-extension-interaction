@@ -22,7 +22,7 @@ def test_file_component_rejects_remote_media():
 
 
 def test_file_component_parses_discord_cdn_response_without_allowing_resend():
-    from discord.ext.interaction.parser import handle_message_parameter
+    from discord.ext.interaction.implementation.parser import handle_message_parameter
 
     payload = {
         "type": 13,

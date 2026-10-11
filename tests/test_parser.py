@@ -5,8 +5,8 @@ import json
 import discord
 import pytest
 
-from discord.ext.interaction.components import ActionRow, Button
-from discord.ext.interaction.parser import handle_message_parameter
+from discord.ext.interaction.implementation.components import ActionRow, Button
+from discord.ext.interaction.implementation.parser import handle_message_parameter
 
 
 def _file():

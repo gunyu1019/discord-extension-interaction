@@ -2,7 +2,8 @@
 
 ## 원칙
 
-이미 출시된 Python 공개 이름과 `discord.ext.interaction` import 경로는 유지한다.
+이미 출시된 Python 공개 이름과 `from discord.ext import interaction` 진입점은 유지한다.
+이전 세부 모듈 경로의 별칭은 제공하지 않는다.
 새 기능을 추가할 때는 Discord 개발자 문서의 명령, 컴포넌트, 인터랙션 및 응답 용어를
 기준으로 이름을 정한다. 이름만 바꾸기 위한 기존 API의 별칭 추가나 사용 중단은 하지 않는다.
 

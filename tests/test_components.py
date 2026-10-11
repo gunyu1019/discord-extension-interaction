@@ -5,7 +5,7 @@ import discord
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.components import Label, TextInput, from_payload
+from discord.ext.interaction.implementation.components import Label, TextInput, from_payload
 
 LABEL_PAYLOAD = {
     "type": 18,

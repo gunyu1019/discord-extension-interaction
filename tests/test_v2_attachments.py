@@ -6,7 +6,7 @@ import discord
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.parser import handle_message_parameter
+from discord.ext.interaction.implementation.parser import handle_message_parameter
 
 
 def test_file_component_reference_matches_multipart_upload():

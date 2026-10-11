@@ -4,8 +4,8 @@ import discord
 from types import SimpleNamespace
 
 from discord.ext import interaction
-from discord.ext.interaction import interaction as interaction_module
-from discord.ext.interaction.serialization.resolved_selects import resolve_select_values
+from discord.ext.interaction.implementation import interaction as interaction_module
+from discord.ext.interaction.implementation.resolved_selects import resolve_select_values
 
 
 def test_user_select_values_resolve_users(monkeypatch, offline_client, user_payload):

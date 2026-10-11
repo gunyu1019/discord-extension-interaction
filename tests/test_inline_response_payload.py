@@ -2,7 +2,7 @@
 
 import pytest
 
-from discord.ext.interaction.application.response_payload import validate_inline_response
+from discord.ext.interaction.implementation.response_payload import validate_inline_response
 
 
 @pytest.mark.parametrize("interaction_type,callback_type", [

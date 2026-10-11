@@ -3,7 +3,7 @@
 import asyncio
 
 from discord.ext import interaction
-from discord.ext.interaction.transport.command_sync_api import CommandSyncAPI
+from discord.ext.interaction.implementation.command_sync_api import CommandSyncAPI
 
 
 class HTTP:

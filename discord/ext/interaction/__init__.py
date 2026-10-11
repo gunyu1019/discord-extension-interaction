@@ -29,15 +29,15 @@ __version__ = "0.8.0"  # discord.py v2.6+ support
 
 from typing import NamedTuple, Literal, Optional
 
-from .client import Client, AutoShardedClient
-from .checks import *
-from .enums import (
+from discord.ext.interaction.implementation.client import Client, AutoShardedClient
+from discord.ext.interaction.implementation.checks import *
+from discord.ext.interaction.models.enums import (
     ApplicationCommandType,
     ApplicationContextType,
     ApplicationIntegrationType,
     Locale,
 )
-from .commands import (
+from discord.ext.interaction.models.commands import (
     CommandOption,
     CommandOptionChoice,
     ContextMenu,
@@ -49,7 +49,7 @@ from .commands import (
     Mentionable,
     option,
 )
-from .core import (
+from discord.ext.interaction.implementation.core import (
     Command,
     ContextMenuCommand,
     SubCommandGroup,
@@ -59,7 +59,7 @@ from .core import (
     user,
     context,
 )
-from .components import (
+from discord.ext.interaction.implementation.components import (
     Components,
     ActionRow,
     Label,
@@ -70,34 +70,42 @@ from .components import (
     DetectComponent,
     detect_component,
 )
-from .domain.text_display import TextDisplay
-from .domain.separator import Separator
-from .domain.section import Section
-from .domain.container import Container
-from .domain.thumbnail import Thumbnail
-from .domain.unfurled_media_item import UnfurledMediaItem
-from .domain.media_gallery import MediaGallery, MediaGalleryItem
-from .domain.file_component import File
-from .domain.user_select import UserSelect
-from .domain.role_select import RoleSelect
-from .domain.mentionable_select import MentionableSelect
-from .domain.channel_select import ChannelSelect
-from .domain.select_default_value import SelectDefaultValue
-from .domain.file_upload import FileUpload
-from .domain.radio_group import RadioGroup, RadioGroupOption
-from .domain.checkbox_group import CheckboxGroup, CheckboxGroupOption
-from .domain.checkbox import Checkbox
-from .domain.activity_command import ActivityCommand, ActivityHandler
-from .domain.command_permissions import (
+from discord.ext.interaction.models.text_display import TextDisplay
+from discord.ext.interaction.models.separator import Separator
+from discord.ext.interaction.models.section import Section
+from discord.ext.interaction.models.container import Container
+from discord.ext.interaction.models.thumbnail import Thumbnail
+from discord.ext.interaction.models.unfurled_media_item import UnfurledMediaItem
+from discord.ext.interaction.models.media_gallery import MediaGallery, MediaGalleryItem
+from discord.ext.interaction.models.file_component import File
+from discord.ext.interaction.models.user_select import UserSelect
+from discord.ext.interaction.models.role_select import RoleSelect
+from discord.ext.interaction.models.mentionable_select import MentionableSelect
+from discord.ext.interaction.models.channel_select import ChannelSelect
+from discord.ext.interaction.models.select_default_value import SelectDefaultValue
+from discord.ext.interaction.models.file_upload import FileUpload
+from discord.ext.interaction.models.radio_group import RadioGroup, RadioGroupOption
+from discord.ext.interaction.models.checkbox_group import (
+    CheckboxGroup,
+    CheckboxGroupOption,
+)
+from discord.ext.interaction.models.checkbox import Checkbox
+from discord.ext.interaction.models.activity_command import (
+    ActivityCommand,
+    ActivityHandler,
+)
+from discord.ext.interaction.models.command_permissions import (
     CommandPermission,
     CommandPermissionType,
     GuildCommandPermissions,
 )
-from .domain.command_scope import GlobalScope, GuildScope
-from .domain.sync_command import SyncCommand
-from .transport.command_permissions_api import CommandPermissionsAPI
-from .errors import InvalidArgument, AlreadyDeferred
-from .interaction import (
+from discord.ext.interaction.models.command_scope import GlobalScope, GuildScope
+from discord.ext.interaction.models.sync_command import SyncCommand
+from discord.ext.interaction.implementation.command_permissions_api import (
+    CommandPermissionsAPI,
+)
+from discord.ext.interaction.models.errors import InvalidArgument, AlreadyDeferred
+from discord.ext.interaction.implementation.interaction import (
     InteractionContext,
     ApplicationContext,
     SubcommandContext,
@@ -105,8 +113,12 @@ from .interaction import (
     AutocompleteContext,
     ModalSubmitContext,
 )
-from .message import Message, MessageTransferable, MessageEditable
-from .listener import listener
+from discord.ext.interaction.implementation.message import (
+    Message,
+    MessageTransferable,
+    MessageEditable,
+)
+from discord.ext.interaction.implementation.listener import listener
 
 
 class VersionInfo(NamedTuple):

@@ -14,7 +14,8 @@ README에 남아 있던 Python 3.9 및 `discord.py` 2.3 표기는 1-f에서 메�
 - 기존 `add_interaction` 및 `delete_interaction`의 `sync_command` 인자.
 - 기존 명령, 컴포넌트, 모달 context 이름과 응답 메서드.
 
-새 모델은 기존 import를 깨지 않고 별도 모듈에서 구현해 공개 facade로 노출한다.
+현재 최상위 공개 이름은 유지한다. 이전 세부 모듈 경로의 별칭은 제거했으며,
+직접 모듈을 가져올 때는 `models/` 또는 `implementation/` 경로를 사용한다.
 새 `SyncCommand` 정책이 없는 범위에는 자동 동기화가 없다. 기존 `True` 설정은
 사용자가 명시한 설정으로 보며, 새 정책과의 상세 우선순위는 3-g에서 실제 동작과
 회귀 테스트를 확인한 후 정한다.

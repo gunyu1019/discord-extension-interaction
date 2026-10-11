@@ -5,11 +5,8 @@ import asyncio
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.application.component_validation import (
-    validate_modal_components,
-    validate_modal_container,
-)
-from discord.ext.interaction.parser import handle_message_parameter
+from discord.ext.interaction.implementation.component_validation import validate_modal_components, validate_modal_container
+from discord.ext.interaction.implementation.parser import handle_message_parameter
 
 
 def _button(index):

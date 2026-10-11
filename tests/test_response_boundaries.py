@@ -5,9 +5,9 @@ import asyncio
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction import interaction as interaction_module
-from discord.ext.interaction.application.response_state import ResponsePhase
-from discord.ext.interaction.errors import AlreadyDeferred
+from discord.ext.interaction.implementation import interaction as interaction_module
+from discord.ext.interaction.implementation.response_state import ResponsePhase
+from discord.ext.interaction.models.errors import AlreadyDeferred
 
 
 def _context(offline_client, user_payload):

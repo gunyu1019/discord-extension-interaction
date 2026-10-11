@@ -15,13 +15,13 @@
 Discord payload와 모델 사이의 변환은 해당 모델의 일부이거나 실제 송수신 과정의
 일부로 배치한다. 이를 위한 별도의 `serialization` 계층은 두지 않는다.
 
-## 공개 경로와 호환성
+## 공개 진입점
 
-`discord.ext.interaction`의 기존 공개 이름과 import 경로는 유지한다. 최상위
-`client.py`, `commands.py`, `components.py` 등과 예전 `domain/`, `application/`,
-`serialization/`, `transport/`, `legacy_components/` 모듈은 실제 코드가 있는 새
-모듈을 가리키는 호환 별칭이다. 새 코드에서는 `models/`와 `implementation/`을
-직접 import한다. 호환 별칭에 새 동작을 추가하지 않는다.
+`from discord.ext import interaction`에서 제공하는 클래스와 함수 이름은 유지한다.
+개별 모듈을 가져올 때는 `discord.ext.interaction.models` 또는
+`discord.ext.interaction.implementation` 경로를 사용한다. 이전 최상위 모듈과
+`domain/`, `application/`, `serialization/`, `transport/`, `legacy_components/`
+경로의 호환 별칭은 제공하지 않는다.
 
 ## 주요 흐름
 
@@ -46,6 +46,6 @@ Discord payload와 모델 사이의 변환은 해당 모델의 일부이거나 �
 
 ## 변경 기준
 
-- 기존 공개 경로의 객체 정체성과 동작을 유지한다.
+- 최상위 공개 이름과 동작을 유지한다.
 - 새 유형은 모델, 필요한 송수신 동작, 왕복 검증을 함께 추가한다.
 - 새로운 추상화는 실제 중복을 없애거나 별도 검증을 가능하게 할 때만 만든다.

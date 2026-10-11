@@ -4,7 +4,7 @@ import pytest
 import discord
 
 from discord.ext import interaction
-from discord.ext.interaction.components import from_payload
+from discord.ext.interaction.implementation.components import from_payload
 
 
 def test_file_upload_modal_label_round_trip():

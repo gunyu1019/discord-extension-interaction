@@ -1,8 +1,8 @@
 """SyncPlan exposes create, edit, delete and unchanged candidates per scope."""
 
 from discord.ext import interaction
-from discord.ext.interaction.application.command_registry import CommandRegistry
-from discord.ext.interaction.application.sync_planner import SyncOperation, plan_sync
+from discord.ext.interaction.implementation.command_registry import CommandRegistry
+from discord.ext.interaction.implementation.sync_planner import SyncOperation, plan_sync
 
 
 def test_sync_plan_classifies_commands_and_keeps_guilds_separate():

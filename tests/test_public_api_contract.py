@@ -3,8 +3,13 @@
 import discord
 
 from discord.ext import interaction
-from discord.ext.interaction.legacy_components import (
-    action_row, button, label, select_option, selection, text_input,
+from discord.ext.interaction.models import (
+    legacy_action_row as action_row,
+    legacy_button as button,
+    legacy_label as label,
+    legacy_select_option as select_option,
+    legacy_selection as selection,
+    legacy_text_input as text_input,
 )
 
 

@@ -22,7 +22,7 @@ def hooked_client(monkeypatch):
     when ``_install_interaction_parsers`` captures them as the "original").
     """
     from discord.ext import interaction
-    from discord.ext.interaction import client as client_mod
+    from discord.ext.interaction.implementation import client as client_mod
 
     for name in (
         "ApplicationContext",
@@ -98,7 +98,7 @@ def test_application_command_dispatch_is_gated_on_registration(hooked_client):
 
 
 def test_message_create_dispatches_interaction_message(hooked_client, monkeypatch):
-    from discord.ext.interaction import client as client_mod
+    from discord.ext.interaction.implementation import client as client_mod
 
     client, orig_calls, dispatched = hooked_client
     monkeypatch.setattr(
@@ -114,7 +114,7 @@ def test_message_create_dispatches_interaction_message(hooked_client, monkeypatc
 
 
 def test_exception_in_our_handler_is_isolated():
-    from discord.ext.interaction.client import ClientBase
+    from discord.ext.interaction.implementation.client import ClientBase
 
     seen = []
     chained = ClientBase._chain_parser(

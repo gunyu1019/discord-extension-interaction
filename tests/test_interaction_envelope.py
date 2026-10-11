@@ -4,7 +4,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from discord.ext.interaction.domain.interaction import InteractionEnvelope
+from discord.ext.interaction.models.interaction import InteractionEnvelope
 
 
 def test_ping_can_omit_data_and_optional_context():

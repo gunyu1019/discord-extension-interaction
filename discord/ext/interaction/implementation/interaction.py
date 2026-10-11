@@ -48,7 +48,10 @@ from discord.ext.interaction.implementation.components import (
 )
 from discord.ext.interaction.models.enums import Locale
 from discord.ext.interaction.models.errors import AlreadyDeferred
-from discord.ext.interaction.http import InteractionHTTPClient, InteractionData
+from discord.ext.interaction.implementation.interaction_api import (
+    InteractionHTTPClient,
+    InteractionData,
+)
 from discord.ext.interaction.implementation.parser import handle_message_parameter
 from discord.ext.interaction.implementation.message import Message
 from discord.ext.interaction.implementation.resolved import (

@@ -2,8 +2,8 @@
 
 import pytest
 
-from discord.ext.interaction.domain.component import Component
-from discord.ext.interaction.serialization.components import ComponentRegistry
+from discord.ext.interaction.models.component import Component
+from discord.ext.interaction.models.component_codec import ComponentRegistry
 
 
 class Display(Component):

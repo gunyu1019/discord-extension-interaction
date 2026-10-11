@@ -3,9 +3,9 @@
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.components import from_payload
-from discord.ext.interaction.application.component_validation import validate_modal_components
-from discord.ext.interaction.parser import handle_message_parameter
+from discord.ext.interaction.implementation.components import from_payload
+from discord.ext.interaction.implementation.component_validation import validate_modal_components
+from discord.ext.interaction.implementation.parser import handle_message_parameter
 
 
 @pytest.mark.parametrize("model,component_type", [

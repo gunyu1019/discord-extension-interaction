@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from discord.ext.interaction.application.interaction_dispatcher import InteractionDispatcher
+from discord.ext.interaction.implementation.interaction_dispatcher import InteractionDispatcher
 
 
 def test_dispatcher_routes_and_gates_commands():
