@@ -1,8 +1,8 @@
-"""Discord Mentionable Select component."""
+"""Compatibility alias for :mod:`discord.ext.interaction.models.mentionable_select`."""
 
-from .auto_select import AutoSelect
+import importlib as _importlib
+import sys as _sys
 
-
-class MentionableSelect(AutoSelect):
-    TYPE = 7
-    DEFAULT_TYPES = ("user", "role")
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.models.mentionable_select"
+)

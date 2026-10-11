@@ -1,18 +1,8 @@
-"""Independent policy switches for Discord command reconciliation."""
+"""Compatibility alias for :mod:`discord.ext.interaction.models.sync_command`."""
 
-from dataclasses import dataclass
+import importlib as _importlib
+import sys as _sys
 
-
-@dataclass(frozen=True)
-class SyncCommand:
-    """Allow create, edit and delete operations in one explicit scope."""
-
-    create: bool = True
-    edit: bool = True
-    delete: bool = True
-
-    def __post_init__(self):
-        if any(
-            type(value) is not bool for value in (self.create, self.edit, self.delete)
-        ):
-            raise TypeError("SyncCommand create, edit and delete must be booleans")
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.models.sync_command"
+)

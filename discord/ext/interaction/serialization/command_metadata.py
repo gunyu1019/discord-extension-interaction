@@ -1,15 +1,8 @@
-"""Serialize application command metadata shared by command types."""
+"""Compatibility alias for :mod:`discord.ext.interaction.models.command_metadata`."""
 
+import importlib as _importlib
+import sys as _sys
 
-def to_register_fields(command) -> dict:
-    """Return Discord API metadata fields from an existing command model."""
-    fields = {}
-    if command.nsfw:
-        fields["nsfw"] = True
-    if command.default_member_permissions is not None:
-        fields["default_member_permissions"] = command.default_member_permissions
-    if command.contexts:
-        fields["contexts"] = [int(context) for context in command.contexts]
-    if command.integration_types:
-        fields["integration_types"] = [int(kind) for kind in command.integration_types]
-    return fields
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.models.command_metadata"
+)

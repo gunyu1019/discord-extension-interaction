@@ -1,8 +1,8 @@
-"""Discord Role Select component."""
+"""Compatibility alias for :mod:`discord.ext.interaction.models.role_select`."""
 
-from .auto_select import AutoSelect
+import importlib as _importlib
+import sys as _sys
 
-
-class RoleSelect(AutoSelect):
-    TYPE = 6
-    DEFAULT_TYPES = ("role",)
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.models.role_select"
+)

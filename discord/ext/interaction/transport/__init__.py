@@ -1,1 +1,1 @@
-"""Discord Gateway and HTTP boundary adapters."""
+"""Compatibility imports; Discord adapters live in implementation."""

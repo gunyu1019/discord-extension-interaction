@@ -1,53 +1,8 @@
-from enum import Enum, IntEnum
+"""Compatibility alias for :mod:`discord.ext.interaction.models.enums`."""
 
+import importlib as _importlib
+import sys as _sys
 
-class ApplicationCommandType(IntEnum):
-    CHAT_INPUT = 1
-    USER = 2
-    MESSAGE = 3
-    PRIMARY_ENTRY_POINT = 4
-
-
-class ApplicationIntegrationType(IntEnum):
-    GUILD_INSTALL = 0
-    USER_INSTALL = 1
-
-
-class ApplicationContextType(IntEnum):
-    GUILD = 0
-    BOT_DM = 1
-    PRIVATE_CHANNEL = 2
-
-
-class Locale(Enum):
-    american_english = "en-US"
-    british_english = "en-GB"
-    bulgarian = "bg"
-    chinese = "zh-CN"
-    taiwan_chinese = "zh-TW"
-    croatian = "hr"
-    czech = "cs"
-    indonesian = "id"
-    danish = "da"
-    dutch = "nl"
-    finnish = "fi"
-    french = "fr"
-    german = "de"
-    greek = "el"
-    hindi = "hi"
-    hungarian = "hu"
-    italian = "it"
-    japanese = "ja"
-    korean = "ko"
-    lithuanian = "lt"
-    norwegian = "no"
-    polish = "pl"
-    brazil_portuguese = "pt-BR"
-    romanian = "ro"
-    russian = "ru"
-    spain_spanish = "es-ES"
-    swedish = "sv-SE"
-    thai = "th"
-    turkish = "tr"
-    ukrainian = "uk"
-    vietnamese = "vi"
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.models.enums"
+)

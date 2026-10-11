@@ -1,8 +1,8 @@
-"""Discord User Select component."""
+"""Compatibility alias for :mod:`discord.ext.interaction.models.user_select`."""
 
-from .auto_select import AutoSelect
+import importlib as _importlib
+import sys as _sys
 
-
-class UserSelect(AutoSelect):
-    TYPE = 5
-    DEFAULT_TYPES = ("user",)
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.models.user_select"
+)

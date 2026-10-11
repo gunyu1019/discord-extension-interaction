@@ -1,0 +1,756 @@
+"""MIT License
+
+Copyright (c) 2021 gunyu1019
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
+
+import discord
+
+from discord.ext.interaction.models.enums import (
+    ApplicationCommandType,
+    ApplicationContextType,
+    ApplicationIntegrationType,
+)
+from discord.ext.interaction.models.command_scope import (
+    CommandScope,
+    GuildScope,
+    resolve_scope,
+)
+from discord.ext.interaction.models.errors import InvalidArgument
+from discord.ext.interaction.models.enums import get_enum
+from discord.ext.interaction.models.command_metadata import to_register_fields
+from discord.ext.interaction.models.localizations import (
+    add_localizations,
+    read_localizations,
+)
+
+if TYPE_CHECKING:
+    from discord import ChannelType
+    from discord.types.command import ApplicationCommand as OriginApplicationCommand
+    from discord.types.command import (
+        ApplicationCommandOptionChoice as OriginApplicationCommandOptionChoice,
+    )
+    from discord.types.command import (
+        ApplicationCommandOption as OriginApplicationCommandOption,
+    )
+    from typing import Type, Union, Optional
+
+log = logging.getLogger(__name__)
+
+
+# OptionType
+class Mentionable:
+    pass
+
+
+# Option
+class CommandOptionChoice:
+    """Represents an application command option choice.
+
+    Attributes
+    ----------
+    name: str
+        The name of the choice. This is visible to the user; max 100 characters.
+    value: str
+        The name of the choice. This is not visible to the user; max 100 characters.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        value: Union[int, str, float],
+        name_localizations: dict[str, str] | None = None,
+    ):
+        self.name = name
+        self.value = value
+        self.name_localizations = dict(name_localizations or {})
+
+    @classmethod
+    def from_payload(cls, data: OriginApplicationCommandOptionChoice):
+        return cls(
+            name=data["name"],
+            value=data["value"],
+            name_localizations=read_localizations(data, "name_localizations"),
+        )
+
+    def to_dict(self) -> dict:
+        data = {"name": self.name, "value": self.value}
+        add_localizations(data, self.name_localizations)
+        return data
+
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.value == other.value
+            and self.name_localizations == other.name_localizations
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class CommandOption:
+    """Represents an application command option.
+
+    Attributes
+    ----------
+    description: str
+        The description of the option; max 100 characters.
+    choices: list[CommandOptionChoice]
+        A list of choices for the command to choose from for this option.
+    min_value: Optional[Union[int, float]]
+        For option type ``integer``, ``float``, the minimum allowed value;
+    max_value: Optional[Union[int, float]]
+        For option type ``integer``, ``float``, the minimum allowed value;
+    min_length: Optional[int]
+        For option type ``string``, the minimum allowed length; min 0, max 6000
+    max_length: Optional[int]
+        For option type ``string``, the maximum allowed length; min 1, max 6000
+    channel_types: Optional[List[discord.ChannelType, int]]
+        For option type ``channel``, the channel types the user must select from;
+    required: Optional[bool]
+        Whether the option is required. (defaults to ``false``)
+    autocomplete: Optional[bool]
+        Whether the option has autocomplete. (defaults to ``false``)
+    """
+
+    def __init__(
+        self,
+        name: str = None,
+        option_type: Type = None,
+        description: str = "No description.",
+        choices: list[CommandOptionChoice] = None,
+        channel_type: Union[ChannelType, int] = None,
+        channel_types: list[Union[ChannelType, int]] = None,
+        min_value: float | int = None,
+        max_value: float | int = None,
+        min_length: int = None,
+        max_length: int = None,
+        required: bool = False,
+        autocomplete: bool = False,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
+    ):
+        if choices is None:
+            choices = []
+        self._name = name
+        self._type = option_type
+        self.description = description
+        self.choices = choices
+        self.required = required
+        self.autocomplete = autocomplete
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
+
+        self.parameter_name: Optional[str] = None
+
+        if option_type is not None:
+            if (len(choices) > 0 or autocomplete) and not (
+                int in option_type.__mro__
+                or float in option_type.__mro__
+                or str in option_type.__mro__
+            ):
+                raise TypeError(
+                    "choices or autocomplete should only be used in integer, string, and float."
+                )
+
+        if len(self.choices) > 0 and self.autocomplete:
+            log.warning("autocomplete may not be set to true if choices are present.")
+
+        self._channel_type: list[int] | None = None
+        if channel_type is not None or channel_types is not None:
+            if option_type is not None:
+                if discord.abc.GuildChannel not in option_type.__mro__:
+                    raise TypeError(
+                        "Channel options can be set only when they are set to a channel type."
+                    )
+
+            if channel_types is not None and channel_type is not None:
+                raise InvalidArgument()
+            elif channel_type is not None:
+                if isinstance(channel_type, discord.ChannelType):
+                    self._channel_type = [getattr(channel_type, "value", 0)]
+                else:
+                    self._channel_type = [channel_type]
+            elif channel_types is not None:
+                self._channel_type = []
+                for x in channel_types:
+                    if hasattr(x, "value"):
+                        self._channel_type.append(x.value)
+                    else:
+                        self._channel_type.append(x)
+
+        if option_type is not None:
+            if min_value is not None and (
+                int not in option_type.__mro__ and float not in option_type.__mro__
+            ):
+                raise TypeError(
+                    "min_value can only be called when the parameter types are int and float."
+                )
+            if max_value is not None and (
+                int not in option_type.__mro__ and float not in option_type.__mro__
+            ):
+                raise TypeError(
+                    "max_value can only be called when the parameter types are int and float."
+                )
+
+            if min_length is not None and str not in option_type.__mro__:
+                raise TypeError(
+                    "min_length can only be called when the parameter types are string."
+                )
+            if max_length is not None and str not in option_type.__mro__:
+                raise TypeError(
+                    "max_length can only be called when the parameter types are string."
+                )
+
+        self.min_value: Optional[int, float] = min_value
+        self.max_value: Optional[int, float] = max_value
+
+        self.min_length: Optional[int] = min_length
+        self.max_length: Optional[int] = max_length
+
+    @classmethod
+    def empty_option(cls):
+        return cls(None, None)
+
+    @property
+    def name(self) -> str:
+        """The name of the option"""
+        if self._name is None:
+            raise ValueError("The name of the option must be defined.")
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @property
+    def type(self) -> Type:
+        """The type of the option"""
+        if self._type is None:
+            raise ValueError("The type of the option must be defined.")
+        return self._type
+
+    @property
+    def channel_type(self) -> list[discord.ChannelType] | None:
+        """A list of channel types that are allowed for this option."""
+        if discord.abc.GuildChannel not in self.type.__mro__:
+            return
+        channel_type = []
+        for x in self._channel_type:
+            channel_type.append(get_enum(discord.ChannelType, x))
+        return channel_type
+
+    @property
+    def _get_type_id(self) -> int:
+        if ApplicationSubcommand in self.type.__mro__:
+            return 1
+        elif ApplicationSubcommandGroup in self.type.__mro__:
+            return 2
+        elif str == self.type:
+            return 3
+        elif int == self.type:
+            return 4
+        elif bool == self.type:
+            return 5
+        elif discord.User in self.type.__mro__:
+            return 6
+        elif discord.abc.GuildChannel in self.type.__mro__:
+            return 7
+        elif discord.Role in self.type.__mro__:
+            return 8
+        elif Mentionable in self.type.__mro__:
+            return 9
+        elif float == self.type:
+            return 10
+        elif discord.Attachment == self.type:
+            return 11
+        raise TypeError(
+            "option type invalid (Subcommand and Subcommand Group, please use decorator)"
+        )
+
+    def to_dict(self) -> dict:
+        data = {
+            "name": self.name,
+            "description": self.description,
+            "type": self._get_type_id,
+            "required": self.required,
+            "choices": [choice.to_dict() for choice in self.choices],
+            "autocomplete": self.autocomplete,
+        }
+        if self._channel_type is not None:
+            data["channel_types"] = self._channel_type
+        if self.min_value is not None:
+            data["min_value"] = self.min_value
+        if self.max_value is not None:
+            data["max_value"] = self.max_value
+        if self.min_length is not None:
+            data["min_length"] = self.min_length
+        if self.max_length is not None:
+            data["max_length"] = self.max_length
+        add_localizations(data, self.name_localizations, self.description_localizations)
+        return data
+
+    def __eq__(self, other: "CommandOption"):
+        default_check = (
+            self.name == other.name
+            and other._type in self._type.__mro__
+            and self.description == other.description
+            and self.choices == other.choices
+            and self.required == other.required
+            and self.autocomplete == other.autocomplete
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
+        )
+        if int in self._type.__mro__ or float in self._type.__mro__:
+            default_check = (
+                default_check
+                and self.min_value == other.min_value
+                and self.max_value == other.max_value
+            )
+        elif str in self._type.__mro__ or float in self._type.__mro__:
+            default_check = (
+                default_check
+                and self.min_length == other.min_length
+                and self.max_length == other.max_length
+            )
+        elif discord.abc.GuildChannel in self._type.__mro__:
+            default_check = default_check and self._channel_type == other._channel_type
+        return default_check
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @classmethod
+    def from_payload(cls, data: OriginApplicationCommandOption):
+        new_cls = cls.empty_option()
+        type_raw_value = data["type"]
+        if type_raw_value == 1:
+            return ApplicationSubcommand.from_payload(data)
+        if type_raw_value == 2:
+            return ApplicationSubcommandGroup.from_payload(data)
+
+        for x in ("name", "description", "required", "autocomplete"):
+            setattr(new_cls, x, data.get(x))
+        new_cls.name_localizations = read_localizations(data, "name_localizations")
+        new_cls.description_localizations = read_localizations(
+            data, "description_localizations"
+        )
+        # optional--default false
+        if new_cls.required is None:
+            new_cls.required = False
+        if new_cls.autocomplete is None:
+            new_cls.autocomplete = False
+
+        new_cls._type = (
+            str,
+            int,
+            bool,
+            discord.User,
+            discord.abc.GuildChannel,
+            discord.Role,
+            Mentionable,
+            float,
+            discord.Attachment,
+        )[(type_raw_value - 3)]
+
+        if new_cls.type == discord.abc.GuildChannel and "channel_types" in data.keys():
+            new_cls._channel_type = data.get("channel_types", [])
+        if new_cls.type == int or new_cls.type == float and "min_value" in data.keys():
+            new_cls.min_value = data.get("min_value")
+        if new_cls.type == int or new_cls.type == float and "max_value" in data.keys():
+            new_cls.max_value = data.get("max_value")
+        if new_cls.type == str and "min_length" in data.keys():
+            new_cls.min_length = data.get("min_length")
+        if new_cls.type == str and "max_length" in data.keys():
+            new_cls.max_length = data.get("max_length")
+
+        new_cls.choices = []
+        choices = data.get("choices", [])
+        if len(choices) > 0:
+            for ch in choices:
+                new_cls.choices.append(CommandOptionChoice.from_payload(ch))
+        return new_cls
+
+
+class ApplicationSubcommand:
+    def __init__(
+        self,
+        name: str,
+        description: str = "No description.",
+        options: Optional[list[CommandOption]] = None,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
+    ):
+        self.name = name
+        self.description = description
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
+        if options is None:
+            options = []
+        self.options = options
+
+    @property
+    def _get_type_id(self) -> int:
+        return 1
+
+    @classmethod
+    def from_payload(cls, data: OriginApplicationCommandOption):
+        new_cls = cls(
+            name=data["name"],
+            description=data["description"],
+            name_localizations=read_localizations(data, "name_localizations"),
+            description_localizations=read_localizations(
+                data, "description_localizations"
+            ),
+        )
+        if "options" in data:
+            new_cls.options = [CommandOption.from_payload(x) for x in data["options"]]
+        return new_cls
+
+    def to_dict(self) -> dict:
+        data = {
+            "name": self.name,
+            "description": self.description,
+            "type": self._get_type_id,
+            "options": [opt.to_dict() for opt in self.options],
+        }
+        add_localizations(data, self.name_localizations, self.description_localizations)
+        return data
+
+    def __eq__(self, other):
+        default_check = (
+            self.name == other.name
+            and self.description == other.description
+            and self.options == other.options
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
+        )
+        return default_check
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class ApplicationSubcommandGroup:
+    def __init__(
+        self,
+        name: str,
+        options: list[ApplicationSubcommand],
+        description: str = "No description.",
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
+    ):
+        self.name = name
+        self.description = description
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
+        self.options = options
+
+    @property
+    def _get_type_id(self) -> int:
+        return 2
+
+    @classmethod
+    def from_payload(cls, data: OriginApplicationCommandOption):
+        return cls(
+            name=data["name"],
+            description=data["description"],
+            options=[ApplicationSubcommand.from_payload(x) for x in data["options"]],
+            name_localizations=read_localizations(data, "name_localizations"),
+            description_localizations=read_localizations(
+                data, "description_localizations"
+            ),
+        )
+
+    def to_dict(self) -> dict:
+        data = {
+            "name": self.name,
+            "description": self.description,
+            "type": self._get_type_id,
+            "options": [opt.to_dict() for opt in self.options],
+        }
+        add_localizations(data, self.name_localizations, self.description_localizations)
+        return data
+
+    def __eq__(self, other):
+        default_check = (
+            self.name == other.name
+            and self.description == other.description
+            and self.options == other.options
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
+        )
+        return default_check
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class ApplicationCommand:
+    """Represents an application command.
+
+    Attributes
+    ----------
+    id: int
+        The id of application command
+    name: str
+        The name of application command
+    description: str
+        The description of application command
+    version: int
+        The version of application command
+    type: ApplicationCommandType
+        The type of application command
+    application_id: ApplicationCommandType
+        The application id of application command
+    guild_id: Optional[int]
+        The guild id of application command for private command
+    default_member_permissions: Optional[str]
+        The default member permissions that can run this command
+    """
+
+    def __init__(
+        self,
+        name: str,
+        description: str = None,
+        guild_id: int | None = None,
+        command_type: ApplicationCommandType = ApplicationCommandType.CHAT_INPUT,
+        default_member_permissions: str = None,
+        nsfw: bool = False,
+        integration_types: Optional[list[int | ApplicationIntegrationType]] = None,
+        contexts: Optional[list[int | ApplicationContextType]] = None,
+        name_localizations: dict[str, str] | None = None,
+        description_localizations: dict[str, str] | None = None,
+        scope: CommandScope | None = None,
+    ):
+        self.id: int = 0  # default: None
+        self.name: str = name
+        self.type: ApplicationCommandType = command_type
+        self.application_id: int = 0  # default: None
+        self.scope: CommandScope = resolve_scope(scope, guild_id)
+        self.guild_id: int | None = (
+            self.scope.guild_id if isinstance(self.scope, GuildScope) else None
+        )
+        self.description: str | None = description
+        self.default_member_permissions: str | None = default_member_permissions
+
+        self.nsfw: bool = nsfw
+        self.integration_types: list[int | ApplicationIntegrationType] = (
+            integration_types or []
+        )
+        self.contexts: list[int | ApplicationContextType] = contexts or []
+        self.name_localizations = dict(name_localizations or {})
+        self.description_localizations = dict(description_localizations or {})
+
+        self.version: int = 1  # default: None
+
+    @classmethod
+    def from_payload(cls, data: OriginApplicationCommand):
+        new_cls = cls(
+            name=data["name"],
+            description=data.get("description") or None,
+            default_member_permissions=data.get("default_member_permissions"),
+            guild_id=data.get("guild_id"),
+        )
+
+        for key in ("id", "application_id", "version"):
+            setattr(new_cls, key, data.get(key))
+        new_cls.nsfw = data.get("nsfw", False)
+
+        # ``integration_types`` / ``contexts`` are lists and may be absent or null.
+        new_cls.type = ApplicationCommandType(data["type"])
+        new_cls.integration_types = [
+            get_enum(ApplicationIntegrationType, x)
+            for x in (data.get("integration_types") or [])
+        ]
+        new_cls.contexts = [
+            get_enum(ApplicationContextType, x) for x in (data.get("contexts") or [])
+        ]
+        new_cls.name_localizations = read_localizations(data, "name_localizations")
+        new_cls.description_localizations = read_localizations(
+            data, "description_localizations"
+        )
+
+        return new_cls
+
+    def to_register_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "name": self.name,
+            "type": self.type.value,
+            "description": self.description,
+        }
+        data.update(to_register_fields(self))
+        add_localizations(data, self.name_localizations, self.description_localizations)
+        return data
+
+    @property
+    def is_guild(self) -> bool:
+        """Whether a private command(guild command)"""
+        return self.guild_id is not None
+
+    def __eq__(self, other):
+        # ``version`` is server-assigned; comparing it would always fail the
+        # "registered command still matches the code" check.
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and (self.description or "") == (other.description or "")
+            and self.default_member_permissions == other.default_member_permissions
+            and self.integration_types == other.integration_types
+            and self.contexts == other.contexts
+            and self.guild_id == other.guild_id
+            and self.nsfw == other.nsfw
+            and self.name_localizations == other.name_localizations
+            and self.description_localizations == other.description_localizations
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class SlashCommand(ApplicationCommand):
+    """Represents an application command for ``CHAT_INPUT`` type.
+
+    Attributes
+    ----------
+    options: list[Union[CommandOption, ApplicationSubcommand, ApplicationSubcommandGroup]]
+        A list of options for application command.
+    """
+
+    def __init__(
+        self,
+        options: list[
+            CommandOption | ApplicationSubcommandGroup | ApplicationSubcommand
+        ] = None,
+        **kwargs,
+    ):
+        if options is None:
+            options = []
+        super().__init__(**kwargs)
+        self.type = ApplicationCommandType.CHAT_INPUT
+        self.options: list[
+            CommandOption | ApplicationSubcommand | ApplicationSubcommandGroup
+        ] = options
+
+    def __eq__(self, other):
+        return super().__eq__(other) and self.options == other.options
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @classmethod
+    def from_payload(cls, data: OriginApplicationCommand):
+        new_cls = super().from_payload(data)
+        new_cls.options = [
+            CommandOption.from_payload(opt) for opt in data.get("options", [])
+        ]
+        return new_cls
+
+    def to_register_dict(self) -> dict:
+        data = super().to_register_dict()
+        data["options"] = [opt.to_dict() for opt in self.options]
+        return data
+
+
+class UserCommand(ApplicationCommand):
+    """Represents an application command for ``User`` type."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.type = ApplicationCommandType.USER
+
+
+class ContextMenu(ApplicationCommand):
+    """Represents an application command for ``Context Menu`` type."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.type = ApplicationCommandType.MESSAGE
+
+
+command_types = SlashCommand | UserCommand | ContextMenu
+
+
+def from_payload(data: OriginApplicationCommand) -> command_types:
+    if data["type"] == ApplicationCommandType.CHAT_INPUT:
+        _result = SlashCommand.from_payload(data)
+    elif data["type"] == ApplicationCommandType.USER:
+        _result = UserCommand.from_payload(data)
+    elif data["type"] == ApplicationCommandType.MESSAGE:
+        _result = ContextMenu.from_payload(data)
+    elif data["type"] == ApplicationCommandType.PRIMARY_ENTRY_POINT:
+        from discord.ext.interaction.models.activity_command import ActivityCommand
+
+        _result = ActivityCommand.from_payload(data)
+    else:
+        _result = ApplicationCommand.from_payload(data)
+    return _result
+
+
+# For Decorator
+def option(
+    name: str = None,
+    option_type: type = None,
+    description: str = "No description.",
+    choices: list[CommandOptionChoice] = None,
+    channel_type: discord.ChannelType | int = None,
+    channel_types: list[discord.ChannelType | int] = None,
+    min_value: float | int = None,
+    max_value: float | int = None,
+    min_length: int = None,
+    max_length: int = None,
+    required: bool = False,
+    autocomplete: bool = False,
+    name_localizations: dict[str, str] | None = None,
+    description_localizations: dict[str, str] | None = None,
+):
+    options = CommandOption(
+        name=name,
+        option_type=option_type,
+        description=description,
+        choices=choices,
+        channel_type=channel_type,
+        channel_types=channel_types,
+        min_value=min_value,
+        max_value=max_value,
+        min_length=min_length,
+        max_length=max_length,
+        required=required,
+        autocomplete=autocomplete,
+        name_localizations=name_localizations,
+        description_localizations=description_localizations,
+    )
+
+    def decorator(func):
+        if hasattr(func, "options") or isinstance(func, SlashCommand):
+            func.options.append(options)
+        else:
+            if not hasattr(func, "__command_options__"):
+                func.__command_options__ = []
+            func.__command_options__.append(options)
+        return func
+
+    return decorator

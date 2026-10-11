@@ -1,8 +1,8 @@
-"""Compare only fields declared for an application command."""
+"""Compatibility alias for :mod:`discord.ext.interaction.implementation.command_comparison`."""
 
+import importlib as _importlib
+import sys as _sys
 
-def same_command_declaration(local, remote) -> bool:
-    """Ignore Discord-assigned ID/version while keeping scope and payload fields."""
-    return (str(local.guild_id) if local.guild_id is not None else None) == (
-        str(remote.guild_id) if remote.guild_id is not None else None
-    ) and local.to_register_dict() == remote.to_register_dict()
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.implementation.command_comparison"
+)

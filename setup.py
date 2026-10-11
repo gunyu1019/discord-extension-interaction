@@ -25,6 +25,8 @@ setup(
     version=version,
     packages=[
         'discord.ext.interaction',
+        'discord.ext.interaction.models',
+        'discord.ext.interaction.implementation',
         'discord.ext.interaction.application',
         'discord.ext.interaction.domain',
         'discord.ext.interaction.legacy_components',

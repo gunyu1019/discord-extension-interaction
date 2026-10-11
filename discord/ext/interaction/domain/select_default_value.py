@@ -1,22 +1,8 @@
-"""Discord auto-select default value object."""
+"""Compatibility alias for :mod:`discord.ext.interaction.models.select_default_value`."""
 
-from typing import Any
+import importlib as _importlib
+import sys as _sys
 
-
-class SelectDefaultValue:
-    """A user, role, or channel selected when a menu first appears."""
-
-    def __init__(self, id: int | str, type: str):
-        if type not in ("user", "role", "channel"):
-            raise ValueError("default value type must be user, role, or channel")
-        if not str(id).isdigit() or int(id) <= 0:
-            raise ValueError("default value id must be a snowflake")
-        self.id = str(id)
-        self.type = type
-
-    def to_payload(self) -> dict[str, Any]:
-        return {"id": self.id, "type": self.type}
-
-    @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "SelectDefaultValue":
-        return cls(payload["id"], payload["type"])
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.models.select_default_value"
+)

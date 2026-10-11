@@ -1,1 +1,1 @@
-"""Conversion between Discord payloads and public interaction objects."""
+"""Compatibility imports; payload code lives in models and implementation."""

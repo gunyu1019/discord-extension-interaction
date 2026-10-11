@@ -1,1 +1,1 @@
-"""Existing public component models, kept compatible during migration."""
+"""Compatibility imports; component models live in models."""

@@ -1,15 +1,8 @@
-"""Validate inline Discord interaction callback types by interaction kind."""
+"""Compatibility alias for :mod:`discord.ext.interaction.implementation.response_payload`."""
 
-ALLOWED_CALLBACKS = {
-    2: {4, 5, 9, 12},
-    3: {4, 5, 6, 7, 9},
-    4: {8},
-    5: {4, 5, 6, 7},
-}
+import importlib as _importlib
+import sys as _sys
 
-
-def validate_inline_response(interaction_type: int, response: dict) -> None:
-    if not isinstance(response, dict) or response.get(
-        "type"
-    ) not in ALLOWED_CALLBACKS.get(interaction_type, ()):
-        raise ValueError("invalid inline callback type for interaction")
+_sys.modules[__name__] = _importlib.import_module(
+    "discord.ext.interaction.implementation.response_payload"
+)

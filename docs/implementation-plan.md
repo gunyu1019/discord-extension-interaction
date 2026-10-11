@@ -1,5 +1,8 @@
 # Discord Interaction 지원 확장 작업 계획
 
+> 이 문서는 기능 개발 당시의 작업 기록이다. 현재 코드 배치는
+> [아키텍처](architecture.md)의 `models/`와 `implementation/` 두 영역을 따른다.
+
 이 문서는 Discord의 Interactions Overview, Receiving and Responding, Application Commands,
 Components Overview, Component Reference, Using Message Components, Using Modal Components를
 프레임워크 자체 API의 지원 범위로 삼는다. 이미 제공 중인 공개 이름은 유지하고,
