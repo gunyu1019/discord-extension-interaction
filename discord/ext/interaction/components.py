@@ -32,7 +32,7 @@ from discord.ext.interaction.models.legacy_select_option import SelectOption
 from discord.ext.interaction.models.legacy_selection import Selection
 from discord.ext.interaction.models.legacy_text_input import TextInput
 from discord.ext.interaction.models.legacy_component_parser import from_payload
-from discord.ext.interaction.models.component import Component
+from discord.ext.interaction.models.components import Component
 
 
 # For Decorator

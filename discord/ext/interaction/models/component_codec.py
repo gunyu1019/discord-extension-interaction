@@ -3,8 +3,25 @@
 import inspect
 from typing import Any
 
-from discord.ext.interaction.models.component import Component
-from discord.ext.interaction.models.unknown_component import UnknownComponent
+from discord.ext.interaction.models.components import (
+    Component,
+    UnknownComponent,
+    Section,
+    TextDisplay,
+    Thumbnail,
+    MediaGallery,
+    File,
+    Separator,
+    Container,
+    UserSelect,
+    RoleSelect,
+    MentionableSelect,
+    ChannelSelect,
+    FileUpload,
+    RadioGroup,
+    CheckboxGroup,
+    Checkbox,
+)
 
 
 class ComponentRegistry:
@@ -32,3 +49,29 @@ class ComponentRegistry:
         if model is None:
             return UnknownComponent.from_payload(payload)
         return model.from_payload(payload)
+
+
+_registry = ComponentRegistry()
+for _model in (
+    Section,
+    TextDisplay,
+    Thumbnail,
+    MediaGallery,
+    File,
+    Separator,
+    Container,
+    UserSelect,
+    RoleSelect,
+    MentionableSelect,
+    ChannelSelect,
+    FileUpload,
+    RadioGroup,
+    CheckboxGroup,
+    Checkbox,
+):
+    _registry.register(_model)
+
+
+def parse_component_model(payload: dict):
+    """Parse a component, preserving future type numbers as unknown."""
+    return _registry.from_payload(payload)

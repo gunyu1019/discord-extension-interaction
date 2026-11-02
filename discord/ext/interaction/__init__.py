@@ -70,26 +70,28 @@ from .components import (
     DetectComponent,
     detect_component,
 )
-from .models.text_display import TextDisplay
-from .models.separator import Separator
-from .models.section import Section
-from .models.container import Container
-from .models.thumbnail import Thumbnail
-from .models.unfurled_media_item import UnfurledMediaItem
-from .models.media_gallery import MediaGallery, MediaGalleryItem
-from .models.file_component import File
-from .models.user_select import UserSelect
-from .models.role_select import RoleSelect
-from .models.mentionable_select import MentionableSelect
-from .models.channel_select import ChannelSelect
-from .models.select_default_value import SelectDefaultValue
-from .models.file_upload import FileUpload
-from .models.radio_group import RadioGroup, RadioGroupOption
-from .models.checkbox_group import (
+from .models.components import (
+    TextDisplay,
+    Separator,
+    Section,
+    Container,
+    Thumbnail,
+    UnfurledMediaItem,
+    MediaGallery,
+    MediaGalleryItem,
+    File,
+    UserSelect,
+    RoleSelect,
+    MentionableSelect,
+    ChannelSelect,
+    SelectDefaultValue,
+    FileUpload,
+    RadioGroup,
+    RadioGroupOption,
     CheckboxGroup,
     CheckboxGroupOption,
+    Checkbox,
 )
-from .models.checkbox import Checkbox
 from .models.activity_command import (
     ActivityCommand,
     ActivityHandler,

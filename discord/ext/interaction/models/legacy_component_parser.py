@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from discord.ext.interaction.models.unknown_component import UnknownComponent
-from discord.ext.interaction.models.component_models import (
+from discord.ext.interaction.models.components import UnknownComponent
+from discord.ext.interaction.models.component_codec import (
     parse_component_model,
 )
 from discord.ext.interaction.models.legacy_action_row import ActionRow

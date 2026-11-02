@@ -37,7 +37,7 @@ from discord.ext.interaction.components import (
     Selection,
     from_payload,
 )
-from discord.ext.interaction.models.component import Component
+from discord.ext.interaction.models.components import Component
 from discord.ext.interaction.errors import InvalidArgument, AlreadyDeferred
 from discord.ext.interaction.parser import handle_message_parameter
 

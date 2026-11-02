@@ -4,7 +4,7 @@ import discord
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.models.unknown_component import UnknownComponent
+from discord.ext.interaction.models.components import UnknownComponent
 from discord.ext.interaction.parser import handle_interaction_message_parameter, handle_message_parameter
 
 
