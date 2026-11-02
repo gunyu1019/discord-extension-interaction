@@ -317,6 +317,16 @@ class InteractionHTTPClient:
             return await self.http.request(route, form=form, files=files)
         return await self.http.request(route, json=payload)
 
+    async def get_followup(self, data: InteractionData, message_id: Union[int, str]):
+        route = Route(
+            "GET",
+            "/webhooks/{webhook_id}/{webhook_token}/messages/{message_id}",
+            webhook_id=data.application_id,
+            webhook_token=data.token,
+            message_id=message_id,
+        )
+        return await self.http.request(route)
+
     async def edit_followup(
         self,
         data: InteractionData,
