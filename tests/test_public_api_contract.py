@@ -3,7 +3,7 @@
 import discord
 
 from discord.ext import interaction
-from discord.ext.interaction import legacy_components
+from discord.ext.interaction import components as component_module
 
 
 def test_readme_command_registration_without_network():
@@ -36,12 +36,12 @@ def test_existing_component_names_are_importable():
 
 
 def test_existing_component_facade_keeps_class_identity_and_to_dict():
-    assert interaction.ActionRow is legacy_components.ActionRow
-    assert interaction.Button is legacy_components.Button
-    assert interaction.Label is legacy_components.Label
-    assert interaction.SelectOption is legacy_components.SelectOption
-    assert interaction.Selection is legacy_components.Selection
-    assert interaction.TextInput is legacy_components.TextInput
+    assert interaction.ActionRow is component_module.ActionRow
+    assert interaction.Button is component_module.Button
+    assert interaction.Label is component_module.Label
+    assert interaction.SelectOption is component_module.SelectOption
+    assert interaction.Selection is component_module.Selection
+    assert interaction.TextInput is component_module.TextInput
 
     item = interaction.Button(style=1, label="Open", custom_id="open")
     row = interaction.ActionRow([item])

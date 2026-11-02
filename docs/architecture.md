@@ -8,7 +8,7 @@
 | 경로 | 책임 |
 | --- | --- |
 | `commands.py`, `command_scope.py`, `command_permissions.py` | 명령과 범위·권한 데이터 |
-| `components.py`, `component_models.py`, `legacy_components.py`, `component_codec.py` | 컴포넌트 API·데이터·payload 해석 |
+| `components.py`, `component_models.py`, `component_codec.py` | 컴포넌트 API·데이터·payload 해석 |
 | `client.py`, `sync.py`, `interaction.py`, `http.py` | 등록·동기화·이벤트·응답·REST 연결 |
 
 데이터 모델은 실행 코드를 import하지 않는다. 별도 파일은 독립적으로 이해하거나
@@ -43,7 +43,7 @@ Discord payload와 모델 사이의 변환은 해당 모델의 일부이거나 �
 ### 컴포넌트
 
 `component_models`에 V2 유형별 객체와 필드 제약을 모은다. 기존 컴포넌트
-API의 모델과 파서는 `legacy_components`에 둔다. `component_codec`은
+API의 모델과 파서는 `components`에 둔다. `component_codec`은
 V2 유형 번호로 객체를 복원하며 알 수 없는 유형의 원본 필드를 보존한다.
 
 ## 변경 기준
