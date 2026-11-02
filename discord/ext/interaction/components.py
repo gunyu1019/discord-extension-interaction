@@ -101,8 +101,8 @@ class SelectOption:
                 if isinstance(self.emoji, discord.PartialEmoji)
                 else self.emoji
             )
-        if self.default is not None:
-            data["default"] = self.default
+        if self.default:
+            data["default"] = True
 
         return data
 
