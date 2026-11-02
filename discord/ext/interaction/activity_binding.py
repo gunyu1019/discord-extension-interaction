@@ -2,7 +2,7 @@
 
 import inspect
 
-from discord.ext.interaction.activity_command import (
+from discord.ext.interaction.commands import (
     ActivityCommand,
     ActivityHandler,
 )

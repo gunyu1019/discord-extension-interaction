@@ -46,6 +46,8 @@ from .commands import (
     ApplicationSubcommandGroup,
     ApplicationSubcommand,
     ApplicationCommand,
+    ActivityCommand,
+    ActivityHandler,
     Mentionable,
     option,
 )
@@ -92,17 +94,13 @@ from .component_models import (
     CheckboxGroupOption,
     Checkbox,
 )
-from .activity_command import (
-    ActivityCommand,
-    ActivityHandler,
-)
 from .command_permissions import (
     CommandPermission,
     CommandPermissionType,
     GuildCommandPermissions,
 )
 from .command_scope import GlobalScope, GuildScope
-from .sync_command import SyncCommand
+from .sync import SyncCommand
 from .http import (
     CommandPermissionsAPI,
 )

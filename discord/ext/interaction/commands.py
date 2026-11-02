@@ -24,6 +24,7 @@ SOFTWARE.
 from __future__ import annotations
 
 import logging
+from enum import IntEnum
 from typing import TYPE_CHECKING
 
 import discord
@@ -40,11 +41,6 @@ from discord.ext.interaction.command_scope import (
 )
 from discord.ext.interaction.errors import InvalidArgument
 from discord.ext.interaction.enums import get_enum
-from discord.ext.interaction.command_metadata import to_register_fields
-from discord.ext.interaction.localizations import (
-    add_localizations,
-    read_localizations,
-)
 
 if TYPE_CHECKING:
     from discord import ChannelType
@@ -58,6 +54,43 @@ if TYPE_CHECKING:
     from typing import Type, Union, Optional
 
 log = logging.getLogger(__name__)
+
+
+# Command Metadata
+
+
+def to_register_fields(command) -> dict:
+    """Return Discord API metadata fields from an existing command model."""
+    fields = {}
+    if command.nsfw:
+        fields["nsfw"] = True
+    if command.default_member_permissions is not None:
+        fields["default_member_permissions"] = command.default_member_permissions
+    if command.contexts:
+        fields["contexts"] = [int(context) for context in command.contexts]
+    if command.integration_types:
+        fields["integration_types"] = [int(kind) for kind in command.integration_types]
+    return fields
+
+
+# Localizations
+
+
+def read_localizations(payload: dict, field: str) -> dict[str, str]:
+    """Keep the full locale map when present, without retaining payload ownership."""
+    return dict(payload.get(field) or {})
+
+
+def add_localizations(
+    payload: dict,
+    name_localizations: dict[str, str],
+    description_localizations: dict[str, str] | None = None,
+) -> None:
+    """Add only declared localization maps to a registration payload."""
+    if name_localizations:
+        payload["name_localizations"] = dict(name_localizations)
+    if description_localizations:
+        payload["description_localizations"] = dict(description_localizations)
 
 
 # OptionType
@@ -702,8 +735,6 @@ def from_payload(data: OriginApplicationCommand) -> command_types:
     elif data["type"] == ApplicationCommandType.MESSAGE:
         _result = ContextMenu.from_payload(data)
     elif data["type"] == ApplicationCommandType.PRIMARY_ENTRY_POINT:
-        from discord.ext.interaction.activity_command import ActivityCommand
-
         _result = ActivityCommand.from_payload(data)
     else:
         _result = ApplicationCommand.from_payload(data)
@@ -754,3 +785,51 @@ def option(
         return func
 
     return decorator
+
+
+# Activity Command
+
+
+class ActivityHandler(IntEnum):
+    APP_HANDLER = 1
+    DISCORD_LAUNCH_ACTIVITY = 2
+
+
+class ActivityCommand(ApplicationCommand):
+    """A global Activity entry point with an explicit handler strategy."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        *,
+        handler: ActivityHandler | int = ActivityHandler.DISCORD_LAUNCH_ACTIVITY,
+        **kwargs,
+    ):
+        if kwargs.get("guild_id") is not None:
+            raise ValueError("PRIMARY_ENTRY_POINT cannot be a guild command")
+        if not isinstance(name, str) or not 1 <= len(name) <= 32:
+            raise ValueError("Activity command name requires 1 to 32 characters")
+        if not isinstance(description, str) or not 1 <= len(description) <= 100:
+            raise ValueError(
+                "Activity command description requires 1 to 100 characters"
+            )
+        try:
+            self.handler = ActivityHandler(handler)
+        except ValueError as error:
+            raise ValueError("invalid Activity command handler") from error
+        super().__init__(
+            name=name,
+            description=description,
+            command_type=ApplicationCommandType.PRIMARY_ENTRY_POINT,
+            **kwargs,
+        )
+
+    def to_register_dict(self) -> dict:
+        return {**super().to_register_dict(), "handler": int(self.handler)}
+
+    @classmethod
+    def from_payload(cls, data: dict) -> "ActivityCommand":
+        result = super().from_payload(data)
+        result.handler = ActivityHandler(data.get("handler", 2))
+        return result

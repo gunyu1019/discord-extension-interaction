@@ -9,7 +9,24 @@ from discord.ext.interaction.command_scope import (
     GlobalScope,
     GuildScope,
 )
-from discord.ext.interaction.sync_command import SyncCommand
+
+# Synchronization Policy
+
+
+@dataclass(frozen=True)
+class SyncCommand:
+    """Allow create, edit and delete operations in one explicit scope."""
+
+    create: bool = True
+    edit: bool = True
+    delete: bool = True
+
+    def __post_init__(self):
+        if any(
+            type(value) is not bool for value in (self.create, self.edit, self.delete)
+        ):
+            raise TypeError("SyncCommand create, edit and delete must be booleans")
+
 
 # Command Registry
 

@@ -30,7 +30,7 @@ Discord payload와 모델 사이의 변환은 해당 모델의 일부이거나 �
 
 1. `sync.CommandRegistry`가 범위와 유형별 선언을 저장한다.
 2. `sync.plan_sync`가 로컬·원격 선언의 차이를 계산한다.
-3. `sync.apply_sync_plan`이 `sync_command.SyncCommand` 정책에 따라 계획을 적용한다.
+3. `sync.apply_sync_plan`이 `sync.SyncCommand` 정책에 따라 계획을 적용한다.
 4. `http.CommandSyncAPI`가 Discord REST 요청을 수행한다.
 
 ### 인터랙션 처리
