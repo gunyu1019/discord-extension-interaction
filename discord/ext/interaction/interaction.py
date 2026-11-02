@@ -300,6 +300,8 @@ class InteractionContext:
         allowed_mentions: discord.AllowedMentions = None,
         suppress_embeds: bool = False,
         components: list[ActionRow | Button | Selection | Component] = None,
+        silent: bool = False,
+        poll: discord.Poll = MISSING,
     ):
         """Responds to this interaction by sending a message.
 
@@ -325,13 +327,19 @@ class InteractionContext:
             Whether to suppress embeds for the message. This sends the message without any embeds if set to True.
         components: list[Components]
             The component to send with the message
+        silent: bool
+            Whether the message is sent without triggering a push or desktop
+            notification (``SUPPRESS_NOTIFICATIONS``).
+        poll: Optional[discord.Poll]
+            The poll to send with the message. It cannot be mixed with Components V2.
         """
-        if suppress_embeds or hidden:
+        if suppress_embeds or hidden or silent:
             flags = discord.MessageFlags(
                 ephemeral=hidden,
                 suppress_embeds=(
                     suppress_embeds if suppress_embeds and not self.responded else False
                 ),
+                suppress_notifications=silent,
             )
         else:
             flags = MISSING
@@ -346,6 +354,7 @@ class InteractionContext:
             allowed_mentions=allowed_mentions,
             components=components,
             flags=flags,
+            poll=poll,
         )
 
         if not self.responded:
@@ -404,6 +413,7 @@ class InteractionContext:
         attachments: Sequence[discord.Attachment | discord.File] = MISSING,
         allowed_mentions: discord.AllowedMentions = MISSING,
         components: list[ActionRow | Button | Selection | Component] = MISSING,
+        poll: discord.Poll = MISSING,
     ):
         """Responds to this interaction by editing the original message or followed message.
 
@@ -426,6 +436,8 @@ class InteractionContext:
             Controls the mentions being processed in this message.
         components: list[Components]
             The component to edit with the message
+        poll: Optional[discord.Poll]
+            The poll to add while editing a deferred original response.
         """
         params = handle_message_parameter(
             content=content,
@@ -435,6 +447,7 @@ class InteractionContext:
             attachments=attachments,
             allowed_mentions=allowed_mentions,
             components=components,
+            poll=poll,
         )
 
         if message_id == "@original":

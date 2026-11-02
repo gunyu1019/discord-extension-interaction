@@ -107,6 +107,24 @@ async def whereami(ctx: interaction.ApplicationContext):
 환경에서는 `ctx.author`가 `discord.User`이므로 원본 멤버 데이터는
 `ctx.envelope.member`에서 읽는다.
 
+## 조용한 응답과 투표
+
+```python
+await ctx.send("알림 없이 보냅니다.", silent=True)
+
+poll = discord.Poll(question="오늘 점심?", duration=datetime.timedelta(hours=24))
+poll.add_answer(text="한식")
+poll.add_answer(text="양식")
+await ctx.send(poll=poll)
+
+# 지연 응답의 원본에 투표를 붙일 수도 있다.
+await ctx.defer()
+await ctx.edit(content="투표를 시작합니다.", poll=poll)
+```
+
+`silent=True`는 `SUPPRESS_NOTIFICATIONS` 플래그를 설정한다. `poll`은 Components V2
+메시지와 함께 쓸 수 없다.
+
 ## Activity
 
 ```python
