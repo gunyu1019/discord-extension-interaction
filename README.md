@@ -95,6 +95,7 @@ You can find more examples in the [examples](https://github.com/gunyu1019/discor
 
 The current [Discord API support matrix](docs/current-support.md) and
 [new feature examples](docs/new-feature-examples.md) show Components V2, modal
-inputs, HTTP receiving, Activity commands, and command permissions. The
-[implementation plan](docs/implementation-plan.md) tracks remaining scope and
-command synchronization decisions.
+inputs, HTTP receiving, Activity commands, and command permissions. See the
+[changelog](CHANGELOG.md) and the [0.6 to 0.8 migration guide](docs/migration-0.6-to-0.8.md)
+when upgrading, and the [implementation plan](docs/implementation-plan.md) for how
+the support was built.

@@ -25,7 +25,7 @@ __title__ = "Discord-Extension-Interaction"
 __author__ = "gunyu1019"
 __license__ = "MIT"
 __copyright__ = "Copyright 2021-present gunyu1019"
-__version__ = "0.8.0"  # discord.py v2.6+ support
+__version__ = "0.8.0"  # requires discord.py>=2.7.1,<3
 
 from typing import NamedTuple, Literal, Optional
 

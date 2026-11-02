@@ -10,7 +10,7 @@
 | `commands.py`, `command_scope.py`, `command_permissions.py` | 명령과 범위·권한 데이터 |
 | `components.py`, `component_models.py`, `component_codec.py` | 컴포넌트 API·데이터·payload 해석 |
 | `client.py`, `sync.py`, `interaction.py`, `http.py` | 등록·동기화·이벤트·응답·REST 연결 |
-| `dpy_internal.py` | discord.py의 비공개 이름(`_channel_factory`, `_get_guild_channel`, `_from_value` 등)을 import하는 유일한 모듈 |
+| `dpy_internal.py` | discord.py의 비공개 이름(`_channel_factory`, `_get_guild_channel`, `_from_value` 등) 접근을 모아 둔 모듈 |
 
 discord.py의 비공개 이름이 필요하면 직접 import하지 말고 `dpy_internal.py`에 추가한다.
 그러면 discord.py 업그레이드로 인한 변경이 한 파일에 모이고, 이름이 없을 때

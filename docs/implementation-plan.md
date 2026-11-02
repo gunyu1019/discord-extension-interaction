@@ -1,7 +1,7 @@
 # Discord Interaction 지원 확장 작업 계획
 
 > 이 문서는 기능 개발 당시의 작업 기록이다. 현재 코드 배치는
-> 현재 경로는 [아키텍처](architecture.md)를 따른다. 이 문서의 작업 계획은 작성 당시 기준이다.
+> [아키텍처](architecture.md)를 따르며, 이 문서의 작업 계획은 작성 당시 기준이다.
 
 이 문서는 Discord의 Interactions Overview, Receiving and Responding, Application Commands,
 Components Overview, Component Reference, Using Message Components, Using Modal Components를
