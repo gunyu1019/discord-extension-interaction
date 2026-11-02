@@ -2,6 +2,7 @@
 
 import json
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
 
 from aiohttp import web
@@ -12,6 +13,8 @@ from discord.ext.interaction.signature import (
 from discord.ext.interaction.response_payload import (
     validate_inline_response,
 )
+
+log = logging.getLogger(__name__)
 
 
 class AiohttpInteractionAdapter:
@@ -56,8 +59,17 @@ class AiohttpInteractionAdapter:
                     self.inline_handler(context), timeout=2.5
                 )
                 validate_inline_response(payload["type"], response)
-            except (ValueError, asyncio.TimeoutError) as error:
-                raise web.HTTPInternalServerError(text=str(error)) from error
+            except asyncio.TimeoutError as error:
+                log.warning("inline interaction handler timed out")
+                raise web.HTTPInternalServerError(
+                    text="inline interaction handler timed out"
+                ) from error
+            except ValueError as error:
+                # The message may come from user code; keep it in the log only.
+                log.warning("invalid inline interaction response: %s", error)
+                raise web.HTTPInternalServerError(
+                    text="invalid inline interaction response"
+                ) from error
             if hasattr(context, "_response_state"):
                 context._response_state.responded()
                 context.responded = True
