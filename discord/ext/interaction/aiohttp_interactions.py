@@ -6,10 +6,10 @@ from collections.abc import Awaitable, Callable
 
 from aiohttp import web
 
-from discord.ext.interaction.implementation.signature import (
+from discord.ext.interaction.signature import (
     InteractionSignatureVerifier,
 )
-from discord.ext.interaction.implementation.response_payload import (
+from discord.ext.interaction.response_payload import (
     validate_inline_response,
 )
 

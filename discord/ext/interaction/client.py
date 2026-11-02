@@ -38,45 +38,45 @@ from typing import TYPE_CHECKING
 import discord.http
 from discord.state import ConnectionState
 
-from discord.ext.interaction.models.commands import (
+from discord.ext.interaction.commands import (
     ApplicationCommand,
     from_payload,
     command_types,
 )
-from discord.ext.interaction.implementation.command_comparison import (
+from discord.ext.interaction.command_comparison import (
     same_command_declaration,
 )
-from discord.ext.interaction.implementation.interaction_dispatcher import (
+from discord.ext.interaction.interaction_dispatcher import (
     InteractionDispatcher,
 )
-from discord.ext.interaction.implementation.activity_binding import ActivityBinding
-from discord.ext.interaction.implementation.command_registry import CommandRegistry
-from discord.ext.interaction.implementation.sync_policy_store import SyncPolicyStore
-from discord.ext.interaction.implementation.sync_planner import plan_sync, SyncPlan
-from discord.ext.interaction.implementation.sync_executor import (
+from discord.ext.interaction.activity_binding import ActivityBinding
+from discord.ext.interaction.command_registry import CommandRegistry
+from discord.ext.interaction.sync_policy_store import SyncPolicyStore
+from discord.ext.interaction.sync_planner import plan_sync, SyncPlan
+from discord.ext.interaction.sync_executor import (
     apply_sync_plan,
     SyncResult,
 )
 from discord.ext.interaction.models.activity_command import ActivityCommand
 from discord.ext.interaction.models.command_scope import GlobalScope, GuildScope
 from discord.ext.interaction.models.sync_command import SyncCommand
-from discord.ext.interaction.implementation.components import DetectComponent
-from discord.ext.interaction.implementation.core import (
+from discord.ext.interaction.components import DetectComponent
+from discord.ext.interaction.core import (
     SubCommand,
     SubCommandGroup,
     BaseCommand,
     decorator_command_types,
 )
-from discord.ext.interaction.models.enums import ApplicationCommandType
-from discord.ext.interaction.models.errors import *
-from discord.ext.interaction.implementation.interaction import (
+from discord.ext.interaction.enums import ApplicationCommandType
+from discord.ext.interaction.errors import *
+from discord.ext.interaction.interaction import (
     ApplicationContext,
     ComponentsContext,
     AutocompleteContext,
     ModalSubmitContext,
 )
-from discord.ext.interaction.implementation.message import Message
-from discord.ext.interaction.implementation.command_api import (
+from discord.ext.interaction.message import Message
+from discord.ext.interaction.command_api import (
     get_global_commands_with_localizations,
     get_guild_commands_with_localizations,
     create_guild_command,
@@ -84,14 +84,14 @@ from discord.ext.interaction.implementation.command_api import (
     delete_guild_command,
     get_guild_command,
 )
-from discord.ext.interaction.implementation.command_sync_api import CommandSyncAPI
-from discord.ext.interaction.implementation.utils import async_all
+from discord.ext.interaction.command_sync_api import CommandSyncAPI
+from discord.ext.interaction.utils import async_all
 
 if TYPE_CHECKING:
     from discord.client import _ClientOptions  # noqa
     from typing import Any, Unpack
 
-    from discord.ext.interaction.models._types import (
+    from discord.ext.interaction._types import (
         CoroutineFunction,
         UserCheck,
         _Coroutine,

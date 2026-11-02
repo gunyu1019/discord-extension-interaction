@@ -2,8 +2,8 @@
 
 import asyncio
 
-from discord.ext.interaction.models.commands import from_payload
-from discord.ext.interaction.models.enums import ApplicationCommandType
+from discord.ext.interaction.commands import from_payload
+from discord.ext.interaction.enums import ApplicationCommandType
 
 
 def test_remove_setup_hook_removes_only_requested_hook(offline_client):

@@ -3,9 +3,9 @@
 import asyncio
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation.command_registry import CommandRegistry
-from discord.ext.interaction.implementation.sync_planner import plan_sync
-from discord.ext.interaction.implementation.sync_executor import SyncOutcome, apply_sync_plan
+from discord.ext.interaction.command_registry import CommandRegistry
+from discord.ext.interaction.sync_planner import plan_sync
+from discord.ext.interaction.sync_executor import SyncOutcome, apply_sync_plan
 
 
 def test_sync_executor_skips_deletes_and_reports_partial_failure():

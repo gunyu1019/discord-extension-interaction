@@ -2,7 +2,7 @@
 
 import asyncio
 
-from discord.ext.interaction.implementation.command_api import create_guild_command, delete_guild_command, edit_guild_command, get_guild_command, get_guild_commands_with_localizations
+from discord.ext.interaction.command_api import create_guild_command, delete_guild_command, edit_guild_command, get_guild_command, get_guild_commands_with_localizations
 
 
 def test_guild_command_list_requests_full_localizations():

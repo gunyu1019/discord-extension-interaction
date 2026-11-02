@@ -30,14 +30,14 @@ import discord
 from discord.state import ConnectionState
 from discord.utils import MISSING
 
-from discord.ext.interaction.models.commands import CommandOptionChoice
+from discord.ext.interaction.commands import CommandOptionChoice
 from discord.ext.interaction.models.component import Component
 from discord.ext.interaction.models.file_upload import FileUpload
-from discord.ext.interaction.implementation.component_validation import (
+from discord.ext.interaction.component_validation import (
     validate_modal_components,
 )
-from discord.ext.interaction.implementation.response_state import ResponseState
-from discord.ext.interaction.implementation.components import (
+from discord.ext.interaction.response_state import ResponseState
+from discord.ext.interaction.components import (
     ActionRow,
     Button,
     Label,
@@ -46,23 +46,23 @@ from discord.ext.interaction.implementation.components import (
     from_payload,
     TextInput,
 )
-from discord.ext.interaction.models.enums import Locale
-from discord.ext.interaction.models.errors import AlreadyDeferred
-from discord.ext.interaction.implementation.interaction_api import (
+from discord.ext.interaction.enums import Locale
+from discord.ext.interaction.errors import AlreadyDeferred
+from discord.ext.interaction.interaction_api import (
     InteractionHTTPClient,
     InteractionData,
 )
-from discord.ext.interaction.implementation.parser import handle_message_parameter
-from discord.ext.interaction.implementation.message import Message
-from discord.ext.interaction.implementation.resolved import (
+from discord.ext.interaction.parser import handle_message_parameter
+from discord.ext.interaction.message import Message
+from discord.ext.interaction.resolved import (
     resolve_attachment,
     resolve_mentionable,
 )
-from discord.ext.interaction.implementation.resolved_objects import resolve_target
-from discord.ext.interaction.implementation.resolved_selects import (
+from discord.ext.interaction.resolved_objects import resolve_target
+from discord.ext.interaction.resolved_selects import (
     resolve_select_values,
 )
-from discord.ext.interaction.implementation.utils import (
+from discord.ext.interaction.utils import (
     get_as_snowflake,
     channel_types,
     get_enum,

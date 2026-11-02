@@ -4,8 +4,8 @@ import asyncio
 from types import SimpleNamespace
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation import interaction as interaction_module
-from discord.ext.interaction.implementation import message as message_module
+from discord.ext.interaction import interaction as interaction_module
+from discord.ext.interaction import message as message_module
 
 
 def test_regular_send_and_edit_forward_v2_payload(monkeypatch):

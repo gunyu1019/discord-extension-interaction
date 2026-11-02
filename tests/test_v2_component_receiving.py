@@ -3,7 +3,7 @@
 import asyncio
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation.components import from_payload
+from discord.ext.interaction.components import from_payload
 
 
 def test_received_container_restores_nested_v2_models():

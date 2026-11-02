@@ -3,10 +3,10 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from discord.ext.interaction.implementation.command_comparison import (
+from discord.ext.interaction.command_comparison import (
     same_command_declaration,
 )
-from discord.ext.interaction.implementation.command_registry import (
+from discord.ext.interaction.command_registry import (
     CommandKey,
     CommandRegistry,
 )

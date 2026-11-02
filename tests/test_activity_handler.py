@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation.response_state import ResponsePhase
+from discord.ext.interaction.response_state import ResponsePhase
 
 
 def test_activity_command_dispatches_its_async_callback(offline_client):

@@ -1,8 +1,8 @@
 """V2 trees and legacy rows share message payloads without losing structure."""
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation.components import from_payload
-from discord.ext.interaction.implementation.parser import handle_message_parameter
+from discord.ext.interaction.components import from_payload
+from discord.ext.interaction.parser import handle_message_parameter
 
 
 def test_nested_v2_tree_survives_send_and_receive():

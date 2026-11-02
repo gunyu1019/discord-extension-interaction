@@ -2,8 +2,8 @@
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.models.commands import ApplicationCommand, ApplicationSubcommand, ApplicationSubcommandGroup, CommandOption, CommandOptionChoice, SlashCommand, from_payload
-from discord.ext.interaction.models.enums import ApplicationCommandType, ApplicationContextType, ApplicationIntegrationType
+from discord.ext.interaction.commands import ApplicationCommand, ApplicationSubcommand, ApplicationSubcommandGroup, CommandOption, CommandOptionChoice, SlashCommand, from_payload
+from discord.ext.interaction.enums import ApplicationCommandType, ApplicationContextType, ApplicationIntegrationType
 
 MINIMAL = {
     "id": "100",

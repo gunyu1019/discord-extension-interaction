@@ -1,7 +1,7 @@
 """Sync comparison uses declared Discord fields, not server metadata."""
 
-from discord.ext.interaction.implementation.command_comparison import same_command_declaration
-from discord.ext.interaction.models.commands import SlashCommand, from_payload
+from discord.ext.interaction.command_comparison import same_command_declaration
+from discord.ext.interaction.commands import SlashCommand, from_payload
 
 
 def _remote(**overrides):

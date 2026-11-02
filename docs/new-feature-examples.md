@@ -47,7 +47,7 @@ agreed = modal_ctx.get_component("agree").value
 ```python
 from aiohttp import web
 from discord.ext import interaction
-from discord.ext.interaction.implementation.aiohttp_interactions import AiohttpInteractionAdapter
+from discord.ext.interaction.aiohttp_interactions import AiohttpInteractionAdapter
 
 bot = interaction.Client()
 app = web.Application()

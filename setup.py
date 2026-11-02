@@ -26,7 +26,6 @@ setup(
     packages=[
         'discord.ext.interaction',
         'discord.ext.interaction.models',
-        'discord.ext.interaction.implementation',
     ],
     url='https://github.com/gunyu1019/discord-extension-interaction',
     license='MIT',

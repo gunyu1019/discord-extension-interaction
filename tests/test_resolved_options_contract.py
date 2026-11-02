@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import discord
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation.resolved import resolve_mentionable
+from discord.ext.interaction.resolved import resolve_mentionable
 
 
 def _frame(user_payload, options, resolved):

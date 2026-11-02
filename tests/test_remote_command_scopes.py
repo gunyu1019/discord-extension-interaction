@@ -3,7 +3,7 @@
 import asyncio
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation import client as client_module
+from discord.ext.interaction import client as client_module
 
 
 def test_remote_command_lists_keep_scopes_separate(monkeypatch, offline_client):

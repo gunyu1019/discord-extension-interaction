@@ -34,13 +34,13 @@ from typing import TYPE_CHECKING
 from collections.abc import Sequence
 
 
-from discord.ext.interaction.implementation.components import (
+from discord.ext.interaction.components import (
     ActionRow,
     Label,
     Button,
     Selection,
 )
-from discord.ext.interaction.implementation.component_validation import (
+from discord.ext.interaction.component_validation import (
     validate_legacy_message_components,
     validate_message_action_row,
     validate_v2_component_count,

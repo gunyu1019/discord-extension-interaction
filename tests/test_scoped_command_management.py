@@ -26,7 +26,7 @@ def test_guild_command_create_edit_delete_use_guild_routes(monkeypatch, offline_
     async def delete(http, app_id, guild_id, command_id):
         calls.append(("delete", app_id, guild_id, command_id))
 
-    from discord.ext.interaction.implementation import client as client_module
+    from discord.ext.interaction import client as client_module
     monkeypatch.setattr(offline_client, "_application_id", app_id)
     monkeypatch.setattr(offline_client, "fetch_guild_commands", fetch)
     monkeypatch.setattr(client_module, "create_guild_command", create)
@@ -46,7 +46,7 @@ def test_guild_command_create_edit_delete_use_guild_routes(monkeypatch, offline_
 
 
 def test_fetch_guild_command_by_id_preserves_scope(monkeypatch, offline_client):
-    from discord.ext.interaction.implementation import client as client_module
+    from discord.ext.interaction import client as client_module
 
     async def app_id():
         return 20

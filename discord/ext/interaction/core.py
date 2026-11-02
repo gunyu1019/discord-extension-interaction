@@ -24,7 +24,7 @@ SOFTWARE.
 import inspect
 from typing import Callable, Coroutine, Any
 
-from discord.ext.interaction.models.commands import (
+from discord.ext.interaction.commands import (
     ApplicationSubcommand,
     ApplicationSubcommandGroup,
     CommandOption,
@@ -32,12 +32,12 @@ from discord.ext.interaction.models.commands import (
     UserCommand,
     ContextMenu,
 )
-from discord.ext.interaction.models.enums import (
+from discord.ext.interaction.enums import (
     ApplicationContextType,
     ApplicationIntegrationType,
 )
 from discord.ext.interaction.models.command_scope import CommandScope
-from discord.ext.interaction.implementation.utils import async_all
+from discord.ext.interaction.utils import async_all
 
 
 class BaseCore:

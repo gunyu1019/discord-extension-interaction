@@ -31,15 +31,15 @@ from discord.message import Message as OriginMessage
 from discord.message import MessageFlags  # noqa
 from discord.utils import MISSING
 
-from discord.ext.interaction.implementation.components import (
+from discord.ext.interaction.components import (
     ActionRow,
     Button,
     Selection,
     from_payload,
 )
 from discord.ext.interaction.models.component import Component
-from discord.ext.interaction.models.errors import InvalidArgument, AlreadyDeferred
-from discord.ext.interaction.implementation.parser import handle_message_parameter
+from discord.ext.interaction.errors import InvalidArgument, AlreadyDeferred
+from discord.ext.interaction.parser import handle_message_parameter
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Union, List

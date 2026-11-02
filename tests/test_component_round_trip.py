@@ -1,6 +1,6 @@
 """Legacy and future component payloads survive receive and serialize cycles."""
 
-from discord.ext.interaction.implementation.components import ActionRow, Label, from_payload
+from discord.ext.interaction.components import ActionRow, Label, from_payload
 from discord.ext.interaction.models.unknown_component import UnknownComponent
 
 

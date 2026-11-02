@@ -1,6 +1,6 @@
 """Resolve selected menu IDs using an interaction's resolved payload."""
 
-from discord.ext.interaction.implementation.resolved_objects import resolve_target
+from discord.ext.interaction.resolved_objects import resolve_target
 
 
 def resolve_select_values(context, component_type: int, values: list[str]) -> list:

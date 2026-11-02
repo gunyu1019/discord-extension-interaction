@@ -2,8 +2,8 @@
 
 from enum import IntEnum
 
-from discord.ext.interaction.models.commands import ApplicationCommand
-from discord.ext.interaction.models.enums import ApplicationCommandType
+from discord.ext.interaction.commands import ApplicationCommand
+from discord.ext.interaction.enums import ApplicationCommandType
 
 
 class ActivityHandler(IntEnum):

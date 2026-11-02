@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from discord.ext.interaction.implementation.sync_planner import (
+from discord.ext.interaction.sync_planner import (
     SyncOperation,
     SyncPlan,
     SyncPlanItem,

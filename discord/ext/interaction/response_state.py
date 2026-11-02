@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from discord.ext.interaction.models.errors import AlreadyDeferred
+from discord.ext.interaction.errors import AlreadyDeferred
 
 
 class ResponsePhase(Enum):

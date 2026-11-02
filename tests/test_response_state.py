@@ -2,8 +2,8 @@
 
 import pytest
 
-from discord.ext.interaction.implementation.response_state import ResponsePhase, ResponseState
-from discord.ext.interaction.models.errors import AlreadyDeferred
+from discord.ext.interaction.response_state import ResponsePhase, ResponseState
+from discord.ext.interaction.errors import AlreadyDeferred
 
 
 def test_response_state_allows_defer_then_edit_and_rejects_duplicate_initial():

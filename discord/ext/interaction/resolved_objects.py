@@ -3,8 +3,8 @@
 import discord
 from discord.channel import _channel_factory
 
-from discord.ext.interaction.implementation.message import Message
-from discord.ext.interaction.implementation.resolved import resolve_attachment
+from discord.ext.interaction.message import Message
+from discord.ext.interaction.resolved import resolve_attachment
 
 
 def resolve_target(context, target_type: str, target_id: int | str | None):

@@ -5,9 +5,9 @@ import asyncio
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation import client as client_module
-from discord.ext.interaction.implementation.sync_executor import SyncOutcome
-from discord.ext.interaction.implementation.sync_planner import SyncOperation
+from discord.ext.interaction import client as client_module
+from discord.ext.interaction.sync_executor import SyncOutcome
+from discord.ext.interaction.sync_planner import SyncOperation
 
 
 def test_manual_preview_and_apply_require_policy(monkeypatch, offline_client):

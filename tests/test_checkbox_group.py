@@ -3,7 +3,7 @@
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation.components import from_payload
+from discord.ext.interaction.components import from_payload
 
 
 def test_checkbox_group_modal_and_submission_round_trip():

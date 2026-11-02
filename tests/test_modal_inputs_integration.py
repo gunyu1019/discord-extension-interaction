@@ -3,8 +3,8 @@
 import pytest
 
 from discord.ext import interaction
-from discord.ext.interaction.implementation.component_validation import validate_modal_components
-from discord.ext.interaction.implementation.components import from_payload
+from discord.ext.interaction.component_validation import validate_modal_components
+from discord.ext.interaction.components import from_payload
 
 
 def test_mixed_modal_inputs_round_trip(offline_client, user_payload):

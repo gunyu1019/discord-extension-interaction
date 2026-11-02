@@ -28,8 +28,8 @@ from typing import Callable
 import discord.utils
 from discord.ext.commands.errors import *
 
-from discord.ext.interaction.implementation.core import BaseCommand
-from discord.ext.interaction.implementation.interaction import InteractionContext
+from discord.ext.interaction.core import BaseCommand
+from discord.ext.interaction.interaction import InteractionContext
 
 
 def check(predicate):

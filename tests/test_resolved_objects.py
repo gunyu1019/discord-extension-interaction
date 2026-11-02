@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import discord
 
-from discord.ext.interaction.implementation.resolved_objects import resolve_target
+from discord.ext.interaction.resolved_objects import resolve_target
 
 
 def _context(offline_client, user_payload):

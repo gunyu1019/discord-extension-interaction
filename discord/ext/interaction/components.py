@@ -23,7 +23,7 @@ SOFTWARE.
 
 import inspect
 
-from discord.ext.interaction.implementation.core import BaseCore
+from discord.ext.interaction.core import BaseCore
 from discord.ext.interaction.models.legacy_base import Components
 from discord.ext.interaction.models.legacy_action_row import ActionRow
 from discord.ext.interaction.models.legacy_label import Label

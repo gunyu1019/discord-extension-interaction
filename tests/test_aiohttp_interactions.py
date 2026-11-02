@@ -8,7 +8,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from nacl.signing import SigningKey
 
-from discord.ext.interaction.implementation.aiohttp_interactions import AiohttpInteractionAdapter
+from discord.ext.interaction.aiohttp_interactions import AiohttpInteractionAdapter
 from discord.ext import interaction
 
 

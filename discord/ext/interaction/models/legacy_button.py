@@ -2,7 +2,7 @@
 
 import discord
 
-from discord.ext.interaction.models.enums import get_enum
+from discord.ext.interaction.enums import get_enum
 from discord.ext.interaction.models.legacy_base import Components
 
 

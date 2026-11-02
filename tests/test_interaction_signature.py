@@ -3,7 +3,7 @@
 import pytest
 from nacl.signing import SigningKey
 
-from discord.ext.interaction.implementation.signature import InteractionSignatureVerifier
+from discord.ext.interaction.signature import InteractionSignatureVerifier
 
 
 def test_signature_verifier_accepts_valid_raw_body_and_rejects_tampering():

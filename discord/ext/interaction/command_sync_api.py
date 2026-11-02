@@ -1,7 +1,7 @@
 """Discord REST adapter for planned global and guild command changes."""
 
 from discord.ext.interaction.models.command_scope import GlobalScope, GuildScope
-from discord.ext.interaction.implementation.command_api import (
+from discord.ext.interaction.command_api import (
     create_guild_command,
     edit_guild_command,
     delete_guild_command,

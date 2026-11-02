@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 
 import discord
 
-from discord.ext.interaction.models.enums import (
+from discord.ext.interaction.enums import (
     ApplicationCommandType,
     ApplicationContextType,
     ApplicationIntegrationType,
@@ -38,8 +38,8 @@ from discord.ext.interaction.models.command_scope import (
     GuildScope,
     resolve_scope,
 )
-from discord.ext.interaction.models.errors import InvalidArgument
-from discord.ext.interaction.models.enums import get_enum
+from discord.ext.interaction.errors import InvalidArgument
+from discord.ext.interaction.enums import get_enum
 from discord.ext.interaction.models.command_metadata import to_register_fields
 from discord.ext.interaction.models.localizations import (
     add_localizations,

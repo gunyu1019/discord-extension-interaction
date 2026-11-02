@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from discord.ext.interaction.models.command_scope import CommandScope, GlobalScope
-from discord.ext.interaction.models.enums import ApplicationCommandType
+from discord.ext.interaction.enums import ApplicationCommandType
 
 
 @dataclass(frozen=True)
