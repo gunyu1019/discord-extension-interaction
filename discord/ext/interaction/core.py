@@ -36,7 +36,7 @@ from discord.ext.interaction.enums import (
     ApplicationContextType,
     ApplicationIntegrationType,
 )
-from discord.ext.interaction.models.command_scope import CommandScope
+from discord.ext.interaction.command_scope import CommandScope
 from discord.ext.interaction.utils import async_all
 
 

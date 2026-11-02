@@ -3,7 +3,7 @@
 import discord
 
 from discord.ext import interaction
-from discord.ext.interaction.models import legacy_components
+from discord.ext.interaction import legacy_components
 
 
 def test_readme_command_registration_without_network():

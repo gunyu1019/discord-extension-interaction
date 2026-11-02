@@ -2,7 +2,7 @@
 
 from collections.abc import Callable, Mapping
 
-from discord.ext.interaction.models.command_scope import GlobalScope, GuildScope
+from discord.ext.interaction.command_scope import GlobalScope, GuildScope
 
 
 class InteractionDispatcher:

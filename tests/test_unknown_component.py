@@ -2,8 +2,8 @@
 
 import pytest
 
-from discord.ext.interaction.models.components import UnknownComponent
-from discord.ext.interaction.models.component_codec import ComponentRegistry
+from discord.ext.interaction.component_models import UnknownComponent
+from discord.ext.interaction.component_codec import ComponentRegistry
 
 
 def test_unknown_component_preserves_future_fields_without_aliasing_input():

@@ -56,9 +56,9 @@ from discord.ext.interaction.interaction_dispatcher import (
     InteractionDispatcher,
 )
 from discord.ext.interaction.activity_binding import ActivityBinding
-from discord.ext.interaction.models.activity_command import ActivityCommand
-from discord.ext.interaction.models.command_scope import GlobalScope, GuildScope
-from discord.ext.interaction.models.sync_command import SyncCommand
+from discord.ext.interaction.activity_command import ActivityCommand
+from discord.ext.interaction.command_scope import GlobalScope, GuildScope
+from discord.ext.interaction.sync_command import SyncCommand
 from discord.ext.interaction.components import DetectComponent
 from discord.ext.interaction.core import (
     SubCommand,

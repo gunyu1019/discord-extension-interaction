@@ -70,7 +70,7 @@ from .components import (
     DetectComponent,
     detect_component,
 )
-from .models.components import (
+from .component_models import (
     TextDisplay,
     Separator,
     Section,
@@ -92,17 +92,17 @@ from .models.components import (
     CheckboxGroupOption,
     Checkbox,
 )
-from .models.activity_command import (
+from .activity_command import (
     ActivityCommand,
     ActivityHandler,
 )
-from .models.command_permissions import (
+from .command_permissions import (
     CommandPermission,
     CommandPermissionType,
     GuildCommandPermissions,
 )
-from .models.command_scope import GlobalScope, GuildScope
-from .models.sync_command import SyncCommand
+from .command_scope import GlobalScope, GuildScope
+from .sync_command import SyncCommand
 from .http import (
     CommandPermissionsAPI,
 )

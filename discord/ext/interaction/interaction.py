@@ -31,7 +31,7 @@ from discord.state import ConnectionState
 from discord.utils import MISSING
 
 from discord.ext.interaction.commands import CommandOptionChoice
-from discord.ext.interaction.models.components import Component, FileUpload
+from discord.ext.interaction.component_models import Component, FileUpload
 from discord.ext.interaction.component_validation import (
     validate_modal_components,
 )

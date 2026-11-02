@@ -1,7 +1,7 @@
 """Legacy and future component payloads survive receive and serialize cycles."""
 
 from discord.ext.interaction.components import ActionRow, Label, from_payload
-from discord.ext.interaction.models.components import UnknownComponent
+from discord.ext.interaction.component_models import UnknownComponent
 
 
 def test_known_action_row_and_label_round_trip():

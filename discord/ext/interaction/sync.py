@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from enum import Enum
 
 from discord.ext.interaction.enums import ApplicationCommandType
-from discord.ext.interaction.models.command_scope import (
+from discord.ext.interaction.command_scope import (
     CommandScope,
     GlobalScope,
     GuildScope,
 )
-from discord.ext.interaction.models.sync_command import SyncCommand
+from discord.ext.interaction.sync_command import SyncCommand
 
 # Command Registry
 

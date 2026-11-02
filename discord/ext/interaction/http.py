@@ -7,8 +7,8 @@ from typing import NamedTuple, TYPE_CHECKING
 
 from discord.http import Route
 
-from discord.ext.interaction.models.command_scope import GlobalScope, GuildScope
-from discord.ext.interaction.models.command_permissions import (
+from discord.ext.interaction.command_scope import GlobalScope, GuildScope
+from discord.ext.interaction.command_permissions import (
     CommandPermission,
     GuildCommandPermissions,
 )

@@ -48,7 +48,7 @@ from discord.ext.interaction.component_validation import (
     validate_attachment_references,
     validate_v2_message_fields,
 )
-from discord.ext.interaction.models.components import Component
+from discord.ext.interaction.component_models import Component
 
 if TYPE_CHECKING:
     from discord import Attachment, MessageFlags

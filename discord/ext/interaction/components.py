@@ -24,7 +24,7 @@ SOFTWARE.
 import inspect
 
 from discord.ext.interaction.core import BaseCore
-from discord.ext.interaction.models.legacy_components import (
+from discord.ext.interaction.legacy_components import (
     Components,
     ActionRow,
     Label,
@@ -34,7 +34,7 @@ from discord.ext.interaction.models.legacy_components import (
     TextInput,
     from_payload,
 )
-from discord.ext.interaction.models.components import Component
+from discord.ext.interaction.component_models import Component
 
 
 # For Decorator

@@ -33,15 +33,15 @@ from discord.ext.interaction.enums import (
     ApplicationContextType,
     ApplicationIntegrationType,
 )
-from discord.ext.interaction.models.command_scope import (
+from discord.ext.interaction.command_scope import (
     CommandScope,
     GuildScope,
     resolve_scope,
 )
 from discord.ext.interaction.errors import InvalidArgument
 from discord.ext.interaction.enums import get_enum
-from discord.ext.interaction.models.command_metadata import to_register_fields
-from discord.ext.interaction.models.localizations import (
+from discord.ext.interaction.command_metadata import to_register_fields
+from discord.ext.interaction.localizations import (
     add_localizations,
     read_localizations,
 )
@@ -702,7 +702,7 @@ def from_payload(data: OriginApplicationCommand) -> command_types:
     elif data["type"] == ApplicationCommandType.MESSAGE:
         _result = ContextMenu.from_payload(data)
     elif data["type"] == ApplicationCommandType.PRIMARY_ENTRY_POINT:
-        from discord.ext.interaction.models.activity_command import ActivityCommand
+        from discord.ext.interaction.activity_command import ActivityCommand
 
         _result = ActivityCommand.from_payload(data)
     else:

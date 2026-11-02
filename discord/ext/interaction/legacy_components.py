@@ -6,8 +6,8 @@ from typing import Any
 import discord
 
 from discord.ext.interaction.enums import get_enum
-from discord.ext.interaction.models.components import UnknownComponent
-from discord.ext.interaction.models.component_codec import parse_component_model
+from discord.ext.interaction.component_models import UnknownComponent
+from discord.ext.interaction.component_codec import parse_component_model
 
 # Base
 

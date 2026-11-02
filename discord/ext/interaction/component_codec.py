@@ -3,7 +3,7 @@
 import inspect
 from typing import Any
 
-from discord.ext.interaction.models.components import (
+from discord.ext.interaction.component_models import (
     Component,
     UnknownComponent,
     Section,

@@ -2,7 +2,7 @@
 
 import pytest
 
-from discord.ext.interaction.models.components import Component
+from discord.ext.interaction.component_models import Component
 
 
 class ExampleComponent(Component):
