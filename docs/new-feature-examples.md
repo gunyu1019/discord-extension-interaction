@@ -121,6 +121,8 @@ async def launch(ctx):
 bot.add_activity_command(command, launch, sync_command=True)
 ```
 
+`ctx.launch_activity()`는 Discord의 Interaction Callback Response를 반환하고 `ctx.callback_response`에도 보관한다. 실행된 인스턴스는 `result["resource"]["activity_instance"]["id"]`로 읽는다. `ctx.send()`도 첫 응답에서 같은 방식으로 콜백 응답의 메시지를 사용하므로 `GET @original` 요청을 추가로 보내지 않는다.
+
 Activity가 Discord 앱에서 활성화되어 있어야 한다. Discord가 직접 실행하게 할 때는
 `ActivityHandler.DISCORD_LAUNCH_ACTIVITY`를 사용하고 콜백을 생략한다.
 

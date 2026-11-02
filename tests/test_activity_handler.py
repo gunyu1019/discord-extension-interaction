@@ -44,7 +44,7 @@ def test_launch_activity_sends_type_12_once(offline_client, user_payload):
     sent = []
 
     class HTTP:
-        async def post_initial_response(self, *, payload, data):
+        async def post_initial_response(self, *, payload, data, with_response=False):
             sent.append(payload)
 
     context.http = HTTP()

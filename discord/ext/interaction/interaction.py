@@ -114,6 +114,9 @@ class InteractionContext:
         The entitlements of the invoking user and guild for this app.
     attachment_size_limit: Optional[int]
         The maximum size in bytes of an attachment the invoking user can upload.
+    callback_response: Optional[dict]
+        The Interaction Callback Response Discord returned for the initial
+        response (``interaction`` and ``resource``), when one was requested.
     deferred: bool
         When ``defer`` called, deferred becomes ``True``
     responded: bool
@@ -154,6 +157,7 @@ class InteractionContext:
 
         self.deferred = False
         self.responded = False
+        self.callback_response: dict | None = None
         self._response_state = ResponseState()
 
         self.data = InteractionData(
@@ -264,14 +268,23 @@ class InteractionContext:
         return
 
     async def launch_activity(self):
-        """Respond with Discord's LAUNCH_ACTIVITY callback (type 12)."""
+        """Respond with Discord's LAUNCH_ACTIVITY callback (type 12).
+
+        Returns
+        -------
+        Optional[dict]
+            The Interaction Callback Response. The launched instance is at
+            ``["resource"]["activity_instance"]["id"]``.
+        """
         self._response_state.ensure_initial_available()
         result = await self.http.post_initial_response(
             payload={"type": 12},
             data=self.data,
+            with_response=True,
         )
         self._response_state.responded()
         self.responded = True
+        self.callback_response = result if isinstance(result, dict) else None
         return result
 
     async def send(
@@ -349,14 +362,25 @@ class InteractionContext:
                 self.deferred = False
             else:
                 self._response_state.ensure_initial_available()
-                await self.http.post_initial_response(
-                    payload={"type": 4, "data": params.payload}, data=self.data
+                callback = await self.http.post_initial_response(
+                    payload={"type": 4, "data": params.payload},
+                    data=self.data,
+                    with_response=True,
                 )
                 # The callback has consumed the one initial response even if
                 # fetching its message subsequently fails.
                 self._response_state.responded()
                 self.responded = True
-                resp = await self.http.get_initial_response(data=self.data)
+                self.callback_response = (
+                    callback if isinstance(callback, dict) else None
+                )
+                # The callback response already carries the created message;
+                # only fall back to GET @original when it does not.
+                resp = ((self.callback_response or {}).get("resource") or {}).get(
+                    "message"
+                )
+                if resp is None:
+                    resp = await self.http.get_initial_response(data=self.data)
             if not self.responded:
                 self._response_state.responded()
                 self.responded = True

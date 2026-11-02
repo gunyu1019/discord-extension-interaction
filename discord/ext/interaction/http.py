@@ -252,14 +252,29 @@ class InteractionHTTPClient:
 
     # -- Initial response -------------------------------------------------
     async def post_initial_response(
-        self, data: InteractionData, payload: Dict[str, Any]
+        self,
+        data: InteractionData,
+        payload: Dict[str, Any],
+        *,
+        with_response: bool = False,
     ):
+        """Send the initial callback.
+
+        With ``with_response`` Discord answers with the Interaction Callback
+        Response object (``interaction`` and ``resource``) instead of an empty 204,
+        which saves a ``GET @original`` request and is the only way to learn the
+        ``activity_instance`` of a ``LAUNCH_ACTIVITY`` callback.
+        """
         route = Route(
             "POST",
             "/interactions/{webhook_id}/{webhook_token}/callback",
             webhook_id=data.id,
             webhook_token=data.token,
         )
+        if with_response:
+            return await self.http.request(
+                route, json=payload, params={"with_response": "true"}
+            )
         return await self.http.request(route, json=payload)
 
     async def get_initial_response(self, data: InteractionData):

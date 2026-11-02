@@ -41,7 +41,7 @@ def test_interaction_send_and_edit_forward_v2_payload(monkeypatch, offline_clien
     sent = {}
 
     class HTTP:
-        async def post_initial_response(self, *, payload, data):
+        async def post_initial_response(self, *, payload, data, with_response=False):
             sent["send"] = payload
 
         async def get_initial_response(self, *, data):
