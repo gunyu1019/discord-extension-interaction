@@ -24,14 +24,16 @@ SOFTWARE.
 import inspect
 
 from discord.ext.interaction.core import BaseCore
-from discord.ext.interaction.models.legacy_base import Components
-from discord.ext.interaction.models.legacy_action_row import ActionRow
-from discord.ext.interaction.models.legacy_label import Label
-from discord.ext.interaction.models.legacy_button import Button
-from discord.ext.interaction.models.legacy_select_option import SelectOption
-from discord.ext.interaction.models.legacy_selection import Selection
-from discord.ext.interaction.models.legacy_text_input import TextInput
-from discord.ext.interaction.models.legacy_component_parser import from_payload
+from discord.ext.interaction.models.legacy_components import (
+    Components,
+    ActionRow,
+    Label,
+    Button,
+    SelectOption,
+    Selection,
+    TextInput,
+    from_payload,
+)
 from discord.ext.interaction.models.components import Component
 
 

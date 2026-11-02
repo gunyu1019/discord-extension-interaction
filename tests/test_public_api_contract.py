@@ -1,16 +1,9 @@
-"""Protect the documented entry points while internals are split into modules."""
+"""Protect the documented entry points after reorganizing the package."""
 
 import discord
 
 from discord.ext import interaction
-from discord.ext.interaction.models import (
-    legacy_action_row as action_row,
-    legacy_button as button,
-    legacy_label as label,
-    legacy_select_option as select_option,
-    legacy_selection as selection,
-    legacy_text_input as text_input,
-)
+from discord.ext.interaction.models import legacy_components
 
 
 def test_readme_command_registration_without_network():
@@ -43,12 +36,12 @@ def test_existing_component_names_are_importable():
 
 
 def test_existing_component_facade_keeps_class_identity_and_to_dict():
-    assert interaction.ActionRow is action_row.ActionRow
-    assert interaction.Button is button.Button
-    assert interaction.Label is label.Label
-    assert interaction.SelectOption is select_option.SelectOption
-    assert interaction.Selection is selection.Selection
-    assert interaction.TextInput is text_input.TextInput
+    assert interaction.ActionRow is legacy_components.ActionRow
+    assert interaction.Button is legacy_components.Button
+    assert interaction.Label is legacy_components.Label
+    assert interaction.SelectOption is legacy_components.SelectOption
+    assert interaction.Selection is legacy_components.Selection
+    assert interaction.TextInput is legacy_components.TextInput
 
     item = interaction.Button(style=1, label="Open", custom_id="open")
     row = interaction.ActionRow([item])
