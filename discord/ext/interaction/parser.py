@@ -23,13 +23,15 @@ SOFTWARE.
 
 from __future__ import annotations
 
-from discord.http import handle_message_parameters as origin_handle_message_parameter
-from discord.flags import MessageFlags
-from discord.webhook.async_ import (
+from discord.utils import MISSING
+from discord.ext.interaction.dpy_internal import (
+    from_json as _from_json,
+    handle_message_parameters as origin_handle_message_parameter,
     interaction_message_response_params,
     interaction_response_params,
-)  # noqa
-from discord.utils import MISSING, _from_json, _to_json
+    message_flags_from_value,
+    to_json as _to_json,
+)
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
 
@@ -163,7 +165,7 @@ def _component_flags(flags, components):
     if not _uses_components_v2(components):
         return flags
     value = 0 if flags is MISSING else flags.value
-    return MessageFlags._from_value(value | 32768)
+    return message_flags_from_value(value | 32768)
 
 
 def _check_v2_fields(components, *, content, embed, embeds, poll, stickers=MISSING):

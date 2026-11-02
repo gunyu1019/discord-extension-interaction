@@ -1,8 +1,8 @@
 """Convert Discord resolved data into discord.py objects at the adapter boundary."""
 
 import discord
-from discord.channel import _channel_factory
 
+from discord.ext.interaction.dpy_internal import channel_factory
 from discord.ext.interaction.message import Message
 from discord.ext.interaction.resolved import resolve_attachment
 
@@ -41,7 +41,7 @@ def resolve_target(context, target_type: str, target_id: int | str | None):
         return discord.Role(data=data, state=context._state, guild=guild)
     if kind == "channels":
         channel_data = dict(data)
-        factory, channel_type = _channel_factory(channel_data["type"])
+        factory, channel_type = channel_factory(channel_data["type"])
         if factory is None:
             raise discord.InvalidData(
                 "Unknown channel type {type} for channel ID {id}.".format_map(

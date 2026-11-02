@@ -66,6 +66,7 @@ from discord.ext.interaction.core import (
     BaseCommand,
     decorator_command_types,
 )
+from discord.ext.interaction.dpy_internal import get_guild_channel
 from discord.ext.interaction.enums import ApplicationCommandType
 from discord.ext.interaction.errors import *
 from discord.ext.interaction.interaction import (
@@ -960,7 +961,7 @@ class ClientBase:
 
     def _parse_message_create(self, data: dict) -> None:
         state: ConnectionState = self._connection
-        channel, _ = state._get_guild_channel(data)
+        channel, _ = get_guild_channel(state, data)
         message = Message(state=state, data=data, channel=channel)
         state.dispatch("interaction_message", message)
 

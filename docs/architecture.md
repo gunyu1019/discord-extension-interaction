@@ -10,6 +10,12 @@
 | `commands.py`, `command_scope.py`, `command_permissions.py` | 명령과 범위·권한 데이터 |
 | `components.py`, `component_models.py`, `component_codec.py` | 컴포넌트 API·데이터·payload 해석 |
 | `client.py`, `sync.py`, `interaction.py`, `http.py` | 등록·동기화·이벤트·응답·REST 연결 |
+| `dpy_internal.py` | discord.py의 비공개 이름(`_channel_factory`, `_get_guild_channel`, `_from_value` 등)을 import하는 유일한 모듈 |
+
+discord.py의 비공개 이름이 필요하면 직접 import하지 말고 `dpy_internal.py`에 추가한다.
+그러면 discord.py 업그레이드로 인한 변경이 한 파일에 모이고, 이름이 없을 때
+지원 범위(`discord.py>=2.7.1,<3`)를 알려 주는 오류를 낸다. 예외는 Gateway 수신을
+담당하는 `client.py`의 `ConnectionState` 훅(`_connection`, `parsers`, `_schedule_event`)이다.
 
 데이터 모델은 실행 코드를 import하지 않는다. 별도 파일은 독립적으로 이해하거나
 검증할 만한 동작이 있을 때만 유지한다. 예를 들어 명령 동기화의 계획 계산은

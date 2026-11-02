@@ -46,6 +46,7 @@ from discord.ext.interaction.components import (
     from_payload,
     TextInput,
 )
+from discord.ext.interaction.dpy_internal import connection_state
 from discord.ext.interaction.enums import (
     ApplicationContextType,
     ApplicationIntegrationType,
@@ -134,7 +135,7 @@ class InteractionContext:
         self.token = payload.get("token")
         self.application = get_as_snowflake(payload, "application_id")
 
-        self._state: ConnectionState = getattr(client, "_connection")
+        self._state: ConnectionState = connection_state(client)
 
         self.guild_id = payload.get("guild_id")
         self.channel_id = payload.get("channel_id")
@@ -526,7 +527,7 @@ class ModalPossible(InteractionContext):
 class BaseApplicationContext(ModalPossible):
     def __init__(self, payload: dict, client):
         super().__init__(payload, client)
-        self._state: ConnectionState = getattr(client, "_connection")
+        self._state: ConnectionState = connection_state(client)
         self._from_data(payload.get("data", {}))
 
     def _from_data(self, data):
