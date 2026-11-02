@@ -116,13 +116,17 @@ class InteractionContext:
         self.guild_id = payload.get("guild_id")
         self.channel_id = payload.get("channel_id")
 
-        if self.guild is not None:
-            member = payload.get("member")
+        member = payload.get("member")
+        if self.guild is not None and member is not None:
             self.author = discord.Member(
                 data=member, state=self._state, guild=self.guild
             )
         else:
-            user = payload.get("user")
+            # Guild interactions carry ``member`` instead of ``user``. When the guild
+            # is not cached (HTTP-only receiving, user-installed apps, no guilds
+            # intent) the author is a plain user; the raw member data stays on
+            # ``payload``/``envelope``.
+            user = payload.get("user") or (member or {}).get("user")
             self.author = discord.User(data=user, state=self._state)
         self.created_at = discord.utils.snowflake_time(self.id)
         self.locale = get_enum(Locale, payload.get("locale"))
@@ -476,8 +480,8 @@ class SubcommandContext(BaseApplicationContext):
                     value
                 ) or self.target("channels", target_id=value)
             elif option_type == 8:
-                self.options[key]: discord.Role | None = self.guild.get_role(
-                    value
+                self.options[key]: discord.Role | None = (
+                    self.guild.get_role(value) if self.guild is not None else None
                 ) or self.target("roles", target_id=value)
             elif option_type == 9:
                 self.options[key] = resolve_mentionable(self, value)
@@ -549,8 +553,8 @@ class ApplicationContext(BaseApplicationContext):
                         value
                     ) or self.target("channels", target_id=value)
                 elif option_type == 8:
-                    self.options[key]: discord.Role | None = self.guild.get_role(
-                        value
+                    self.options[key]: discord.Role | None = (
+                        self.guild.get_role(value) if self.guild is not None else None
                     ) or self.target("roles", target_id=value)
                 elif option_type == 9:
                     self.options[key] = resolve_mentionable(self, value)
