@@ -63,6 +63,10 @@ For HTTP interaction webhooks, install the signing extra:
 python -m pip install -U 'discord-extension-interaction[http]'
 ```
 
+HTTP-only receiving does not connect to the Gateway, so call `await bot.login(token)`
+before serving requests (and `await bot.close()` on shutdown). See
+[new feature examples](docs/new-feature-examples.md#aiohttp-수신) for a complete setup.
+
 To install the development version, do the following:
 ```bash
 $ git clone https://github.com/gunyu1019/discord-extension-interaction

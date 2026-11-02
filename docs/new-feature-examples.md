@@ -52,6 +52,20 @@ from discord.ext.interaction.aiohttp_interactions import AiohttpInteractionAdapt
 bot = interaction.Client()
 app = web.Application()
 AiohttpInteractionAdapter(bot, public_key="APPLICATION_PUBLIC_KEY").register(app)
+
+
+async def start_http_client(app: web.Application):
+    # Gateway에 연결하지 않고 REST 세션만 연다. 이 호출이 없으면 Context의
+    # ``send()`` 같은 응답 요청이 AttributeError로 실패한다.
+    await bot.login("BOT_TOKEN")
+
+
+async def stop_http_client(app: web.Application):
+    await bot.close()
+
+
+app.on_startup.append(start_http_client)
+app.on_cleanup.append(stop_http_client)
 web.run_app(app, port=8080)
 ```
 
@@ -59,6 +73,14 @@ web.run_app(app, port=8080)
 Context 메서드가 Discord REST endpoint에 보낸다. Gateway 수신과 HTTP webhook
 수신은 Discord 앱 설정에서 서로 배타적이다. HTTP 전용 실행에서 명령 콜백이 필요하면
 클라이언트에 명령을 먼저 등록해야 한다. 앱의 공개 키는 Developer Portal에서 가져온다.
+
+HTTP 전용 실행에는 다음 제약이 있다.
+
+- `bot.login(token)`만 호출하고 `bot.run()`/`bot.start()`는 호출하지 않는다.
+  Gateway에 연결하지 않으므로 `on_ready`가 오지 않고, 시작 시 자동 동기화도 실행되지
+  않는다. 명령 동기화는 `plan_sync_commands`/`apply_sync_commands`를 직접 호출한다.
+- 길드·채널·멤버 캐시가 비어 있다. 길드 상호작용의 `ctx.author`는 `discord.Member`가
+  아니라 `discord.User`이고, 원본 멤버 데이터는 `ctx.envelope.member`에서 읽는다.
 
 직접 JSON 응답을 반환하려면 `inline_handler`에 async 함수를 전달한다. 함수는
 컨텍스트를 받고 `{"type": 4, "data": {"content": "hello"}}` 같은 Discord callback
