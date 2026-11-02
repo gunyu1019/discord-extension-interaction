@@ -47,7 +47,7 @@ from discord.ext.interaction.components import (
 )
 from discord.ext.interaction.enums import Locale
 from discord.ext.interaction.errors import AlreadyDeferred
-from discord.ext.interaction.interaction_api import (
+from discord.ext.interaction.http import (
     InteractionHTTPClient,
     InteractionData,
 )

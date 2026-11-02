@@ -103,7 +103,7 @@ from .models.command_permissions import (
 )
 from .models.command_scope import GlobalScope, GuildScope
 from .models.sync_command import SyncCommand
-from .command_permissions_api import (
+from .http import (
     CommandPermissionsAPI,
 )
 from .errors import InvalidArgument, AlreadyDeferred

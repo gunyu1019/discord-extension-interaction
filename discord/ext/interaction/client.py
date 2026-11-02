@@ -75,15 +75,15 @@ from discord.ext.interaction.interaction import (
     ModalSubmitContext,
 )
 from discord.ext.interaction.message import Message
-from discord.ext.interaction.command_api import (
+from discord.ext.interaction.http import (
     get_global_commands_with_localizations,
     get_guild_commands_with_localizations,
     create_guild_command,
     edit_guild_command,
     delete_guild_command,
     get_guild_command,
+    CommandSyncAPI,
 )
-from discord.ext.interaction.command_sync_api import CommandSyncAPI
 from discord.ext.interaction.utils import async_all
 
 if TYPE_CHECKING:

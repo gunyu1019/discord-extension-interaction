@@ -31,14 +31,14 @@ Discord payload와 모델 사이의 변환은 해당 모델의 일부이거나 �
 1. `sync.CommandRegistry`가 범위와 유형별 선언을 저장한다.
 2. `sync.plan_sync`가 로컬·원격 선언의 차이를 계산한다.
 3. `sync.apply_sync_plan`이 `models.sync_command.SyncCommand` 정책에 따라 계획을 적용한다.
-4. `command_sync_api`가 Discord REST 요청을 수행한다.
+4. `http.CommandSyncAPI`가 Discord REST 요청을 수행한다.
 
 ### 인터랙션 처리
 
 1. Gateway 또는 HTTP 수신 코드가 payload를 받는다.
 2. `interaction_dispatcher`가 context를 만들고 이벤트를 전달한다.
 3. 클라이언트가 등록된 콜백을 실행한다.
-4. context의 응답 메서드가 상태를 확인하고 `interaction_api`로 전송한다.
+4. context의 응답 메서드가 상태를 확인하고 `http.InteractionHTTPClient`로 전송한다.
 
 ### 컴포넌트
 

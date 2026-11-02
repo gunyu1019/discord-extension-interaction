@@ -1,7 +1,7 @@
 """InteractionHTTPClient — route construction and rate-limit bucketing."""
 import asyncio
 
-from discord.ext.interaction.interaction_api import InteractionData, InteractionHTTPClient
+from discord.ext.interaction.http import InteractionData, InteractionHTTPClient
 
 
 class _RecordingHTTP:
