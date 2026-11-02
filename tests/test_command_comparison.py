@@ -1,6 +1,6 @@
 """Sync comparison uses declared Discord fields, not server metadata."""
 
-from discord.ext.interaction.command_comparison import same_command_declaration
+from discord.ext.interaction.sync import same_command_declaration
 from discord.ext.interaction.commands import SlashCommand, from_payload
 
 

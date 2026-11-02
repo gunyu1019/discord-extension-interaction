@@ -4,7 +4,7 @@ import pytest
 
 from discord.ext import interaction
 from discord.ext.interaction.commands import from_payload
-from discord.ext.interaction.command_comparison import same_command_declaration
+from discord.ext.interaction.sync import same_command_declaration
 
 
 def test_activity_command_round_trip_and_comparison():

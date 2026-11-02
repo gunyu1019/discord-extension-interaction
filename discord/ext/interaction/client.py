@@ -43,20 +43,19 @@ from discord.ext.interaction.commands import (
     from_payload,
     command_types,
 )
-from discord.ext.interaction.command_comparison import (
+from discord.ext.interaction.sync import (
     same_command_declaration,
+    CommandRegistry,
+    SyncPolicyStore,
+    plan_sync,
+    SyncPlan,
+    apply_sync_plan,
+    SyncResult,
 )
 from discord.ext.interaction.interaction_dispatcher import (
     InteractionDispatcher,
 )
 from discord.ext.interaction.activity_binding import ActivityBinding
-from discord.ext.interaction.command_registry import CommandRegistry
-from discord.ext.interaction.sync_policy_store import SyncPolicyStore
-from discord.ext.interaction.sync_planner import plan_sync, SyncPlan
-from discord.ext.interaction.sync_executor import (
-    apply_sync_plan,
-    SyncResult,
-)
 from discord.ext.interaction.models.activity_command import ActivityCommand
 from discord.ext.interaction.models.command_scope import GlobalScope, GuildScope
 from discord.ext.interaction.models.sync_command import SyncCommand

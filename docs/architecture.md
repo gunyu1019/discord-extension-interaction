@@ -12,7 +12,7 @@
 
 모델 코드는 실행 코드를 import하지 않는다. 별도 파일은 독립적으로 이해하거나
 검증할 만한 동작이 있을 때만 유지한다. 예를 들어 명령 동기화의 계획 계산은
-네트워크 호출 없이 실행되므로 `sync_planner.py`에 남긴다.
+네트워크 호출 없이 실행되므로 `sync.py`에 남긴다.
 Discord payload와 모델 사이의 변환은 해당 모델의 일부이거나 실제 송수신 과정의
 일부로 배치한다. 이를 위한 별도의 `serialization` 계층은 두지 않는다.
 
@@ -28,9 +28,9 @@ Discord payload와 모델 사이의 변환은 해당 모델의 일부이거나 �
 
 ### 명령 동기화
 
-1. `command_registry`가 범위와 유형별 선언을 저장한다.
-2. `sync_planner`가 로컬·원격 선언의 차이를 계산한다.
-3. `sync_executor`가 `models.sync_command.SyncCommand` 정책에 따라 계획을 적용한다.
+1. `sync.CommandRegistry`가 범위와 유형별 선언을 저장한다.
+2. `sync.plan_sync`가 로컬·원격 선언의 차이를 계산한다.
+3. `sync.apply_sync_plan`이 `models.sync_command.SyncCommand` 정책에 따라 계획을 적용한다.
 4. `command_sync_api`가 Discord REST 요청을 수행한다.
 
 ### 인터랙션 처리
