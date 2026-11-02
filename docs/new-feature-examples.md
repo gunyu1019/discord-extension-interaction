@@ -87,6 +87,26 @@ HTTP 전용 실행에는 다음 제약이 있다.
 payload를 반환한다. 이 경로는 기존 이벤트 콜백을 실행하지 않는다. 2.5초 안에 응답해야
 하며 `ctx.send()` 같은 REST 초기 응답을 함께 호출하면 안 된다.
 
+## 인터랙션 메타데이터
+
+```python
+@interaction.command(description="Show invocation details")
+async def whereami(ctx: interaction.ApplicationContext):
+    if ctx.context == interaction.ApplicationContextType.BOT_DM:
+        return await ctx.send("DM에서 호출했습니다.")
+
+    can_embed = ctx.app_permissions is not None and ctx.app_permissions.embed_links
+    installs = ", ".join(t.name for t in ctx.authorizing_integration_owners)
+    await ctx.send(
+        f"설치 유형: {installs} / 임베드 가능: {can_embed} / "
+        f"업로드 한도: {ctx.attachment_size_limit} bytes / 구독 {len(ctx.entitlements)}건"
+    )
+```
+
+`ctx.envelope`는 받은 Interaction Object의 읽기 전용 스냅샷이다. 길드 캐시가 없는
+환경에서는 `ctx.author`가 `discord.User`이므로 원본 멤버 데이터는
+`ctx.envelope.member`에서 읽는다.
+
 ## Activity
 
 ```python

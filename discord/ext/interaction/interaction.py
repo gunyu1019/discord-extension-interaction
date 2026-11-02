@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
+from functools import cached_property
 
 import discord
 from discord.state import ConnectionState
@@ -45,12 +46,17 @@ from discord.ext.interaction.components import (
     from_payload,
     TextInput,
 )
-from discord.ext.interaction.enums import Locale
+from discord.ext.interaction.enums import (
+    ApplicationContextType,
+    ApplicationIntegrationType,
+    Locale,
+)
 from discord.ext.interaction.errors import AlreadyDeferred
 from discord.ext.interaction.http import (
     InteractionHTTPClient,
     InteractionData,
 )
+from discord.ext.interaction.interaction_envelope import InteractionEnvelope
 from discord.ext.interaction.parser import handle_message_parameter
 from discord.ext.interaction.message import Message
 from discord.ext.interaction.resolved import (
@@ -95,6 +101,19 @@ class InteractionContext:
         Selected language of the invoking user
     guild_locale: Locale
         Selected language of the invoking guild
+    envelope: InteractionEnvelope
+        A frozen snapshot of the received Interaction Object, including the raw
+        ``member``, ``channel`` and ``guild`` payloads.
+    app_permissions: Optional[discord.Permissions]
+        The permissions the app has in the channel of the interaction.
+    context: Optional[ApplicationContextType]
+        Where the interaction was triggered (guild, bot DM or private channel).
+    authorizing_integration_owners: dict[ApplicationIntegrationType, int]
+        The installation contexts that authorized the interaction and their owner IDs.
+    entitlements: list[discord.Entitlement]
+        The entitlements of the invoking user and guild for this app.
+    attachment_size_limit: Optional[int]
+        The maximum size in bytes of an attachment the invoking user can upload.
     deferred: bool
         When ``defer`` called, deferred becomes ``True``
     responded: bool
@@ -103,6 +122,7 @@ class InteractionContext:
 
     def __init__(self, payload: dict, client):
         self.client = client
+        self._payload = payload
         self.id: int = get_as_snowflake(payload, "id")
         self.version: int = payload.get("version")
         self.type: discord.InteractionType = get_enum(
@@ -125,7 +145,7 @@ class InteractionContext:
             # Guild interactions carry ``member`` instead of ``user``. When the guild
             # is not cached (HTTP-only receiving, user-installed apps, no guilds
             # intent) the author is a plain user; the raw member data stays on
-            # ``payload``/``envelope``.
+            # ``envelope.member``.
             user = payload.get("user") or (member or {}).get("user")
             self.author = discord.User(data=user, state=self._state)
         self.created_at = discord.utils.snowflake_time(self.id)
@@ -159,16 +179,63 @@ class InteractionContext:
             if self.guild is not None:
                 channel = self.guild.get_channel(int(self.channel_id))
             else:
-                tp = (
-                    discord.ChannelType.text
-                    if self.guild_id is not None
-                    else discord.ChannelType.private
-                )
+                # Use the partial channel Discord sends with the interaction so the
+                # type is accurate even when nothing is cached.
+                channel_type = (self._payload.get("channel") or {}).get("type")
+                if channel_type is not None:
+                    tp = get_enum(discord.ChannelType, channel_type)
+                elif self.guild_id is not None:
+                    tp = discord.ChannelType.text
+                else:
+                    tp = discord.ChannelType.private
                 channel = discord.PartialMessageable(
-                    state=self._state, id=self.channel_id, type=tp
+                    state=self._state,
+                    id=int(self.channel_id),
+                    guild_id=int(self.guild_id) if self.guild_id is not None else None,
+                    type=tp,
                 )
             return channel
         return
+
+    @cached_property
+    def envelope(self) -> InteractionEnvelope:
+        """A frozen snapshot of the received Interaction Object."""
+        return InteractionEnvelope.from_payload(self._payload)
+
+    @property
+    def app_permissions(self) -> discord.Permissions | None:
+        """The permissions the app has in the channel of the interaction."""
+        value = self.envelope.app_permissions
+        return discord.Permissions(int(value)) if value is not None else None
+
+    @property
+    def context(self) -> ApplicationContextType | int | None:
+        """Where the interaction was triggered."""
+        value = self.envelope.context
+        return get_enum(ApplicationContextType, value) if value is not None else None
+
+    @property
+    def authorizing_integration_owners(
+        self,
+    ) -> dict[ApplicationIntegrationType | int, int]:
+        """The installation contexts that authorized the interaction."""
+        return {
+            get_enum(ApplicationIntegrationType, int(key)): int(value)
+            for key, value in self.envelope.authorizing_integration_owners.items()
+        }
+
+    @property
+    def entitlements(self) -> list[discord.Entitlement]:
+        """The entitlements of the invoking user and guild for this app."""
+        return [
+            discord.Entitlement(state=self._state, data=entitlement)
+            for entitlement in self.envelope.entitlements
+        ]
+
+    @property
+    def attachment_size_limit(self) -> int | None:
+        """The maximum size in bytes of an attachment the invoker can upload."""
+        return self.envelope.attachment_size_limit
 
     @property
     def voice_client(self) -> discord.VoiceClient | None:
